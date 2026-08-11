@@ -1,0 +1,453 @@
+/*
+ * Slide surface styling. Every visual token reads a --presentation-* CSS
+ * variable so themes restyle everything without touching structure.
+ */
+@import "./variants.css";
+@import "./archetypes.css";
+@import "./packs.css";
+
+/* Type scale, derived once from the raw family scale and multiplied by the
+   per-slide autofit factor. Every rule keeps using --presentation-fs-*, so
+   nothing else has to know autofit exists. Fallbacks match the corporate
+   (legacy) scale so a theme that never emitted --v-fs-* still renders. */
+[data-family] {
+  --presentation-fs-numeral: calc(var(--v-fs-numeral, 160px) * var(--v-fit, 1));
+  --presentation-fs-display: calc(var(--v-fs-display, 84px) * var(--v-fit, 1));
+  --presentation-fs-title: calc(var(--v-fs-title, 64px) * var(--v-fit, 1));
+  --presentation-fs-h1: calc(var(--v-fs-h1, 44px) * var(--v-fit, 1));
+  --presentation-fs-h2: calc(var(--v-fs-h2, 32px) * var(--v-fit, 1));
+  --presentation-fs-h3: calc(var(--v-fs-h3, 22px) * var(--v-fit, 1));
+  --presentation-fs-h4: calc(var(--v-fs-h4, 18px) * var(--v-fit, 1));
+  --presentation-fs-body: calc(var(--v-fs-body, 17px) * var(--v-fit, 1));
+  --presentation-fs-small: calc(var(--v-fs-small, 16px) * var(--v-fit, 1));
+  --presentation-fs-caption: calc(var(--v-fs-caption, 13px) * var(--v-fit, 1));
+  --presentation-fs-micro: calc(var(--v-fs-micro, 11px) * var(--v-fit, 1));
+}
+
+.v-slide {
+  /* Single source of truth for the slide's text inset. Archetypes override
+     these instead of re-declaring padding, so the citation band and the brand
+     logo stay on the same margin as the text — they used to hardcode 64px and
+     56px and drifted on every archetype that changed its padding. */
+  --v-pad-x: 64px;
+  --v-pad-y: calc(56px * var(--v-density, 1));
+  --v-pad-l: var(--v-pad-x);
+  --v-pad-r: var(--v-pad-x);
+  /* Width of the image rail. Archetypes override this one value rather than
+     re-stating flex-basis and width in three places. */
+  --v-split: 40%;
+
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  background: var(--presentation-background, #101216);
+  color: var(--presentation-text, #e8eaf0);
+  font-family: var(--presentation-body-font, "Inter", system-ui, sans-serif);
+  border-radius: var(--presentation-slide-border-radius, 12px);
+  /* Themes only ever animate colour. `transition: all` here also eased every
+     geometry change, turning any layout churn into a visible melt across all
+     nine navigator thumbnails. */
+  transition:
+    background-color var(--presentation-transition-dur, 0.2s) ease,
+    color var(--presentation-transition-dur, 0.2s) ease;
+}
+
+/* ---- layout arrangements ---- */
+.v-layout-left { flex-direction: row; }
+.v-layout-right { flex-direction: row-reverse; }
+.v-layout-vertical { flex-direction: column; }
+
+.v-rootimg {
+  flex: 0 0 var(--v-split);
+  object-fit: cover;
+  width: var(--v-split);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Deck-wide grade: unifies mismatched generations into one set. */
+img.v-rootimg,
+img.v-img {
+  filter: var(--presentation-img-grade, none);
+}
+.v-layout-vertical > .v-rootimg {
+  width: 100%;
+  height: var(--v-band, 42%);
+  flex: 0 0 var(--v-band, 42%);
+}
+.v-slide[data-archetype="split"].v-layout-vertical { --v-band: 38%; }
+.v-bg-img {
+  position: absolute;
+  inset: 0;
+  opacity: 0.25;
+}
+.v-bg-img .v-rootimg {
+  width: 100%;
+  height: 100%;
+}
+
+.v-content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--v-gap-3);
+  /* Fallbacks matter: the document reader renders .v-content without a
+     .v-slide ancestor, so the inset variables are undefined there. */
+  padding: var(--v-pad-y, 56px) var(--v-pad-r, 64px) var(--v-pad-y, 56px)
+    var(--v-pad-l, 64px);
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+/* Autofit hit its floor and the content still does not fit. Anchor to the top
+   so the heading survives — centring clipped BOTH ends, losing the title as
+   well as the last bullet. */
+.v-content--overflow {
+  justify-content: flex-start;
+}
+.v-content--overflow::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 56px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--presentation-background, #101216) 82%, transparent)
+  );
+}
+
+/* ---- typography (token-driven; fallbacks = Phase-2 values) ---- */
+.v-title {
+  font-family: var(--presentation-heading-font, var(--presentation-body-font, "Inter", sans-serif));
+  color: var(--presentation-heading, #ffffff);
+  font-size: var(--presentation-fs-title, 64px);
+  line-height: 1.06;
+  font-weight: var(--presentation-heading-weight, 700);
+  letter-spacing: var(--presentation-track-title, -0.02em);
+}
+.v-h1 {
+  font-family: var(--presentation-heading-font, inherit);
+  color: var(--presentation-heading, #ffffff);
+  font-size: var(--presentation-fs-h1, 44px);
+  line-height: 1.12;
+  font-weight: var(--presentation-heading-weight, 700);
+  letter-spacing: var(--presentation-track-h1, -0.015em);
+}
+.v-h2 { font-family: var(--presentation-heading-font, inherit); color: var(--presentation-heading, #fff); font-size: var(--presentation-fs-h2, 32px); font-weight: 650; line-height: 1.2; }
+.v-h3 { font-family: var(--presentation-heading-font, inherit); color: var(--presentation-heading, #fff); font-size: var(--presentation-fs-h3, 22px); font-weight: 650; line-height: 1.25; }
+.v-h4 { font-family: var(--presentation-heading-font, inherit); color: var(--presentation-heading, #fff); font-size: var(--presentation-fs-h4, 18px); font-weight: 600; line-height: 1.3; }
+.v-p { font-size: var(--presentation-fs-body, 17px); line-height: 1.5; color: var(--presentation-text, #e8eaf0); opacity: 0.92; }
+.v-li { font-size: var(--presentation-fs-small, 16px); line-height: 1.5; margin-left: 1.1em; }
+
+.v-label {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: var(--presentation-fs-caption, 13px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--presentation-accent, #7c6cff);
+  border: 1px solid color-mix(in srgb, var(--presentation-accent, #7c6cff) 45%, transparent);
+  border-radius: 999px;
+  padding: 6px 14px;
+}
+
+/* ---- shared card ---- */
+.v-card {
+  background: var(--presentation-card-background, color-mix(in srgb, var(--presentation-text, #fff) 7%, transparent));
+  border: 1px solid color-mix(in srgb, var(--presentation-text, #fff) 12%, transparent);
+  border-radius: var(--presentation-card-border-radius, 14px);
+  box-shadow: var(--presentation-card-shadow, none);
+  padding: 16px 18px;
+}
+
+.v-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  flex: 0 0 30px;
+  background: var(--presentation-accent, #7c6cff);
+  color: var(--presentation-background, #101216);
+  font-weight: 700;
+  font-size: 15px;
+}
+.v-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  flex: 0 0 40px;
+  background: color-mix(in srgb, var(--presentation-accent, #7c6cff) 18%, transparent);
+  color: var(--presentation-accent, #7c6cff);
+  font-weight: 700;
+  font-size: 18px;
+}
+.v-icon img { width: 24px; height: 24px; }
+.v-icon-glyph {
+  width: 24px;
+  height: 24px;
+  background: var(--presentation-accent, #7c6cff);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.v-item-body { min-width: 0; }
+.v-item-body .v-h3, .v-item-body .v-h4 { margin-bottom: 4px; }
+.v-item-body .v-p { font-size: 15px; opacity: 0.85; }
+
+/* ---- bullets ---- */
+.v-bullets { display: flex; flex-direction: column; gap: var(--v-gap-3); }
+.v-bullet { display: flex; gap: var(--v-gap-3); align-items: flex-start; }
+.v-bullet-marker { flex: 0 0 30px; display: flex; justify-content: center; padding-top: 3px; }
+.v-dot { width: 10px; height: 10px; border-radius: 999px; background: var(--presentation-accent, #7c6cff); margin-top: 6px; }
+.v-arrowhead { color: var(--presentation-accent, #7c6cff); font-size: 20px; font-weight: 700; }
+
+/* ---- icons list ---- */
+.v-icons { display: grid; gap: var(--v-gap-3); }
+.v-icons-side { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.v-icons-side .v-icons-item { display: flex; gap: var(--v-gap-3); align-items: flex-start; }
+.v-icons-top { grid-auto-flow: column; grid-auto-columns: 1fr; }
+.v-icons-top .v-icons-item { display: flex; flex-direction: column; gap: var(--v-gap-1); align-items: flex-start; }
+
+/* ---- boxes ---- */
+.v-boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--v-gap-3); }
+.v-box { display: flex; flex-direction: column; gap: var(--v-gap-1); }
+.v-box-head { display: flex; }
+
+/* ---- arrows (horizontal flow) ---- */
+.v-arrows { display: flex; align-items: stretch; gap: var(--v-gap-1); }
+.v-arrow-item { display: flex; align-items: center; gap: var(--v-gap-1); flex: 1; min-width: 0; }
+.v-arrow-shape { flex: 1; }
+.v-arrow-sep { color: var(--presentation-accent, #7c6cff); font-size: 26px; font-weight: 700; }
+
+/* ---- vertical sequence ---- */
+.v-seq { display: flex; flex-direction: column; gap: var(--v-gap-2); }
+.v-seq-item { display: flex; gap: var(--v-gap-3); align-items: flex-start; }
+.v-seq-body { flex: 1; }
+
+/* ---- steps ---- */
+.v-steps { display: flex; gap: var(--v-gap-2); }
+.v-step { flex: 1; display: flex; flex-direction: column; gap: var(--v-gap-1); min-width: 0; }
+.v-step-head { display: flex; align-items: center; gap: var(--v-gap-1); }
+.v-step-line { flex: 1; height: 2px; background: color-mix(in srgb, var(--presentation-accent, #7c6cff) 45%, transparent); }
+.v-step-body { display: flex; flex-direction: column; gap: var(--v-gap-1); }
+
+/* ---- timeline ---- */
+.v-timeline { position: relative; display: flex; flex-direction: column; gap: var(--v-gap-3); padding-left: 34px; }
+.v-timeline-line { position: absolute; left: 10px; top: 6px; bottom: 6px; width: 2px; background: color-mix(in srgb, var(--presentation-accent, #7c6cff) 50%, transparent); }
+.v-timeline-item { position: relative; }
+.v-timeline-dot { position: absolute; left: -30px; top: 14px; width: 12px; height: 12px; border-radius: 999px; background: var(--presentation-accent, #7c6cff); box-shadow: 0 0 0 4px color-mix(in srgb, var(--presentation-accent, #7c6cff) 25%, transparent); }
+
+/* ---- cycle ---- */
+.v-cycle { position: relative; flex: 1; min-height: 340px; }
+.v-cycle-ring { position: absolute; left: 50%; top: 50%; width: 62%; aspect-ratio: 1; transform: translate(-50%, -50%); border: 2px dashed color-mix(in srgb, var(--presentation-accent, #7c6cff) 45%, transparent); border-radius: 999px; }
+.v-cycle-item { position: absolute; transform: translate(-50%, -50%); width: 218px; text-align: center; }
+.v-cycle-item .v-p { font-size: 13px; }
+.v-cycle-item .v-h3 { font-size: 17px; }
+
+/* ---- pyramid ---- */
+.v-pyramid { display: flex; flex-direction: column; align-items: center; gap: var(--v-gap-1); }
+.v-pyramid-row { display: flex; justify-content: center; }
+.v-pyramid-band {
+  width: 100%;
+  text-align: center;
+  padding: 12px 18px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--presentation-accent, #7c6cff) 26%, var(--presentation-card-background, transparent));
+  border: 1px solid color-mix(in srgb, var(--presentation-accent, #7c6cff) 40%, transparent);
+}
+.v-pyramid-label .v-p { font-size: 13px; opacity: 0.8; }
+.v-pyramid-label .v-h3 { font-size: 17px; }
+
+/* ---- staircase ---- */
+.v-stairs { display: flex; flex-direction: column; gap: var(--v-gap-1); }
+.v-stair { display: flex; align-items: center; gap: var(--v-gap-2); }
+.v-stair-body { flex: 0 1 460px; }
+
+/* ---- compare / before-after / pros-cons ---- */
+.v-twoside { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: var(--v-gap-3); align-items: stretch; }
+.v-side { display: flex; flex-direction: column; gap: var(--v-gap-1); }
+.v-side-a { border-top: 3px solid var(--presentation-accent, #7c6cff); }
+.v-side-b { border-top: 3px solid color-mix(in srgb, var(--presentation-accent, #7c6cff) 40%, var(--presentation-text, #fff)); }
+.v-vs {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--presentation-accent, #7c6cff);
+  color: var(--presentation-background, #101216);
+  font-weight: 800;
+  font-size: 13px;
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+.v-proscons .v-vs { display: none; }
+.v-pros { border-top: 3px solid var(--presentation-positive, #34c98e); }
+.v-cons { border-top: 3px solid var(--presentation-negative, #e2596f); }
+
+/* ---- stats ---- */
+.v-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--v-gap-3); }
+.v-stat { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.v-stat-value {
+  font-family: var(--presentation-heading-font, inherit);
+  /* One sizing strategy. This was a hardcoded 44px that only matched the
+     corporate scale, while kpi and metric-bubbles each multiplied fs-title by
+     their own magic factor. Archetypes now set --v-stat-size. */
+  font-size: var(--v-stat-size, var(--presentation-fs-h1, 44px));
+  font-weight: 800;
+  line-height: 1;
+  color: var(--presentation-accent, #7c6cff);
+  letter-spacing: -0.02em;
+}
+
+/* ---- columns ---- */
+.v-columns { display: grid; grid-template-columns: repeat(var(--v-cols, 2), 1fr); gap: var(--v-gap-4); }
+.v-column { display: flex; flex-direction: column; gap: var(--v-gap-1); min-width: 0; }
+
+/* ---- media / blocks ---- */
+.v-img { width: 100%; border-radius: var(--presentation-card-border-radius, 14px); object-fit: cover; }
+.v-img-pending {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--presentation-accent, #7c6cff) 22%, var(--presentation-background, #101216)),
+    color-mix(in srgb, var(--presentation-accent, #7c6cff) 8%, var(--presentation-background, #101216)));
+  color: color-mix(in srgb, var(--presentation-text, #fff) 65%, transparent);
+  font-size: 14px;
+  border-radius: var(--presentation-card-border-radius, 14px);
+}
+.v-rootimg.v-img-pending { height: 100%; border-radius: 0; }
+
+.v-quote { border-left: 4px solid var(--presentation-accent, #7c6cff); padding: 6px 0 6px 20px; }
+.v-quote blockquote { font-size: 22px; font-style: italic; line-height: 1.45; color: var(--presentation-heading, #fff); }
+.v-quote figcaption { margin-top: 8px; font-size: 14px; opacity: 0.7; }
+
+.v-callout { border-radius: var(--presentation-card-border-radius, 14px); padding: 14px 18px; font-size: 15px; border: 1px solid; }
+.v-callout-note, .v-callout-info { background: color-mix(in srgb, var(--presentation-info, #4f8ef7) 14%, transparent); border-color: color-mix(in srgb, var(--presentation-info, #4f8ef7) 40%, transparent); }
+.v-callout-warning, .v-callout-caution { background: color-mix(in srgb, var(--presentation-warning, #f7b84f) 14%, transparent); border-color: color-mix(in srgb, var(--presentation-warning, #f7b84f) 40%, transparent); }
+.v-callout-success { background: color-mix(in srgb, var(--presentation-positive, #34c98e) 14%, transparent); border-color: color-mix(in srgb, var(--presentation-positive, #34c98e) 40%, transparent); }
+.v-callout-question { background: color-mix(in srgb, var(--presentation-accent, #b06cff) 14%, transparent); border-color: color-mix(in srgb, var(--presentation-accent, #b06cff) 40%, transparent); }
+
+.v-code {
+  background: color-mix(in srgb, #000 35%, var(--presentation-background, #101216));
+  border: 1px solid color-mix(in srgb, var(--presentation-text, #fff) 12%, transparent);
+  border-radius: var(--presentation-card-border-radius, 14px);
+  padding: 16px 18px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: hidden;
+  white-space: pre-wrap;
+}
+
+.v-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.v-table th {
+  text-align: left;
+  font-family: var(--presentation-heading-font, inherit);
+  color: var(--presentation-heading, #fff);
+  border-bottom: 2px solid var(--presentation-accent, #7c6cff);
+  padding: 10px 12px;
+}
+.v-table td { padding: 10px 12px; border-bottom: 1px solid color-mix(in srgb, var(--presentation-text, #fff) 12%, transparent); }
+
+.v-chart-pending { display: flex; align-items: center; justify-content: center; min-height: 200px; font-size: 15px; opacity: 0.75; }
+
+/* ---- typewriter ---- */
+.vellum-generating {
+  border-right: 2px solid var(--presentation-accent, #7c6cff);
+  animation: v-caret 0.8s steps(1) infinite;
+}
+@keyframes v-caret {
+  50% { border-color: transparent; }
+}
+
+/* ---- document reader view ---- */
+.v-doc-wrap {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+.v-doc-toc {
+  position: sticky;
+  top: 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.v-doc-toc-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 11px;
+  opacity: 0.6;
+  margin-bottom: 4px;
+}
+.v-doc-toc-item {
+  opacity: 0.75;
+  text-decoration: none;
+  color: inherit;
+  padding: 3px 0;
+  border-left: 2px solid transparent;
+  padding-left: 10px;
+}
+.v-doc-toc-item:hover {
+  opacity: 1;
+  border-left-color: var(--presentation-accent, #7c6cff);
+}
+.v-doc {
+  background: var(--presentation-background, #fff);
+  color: var(--presentation-text, #222);
+  font-family: var(--presentation-body-font, Georgia, serif);
+  border-radius: var(--presentation-slide-border-radius, 12px);
+  padding: 72px 84px;
+  max-width: 860px;
+}
+.v-doc .v-content {
+  padding: 0;
+  gap: var(--v-gap-3);
+  justify-content: flex-start;
+  overflow: visible;
+}
+.v-doc-section {
+  padding: 28px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--presentation-text, #000) 10%, transparent);
+}
+.v-doc-section:last-child { border-bottom: none; }
+/* The reader ramp derives from the family scale like everything else. It used
+   to hardcode 44/30/23/16.5px, so every design family rendered documents
+   identically — and 16.5px was a sub-pixel body size. */
+.v-doc .v-title { font-size: var(--presentation-fs-h1, 44px); }
+.v-doc .v-h1 {
+  font-size: calc(var(--presentation-fs-h2, 32px) * 0.94);
+  margin-top: var(--v-gap-1);
+}
+.v-doc .v-h2 { font-size: var(--presentation-fs-h3, 22px); }
+.v-doc .v-p { font-size: var(--presentation-fs-body, 17px); line-height: 1.65; }
+.v-doc .v-img { max-height: 360px; }
+
+.v-chart { width: 100%; height: 340px; }
+.v-doc .v-chart { height: 300px; }
+
+/* Figure wrappers exist for print numbering (see print.css); on screen the
+   wrapper is inert and the caption is hidden, so the reader looks unchanged. */
+.v-doc-figure { margin: 0; }
+.v-doc-figcaption { display: none; }

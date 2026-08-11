@@ -1,0 +1,103 @@
+/*
+ * Style-pack decoration layer (P4): pack- and family-scoped restyling of
+ * cards, hairlines, labels, media tiles. Selectors key on [data-family]
+ * (from ThemeScope) so packs can change the register of every component
+ * without touching the component CSS. Filled by P4-W2.
+ */
+
+/* ---- citation footnote band ---- */
+.v-footnotes {
+  position: absolute;
+  /* Follows the slide's text inset instead of assuming the base 64px, which
+     left the band hanging off the margin on statement/quote/testimonial. */
+  left: var(--v-pad-l, 64px);
+  right: var(--v-pad-r, 64px);
+  bottom: 18px;
+  padding-top: 8px;
+  border-top: 1px solid
+    color-mix(in srgb, var(--presentation-text, #fff) 10%, transparent);
+  font-size: var(--presentation-fs-micro, 11px);
+  letter-spacing: 0.02em;
+  color: var(--presentation-text, #e8eaf0);
+  opacity: 0.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Beside a rail the band spans only the text column. The column is whatever
+   the image does not take (--v-split, 40% by default), not a fixed 60%. */
+.v-layout-left > .v-footnotes,
+.v-layout-right > .v-footnotes {
+  left: auto;
+  right: var(--v-pad-r, 64px);
+  width: calc(100% - var(--v-split, 40%) - var(--v-pad-l, 64px) - var(--v-pad-r, 64px));
+}
+.v-layout-right > .v-footnotes {
+  right: auto;
+  left: var(--v-pad-l, 64px);
+}
+
+/* Numeric slot: stats/tables render in the theme's numeric face. */
+.v-slide .v-stat-value,
+.v-slide .v-table td,
+.v-slide .v-kpi-value {
+  font-family: var(--presentation-numeric-font), inherit;
+}
+
+/* ---- gradient heading fill (Prism signature; any theme may set it) ----
+   The fallback is a solid "gradient" of the heading color, so themes
+   without --presentation-heading-fill render identically to plain text. */
+@supports (-webkit-background-clip: text) {
+  .v-slide[data-archetype="hero"] .v-title,
+  .v-slide[data-archetype="hero"] .v-h1,
+  .v-slide[data-archetype="statement"] .v-h1,
+  .v-slide[data-archetype="statement"] .v-h2,
+  .v-slide[data-archetype="divider"] .v-h1,
+  .v-slide[data-archetype="divider"] .v-title,
+  .v-slide[data-archetype="closing"] .v-title,
+  .v-slide[data-archetype="closing"] .v-h1 {
+    background-image: var(
+      --presentation-heading-fill,
+      linear-gradient(
+        var(--presentation-heading, #fff),
+        var(--presentation-heading, #fff)
+      )
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/* ---- studio family (Meridian): hairline tile register ---- */
+[data-family="studio"] .v-card {
+  background: var(--presentation-card-background, #17171A);
+  border: 1px solid #2a2a2f;
+  box-shadow: none;
+}
+[data-family="studio"] .v-label {
+  border: 0;
+  padding: 0 0 2px 0;
+  border-radius: 0;
+  letter-spacing: 0.22em;
+}
+[data-family="studio"] .v-slide .v-content {
+  gap: var(--v-gap-4);
+}
+[data-family="studio"] .v-table th {
+  border-bottom-width: 1px;
+}
+
+/* ---- bold family on nocturne-like themes: floating media tiles ---- */
+[data-family="bold"] .v-slide[data-archetype="split"] > img.v-rootimg {
+  margin: 40px;
+  height: calc(100% - 80px);
+  width: calc(38% - 40px);
+  flex-basis: calc(38% - 40px);
+  border-radius: 20px;
+}
+[data-family="bold"] .v-slide[data-archetype="split"].v-layout-vertical > img.v-rootimg {
+  width: calc(100% - 80px);
+  height: calc(38% - 40px);
+  flex-basis: auto;
+}

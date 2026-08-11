@@ -1,0 +1,44 @@
+{
+  "name": "vellum",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack -p 3210",
+    "build": "next build --turbopack",
+    "start": "next start -p 3210",
+    "lint": "eslint",
+    "test": "vitest run",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "6.16.3",
+    "docx": "9.7.1",
+    "echarts": "6.1.0",
+    "iron-session": "8.0.4",
+    "mammoth": "1.12.1",
+    "next": "15.5.23",
+    "pdf-parse": "2.4.5",
+    "pptxgenjs": "4.0.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "sharp": "0.35.3",
+    "zod": "3.25.76",
+    "zod-to-json-schema": "3.25.2"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.23",
+    "playwright": "1.62.1",
+    "prisma": "6.16.3",
+    "tailwindcss": "^4",
+    "tsx": "4.23.12",
+    "typescript": "^5",
+    "vitest": "4.1.10"
+  }
+}

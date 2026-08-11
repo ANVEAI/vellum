@@ -1,0 +1,1683 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SlideParser golden fixtures > deck-medium > matches snapshot 1`] = `
+[
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "A Homeowner's Guide to Going Solar",
+          },
+        ],
+        "id": "9VsqZLE6yX3apJQdVblN2",
+        "type": "presentation-title",
+        "variant": "title",
+      },
+      {
+        "children": [
+          {
+            "text": "",
+          },
+        ],
+        "id": "RzoNacMBO33NqFGOGL0W5",
+        "type": "contributor",
+      },
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "Practical steps, costs, and decisions for residential solar adoption.",
+          },
+        ],
+        "id": "lDR8phiD2LUTnzxWyLx1b",
+        "type": "p",
+      },
+    ],
+    "id": "1pdtCIxUko8HTRakc3UR8",
+    "layoutType": "left",
+    "rootImage": {
+      "layoutType": "left",
+      "query": "bright and optimistic illustration of a modern suburban home with sleek blue solar panels on the roof, surrounded by green trees and a clear blue sky, soft natural lighting, friendly and approachable style",
+    },
+  },
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "Why Solar Now",
+          },
+        ],
+        "id": "BIxwD5aISY5VxhFwBmA3F",
+        "type": "label",
+      },
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "The Economic Shift",
+          },
+        ],
+        "id": "2aifOsh3RbAjuIyC109jt",
+        "type": "presentation-title",
+        "variant": "title",
+      },
+      {
+        "boxType": "solid",
+        "children": [
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "90% Cost Drop",
+                  },
+                ],
+                "id": "3xacalNyf9VweoyQHAFmE",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Panel prices have plummeted since 2010, making solar significantly more affordable.",
+                  },
+                ],
+                "id": "PKTljzYMn2O26C687kYDz",
+                "type": "p",
+              },
+            ],
+            "id": "is5k7tz7v751Gdqh66BI1",
+            "type": "box-item",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Grid Parity",
+                  },
+                ],
+                "id": "82U0hDLx4ThRgIewIQlP4",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "In most markets, solar power now costs less than or equal to traditional grid electricity.",
+                  },
+                ],
+                "id": "D5oMa5ih6TIWiTsOUvHo4",
+                "type": "p",
+              },
+            ],
+            "id": "aszUEa0cAw5X77k85KRwr",
+            "type": "box-item",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Immediate ROI",
+                  },
+                ],
+                "id": "zmjPsJimVKvTSDtzKldHz",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Lower upfront costs mean faster payback periods and better long-term savings.",
+                  },
+                ],
+                "id": "8HlPbW0dCq4YXNw2SV33u",
+                "type": "p",
+              },
+            ],
+            "id": "vtVszwqm8iYpBoUQVmrUe",
+            "type": "box-item",
+          },
+        ],
+        "id": "ODQZCsAqFfYVZM7ZM6eop",
+        "orientation": "horizontal",
+        "type": "boxes",
+      },
+    ],
+    "id": "1izO3vFliCfggDLPRHJJA",
+    "layoutType": "left",
+    "rootImage": {
+      "layoutType": "left",
+      "query": "split screen composition: left side shows a declining cost graph trending down, right side shows a happy family standing in front of their solar-equipped home, warm lighting, clean and professional style",
+    },
+  },
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "The Basics",
+          },
+        ],
+        "id": "8869AgPNQk7gJ2nho4qti",
+        "type": "label",
+      },
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "How Solar Panels Work",
+          },
+        ],
+        "id": "zedNQrWFLCIqYwlhpFmCZ",
+        "type": "presentation-title",
+        "variant": "title",
+      },
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Absorption",
+                  },
+                ],
+                "id": "Mk9boBmfWXGLEjbfVr6KO",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Panels capture sunlight and convert photons into direct current (DC) electricity.",
+                  },
+                ],
+                "id": "7VfXeAUqOAZUvTlfh2j1F",
+                "type": "p",
+              },
+            ],
+            "icon": "sun",
+            "id": "OvJOZz9PD3bd47ghAWCcs",
+            "type": "icon-item",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Inversion",
+                  },
+                ],
+                "id": "UZOEeuKkh8utTBIW8RaRI",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "An inverter transforms DC power into alternating current (AC) for home use.",
+                  },
+                ],
+                "id": "gnTFRnRy3y9UeWKDOqITp",
+                "type": "p",
+              },
+            ],
+            "icon": "settings",
+            "id": "18qG2fsb6c0d0OjRJEsLU",
+            "type": "icon-item",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Metering",
+                  },
+                ],
+                "id": "4MBANcphVWMRk1jXtWqgU",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Net metering tracks energy produced vs. consumed for billing credits.",
+                  },
+                ],
+                "id": "1q7Ab1C2A5FKQ58GCiHFe",
+                "type": "p",
+              },
+            ],
+            "icon": "chart",
+            "id": "XS09nClsF3bT0Mq8j10bz",
+            "type": "icon-item",
+          },
+        ],
+        "id": "Hm8ZinL3unIYCRFO7JAWk",
+        "orientation": "top",
+        "type": "icons",
+        "variant": "icon",
+      },
+    ],
+    "id": "Rpcxni6xhHMEzDaTtFLAC",
+    "layoutType": "vertical",
+    "rootImage": {
+      "layoutType": "vertical",
+      "query": "close-up detailed view of a photovoltaic solar cell under bright light, showing the grid structure and blue silicon texture, technical but accessible illustration style",
+    },
+  },
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "generating": undefined,
+            "text": "Timeline",
+          },
+        ],
+        "id": "6GSrhJDUzcCv96ZJausaP",
+        "type": "label",
+      },
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "Installation Steps",
+          },
+        ],
+        "id": "zT8RzMimv2bRK0l8pBu21",
+        "type": "presentation-title",
+        "variant": "title",
+      },
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "1. Assessment",
+                  },
+                ],
+                "id": "etM6MauuyPU5aWIedeb0z",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Evaluate roof space and energy needs.",
+                  },
+                ],
+                "id": "H2JrpAgIyeYWUhH1xsHeI",
+                "type": "p",
+              },
+            ],
+            "icon": "file",
+            "id": "LbOWgHpyTtJFwHRYpTxak",
+            "type": "steps-item",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "2. Permits",
+                  },
+                ],
+                "id": "qGQPtBm7jsiQnvxd8HpiE",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Secure local approvals and utility agreements.",
+                  },
+                ],
+                "id": "IW464GfCgZy5URhHw0jTj",
+                "type": "p",
+              },
+            ],
+            "icon": "gavel",
+            "id": "o5i5nfPvulFwceIdx7goG",
+            "type": "steps-item",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "3. Install",
+                  },
+                ],
+                "id": "QIXADbQAgYN29mCjBUene",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Professional mounting and wiring (1-3 days).",
+                  },
+                ],
+                "id": "VMMFPom8nYtJT26czdhWz",
+                "type": "p",
+              },
+            ],
+            "icon": "hammer",
+            "id": "SeTcTXS9f5eFct8XfKZQ7",
+            "type": "steps-item",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "4. Inspection",
+                  },
+                ],
+                "id": "XNnzxJEL0qnsCHkve4cza",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Final review and grid connection approval.",
+                  },
+                ],
+                "id": "uebZyYlZ9UGaV65MDPZ4t",
+                "type": "p",
+              },
+            ],
+            "icon": "check",
+            "id": "De85xmIxsuF1M8wJtVvff",
+            "type": "steps-item",
+          },
+        ],
+        "id": "Tnw1qqrwm1GIB0KOMBChP",
+        "type": "steps",
+        "variant": "arrow",
+      },
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "text": "Typical Timeline: 6-8 weeks from sign-off to activation.",
+              },
+            ],
+            "id": "u4tBsNNDH3IoddoPs5huG",
+            "type": "p",
+          },
+        ],
+        "id": "SHdxUOjxlmeAfL09n84y5",
+        "type": "callout",
+        "variant": "info",
+      },
+    ],
+    "id": "2W4UHSnyAu39maLXQr73E",
+    "layoutType": "right",
+    "rootImage": {
+      "layoutType": "right",
+      "query": "diagram showing a streamlined workflow icon set for assessment, permits, installation, and inspection, connected by arrows, clean white background, minimalist design",
+    },
+  },
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "Investment",
+          },
+        ],
+        "id": "Z2ugKGzgiWb5j0Xj032nL",
+        "type": "label",
+      },
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "Costs and Payback",
+          },
+        ],
+        "id": "VUrM4U4XwlvS2RB7FmF4r",
+        "type": "presentation-title",
+        "variant": "title",
+      },
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Avg. Payback",
+                  },
+                ],
+                "id": "iA1ho0eGmB4WdotFcsSjO",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Time to break even after incentives.",
+                  },
+                ],
+                "id": "j4nGWRIH7zcUyOOQYh5bf",
+                "type": "p",
+              },
+            ],
+            "id": "omT0QFUcRh9xnuuHpijkI",
+            "stat": "6-9 years",
+            "type": "stats-item",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Lifespan",
+                  },
+                ],
+                "id": "crKspUgDaQKaXnMrjtd0T",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Effective energy generation period.",
+                  },
+                ],
+                "id": "pYjOkQ9d16jtAAiUrqQDM",
+                "type": "p",
+              },
+            ],
+            "id": "43F2QGOSLwGuyb9qjv5Mx",
+            "stat": "25+ years",
+            "type": "stats-item",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Federal Credit",
+                  },
+                ],
+                "id": "ldjTy6c9Mj2Ql22HntNMR",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Tax incentive available in many regions.",
+                  },
+                ],
+                "id": "Q86Om8ZqHCulzXbrc8XQw",
+                "type": "p",
+              },
+            ],
+            "id": "ZbqjCfYWsywwB6zNJVPif",
+            "stat": "30%",
+            "type": "stats-item",
+          },
+        ],
+        "id": "66cr2nGT2xSjRCefV8kGz",
+        "statsType": "bar",
+        "statstype": "bar",
+        "type": "stats",
+      },
+      {
+        "children": [
+          {
+            "text": "The initial investment is offset by long-term electricity bill savings and potential home value increase.",
+          },
+        ],
+        "id": "9NKxoc1Y4QaZfEcdLE1kj",
+        "type": "p",
+      },
+    ],
+    "id": "1IPX0IA6Flmg7AB8cAEas",
+    "layoutType": "left",
+    "rootImage": {
+      "layoutType": "left",
+      "query": "infographic style visualization of a piggy bank growing alongside solar panels, with coins flying into the bank, bright and colorful financial illustration",
+    },
+  },
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "Selection",
+          },
+        ],
+        "id": "BtHb5pHp1mOqPpBKPXWiA",
+        "type": "label",
+      },
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "Choosing an Installer",
+          },
+        ],
+        "id": "2Po7K32SwOCRZCubv8ZXc",
+        "type": "presentation-title",
+        "variant": "title",
+      },
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Certifications",
+                  },
+                ],
+                "id": "0bIgLwccMpnfXPt9S8PiJ",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Look for NABCEP certification and local licensing.",
+                  },
+                ],
+                "id": "M6ml1yMY3u5bVQsJpeVig",
+                "type": "p",
+              },
+            ],
+            "id": "SkNikiP1ALAzs8i9o1mnz",
+            "type": "column",
+            "width": "",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Comparisons",
+                  },
+                ],
+                "id": "ruEnKzgTxxehL9G4CaykY",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Compare warranties, panel brands, and production estimates.",
+                  },
+                ],
+                "id": "9VkQrTtLouXwEbJNgF2uN",
+                "type": "p",
+              },
+            ],
+            "id": "UTSc4VqPUvKNusanOKg3V",
+            "type": "column",
+            "width": "",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "References",
+                  },
+                ],
+                "id": "MaIVnhCJgq7Z95hhyg7tb",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Check recent customer reviews and portfolio photos.",
+                  },
+                ],
+                "id": "wesLBercMcTcSgUGutPAi",
+                "type": "p",
+              },
+            ],
+            "id": "WHqJO2PamCeIj8a35Xom7",
+            "type": "column",
+            "width": "",
+          },
+        ],
+        "id": "aNDTkOAzze0yDxsbKfO7F",
+        "type": "column_group",
+      },
+    ],
+    "id": "NlmvQ9pGTscemsmEZqpGy",
+    "layoutType": "right",
+    "rootImage": {
+      "layoutType": "right",
+      "query": "handshake between a homeowner and a solar installer in front of a completed installation, trustworthy and professional atmosphere, natural lighting",
+    },
+  },
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "Future-Proofing",
+          },
+        ],
+        "id": "RdMPYXWDSIln0cD37XlIE",
+        "type": "label",
+      },
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "The Road Ahead",
+          },
+        ],
+        "id": "c7VeUPEKmIZ3zYOzH7aiV",
+        "type": "presentation-title",
+        "variant": "title",
+      },
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Battery Storage",
+                  },
+                ],
+                "id": "mmYrYREb3zY1RLp1QEfaq",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Store excess energy for night or emergencies.",
+                  },
+                ],
+                "id": "A7dt51nuZ4XE6MFv6oA97",
+                "type": "p",
+              },
+            ],
+            "id": "iyf6vMEKCCph6L5eD0C5H",
+            "type": "arrow-item",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "EV Charging",
+                  },
+                ],
+                "id": "QC9ba8AHAELnxR0kHQz4p",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Pair your system with an electric vehicle charger.",
+                  },
+                ],
+                "id": "V1nMveFhPwsqGyaG5652M",
+                "type": "p",
+              },
+            ],
+            "id": "4zB7k7pznR5oMiEwrpTba",
+            "type": "arrow-item",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Community Solar",
+                  },
+                ],
+                "id": "2lN4dU3ZbyfkFFnTt7mfn",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Join shared solar projects if rooftop isn't viable.",
+                  },
+                ],
+                "id": "HNPCv21VFc0ewtI2X4Wn2",
+                "type": "p",
+              },
+            ],
+            "id": "Z912E8PKropvRFNND6QR1",
+            "type": "arrow-item",
+          },
+        ],
+        "id": "m8Sn3Kw77AyxlTEsFiFOv",
+        "orientation": "horizontal",
+        "type": "arrows",
+      },
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "text": "Solar is just the start. Storage and smart grids are the future.",
+              },
+            ],
+            "id": "2lzWme3FQptshnrIxCzV0",
+            "type": "p",
+          },
+        ],
+        "id": "3UIq7RC2C6sucHudnD4ih",
+        "type": "callout",
+        "variant": "success",
+      },
+    ],
+    "id": "Pe2b4dueaWeGxzjYuftK8",
+    "layoutType": "left",
+    "rootImage": {
+      "layoutType": "left",
+      "query": "modern home with integrated solar panels, a sleek battery storage unit in the garage, and an electric car charging nearby, futuristic but realistic interior-exterior blend",
+    },
+  },
+]
+`;
+
+exports[`SlideParser golden fixtures > deck-short > matches snapshot 1`] = `
+[
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "Reclaiming Deep Work",
+          },
+        ],
+        "id": "1SAXusM1lAaCMZZrdQjKJ",
+        "type": "presentation-title",
+        "variant": "title",
+      },
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "The Case for Async-First Culture",
+          },
+        ],
+        "id": "HcT7zEsIzrz8hTlT51dQr",
+        "type": "label",
+      },
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "Shifting from synchronous dependency to asynchronous clarity.",
+          },
+        ],
+        "id": "BQOy8uDFWK3mmJxF6Z29g",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "text": "",
+          },
+        ],
+        "id": "beX9ASbhu68ezsxE7nbiS",
+        "type": "contributor",
+      },
+    ],
+    "id": "h2nYK3FqVR9NEp6xcAxo8",
+    "layoutType": "left",
+    "rootImage": {
+      "layoutType": "left",
+      "query": "minimalist abstract background of a clean, uncluttered desk with soft morning light streaming through a window, symbolizing focus and calm, shallow depth of field, high-key lighting, professional aesthetic",
+    },
+  },
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "alignment": "left",
+        "children": [
+          {
+            "text": "The Problem: Synchronous Overload",
+          },
+        ],
+        "id": "bAFBzedun5QzkYORHN0FG",
+        "type": "presentation-title",
+        "variant": "title",
+      },
+      {
+        "alignment": "left",
+        "children": [
+          {
+            "text": "Meetings are draining capacity and stalling progress.",
+          },
+        ],
+        "id": "Taa6bPvtylCJq1Gv2pts0",
+        "type": "h2",
+      },
+      {
+        "bulletType": "arrow",
+        "children": [
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Time Drain",
+                  },
+                ],
+                "id": "LjvZUR0X3sOI2QrxwWEbf",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Managers spend 23 hours weekly in meetings.",
+                  },
+                ],
+                "id": "mdmkrBkgwoXBG4yITSCYn",
+                "type": "p",
+              },
+            ],
+            "icon": "clock",
+            "id": "IZqAJj1X59SXcRJkXJjuE",
+            "type": "bullet",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Decision Stalls",
+                  },
+                ],
+                "id": "MOpBV8Ggkdyei7zbRmPDR",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Updates block actual problem-solving.",
+                  },
+                ],
+                "id": "j2vAB7ZpUN54kelsdGbBg",
+                "type": "p",
+              },
+            ],
+            "icon": "hourglass",
+            "id": "50osu09325Cfz5TPWvKnI",
+            "type": "bullet",
+          },
+        ],
+        "id": "6EYsF8gekgS1JLxuTTasv",
+        "type": "bullets",
+      },
+    ],
+    "id": "vvDqH8vBW1pOVassxAelK",
+    "layoutType": "vertical",
+    "rootImage": {
+      "layoutType": "vertical",
+      "query": "cinematic shot of a stressed professional looking at multiple screens with calendar notifications popping up, dark office lighting, moody atmosphere, sense of urgency and overwhelm",
+    },
+  },
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "alignment": "left",
+        "children": [
+          {
+            "text": "The Async Advantage",
+          },
+        ],
+        "id": "osVUYrYFkOPNnY71elHwC",
+        "type": "presentation-title",
+        "variant": "title",
+      },
+      {
+        "alignment": "left",
+        "children": [
+          {
+            "text": "Written updates enable faster decisions.",
+          },
+        ],
+        "id": "f9kSuDHXSQ3NyshvkrBzs",
+        "type": "h2",
+      },
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Async Updates",
+                  },
+                ],
+                "id": "elQDr4hIxKZ8SlVA3OLrn",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Clear, documented context for all.",
+                  },
+                ],
+                "id": "anYV8DIklmSfKk0le2fve",
+                "type": "p",
+              },
+            ],
+            "icon": "document",
+            "id": "iAyZdPFZVsT0vSHx8MfZR",
+            "type": "column",
+            "width": "",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Focused Debate",
+                  },
+                ],
+                "id": "mRzVWT0UVhwTpd8zPnpxd",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Meetings only for genuine alignment.",
+                  },
+                ],
+                "id": "vNpWJtTBQsqvNnwlC3Ere",
+                "type": "p",
+              },
+            ],
+            "icon": "users",
+            "id": "DxpQj5lKYuCxoJMbrcl27",
+            "type": "column",
+            "width": "",
+          },
+        ],
+        "id": "0SYCizwUeCE3RpwBQyA00",
+        "type": "column_group",
+      },
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Meeting Reduction",
+                  },
+                ],
+                "id": "eeryBD6YDFuH17dhOsaVF",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "In pilot teams adopting async-first practices.",
+                  },
+                ],
+                "id": "YOo4039BWmGVYAy7aWapJ",
+                "type": "p",
+              },
+            ],
+            "id": "CoKsxQTrdqBJSGQTYJ4pU",
+            "stat": "40%",
+            "type": "stats-item",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Decision Speed",
+                  },
+                ],
+                "id": "F1mXop3eqTPFJcjFwm6Yx",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Faster turnaround on key initiatives.",
+                  },
+                ],
+                "id": "ztTnaqhSk8UhbHpoardEj",
+                "type": "p",
+              },
+            ],
+            "id": "2vjFhB2ZEk3bFsNZ79bG2",
+            "stat": "2x",
+            "type": "stats-item",
+          },
+        ],
+        "id": "Qp3tEfAR3oABNq3T4mEvT",
+        "statsType": "bar",
+        "statstype": "bar",
+        "type": "stats",
+      },
+    ],
+    "id": "FdYcUot3sOQ6m5HgotTmQ",
+    "layoutType": "right",
+  },
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "The Result: Velocity & Clarity",
+          },
+        ],
+        "id": "QCofYogaUg2LFzwKwE5yQ",
+        "type": "presentation-title",
+        "variant": "title",
+      },
+      {
+        "alignment": "center",
+        "children": [
+          {
+            "text": "Async-first is not just a process change; it is a capacity multiplier.",
+          },
+        ],
+        "id": "nkSpzI5HCkSP5K6rbYxml",
+        "type": "h2",
+      },
+      {
+        "bulletType": "numbered",
+        "children": [
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Less Context Switching",
+                  },
+                ],
+                "id": "DwxhupXtDyjXcbDBIWw4W",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Deep work gets uninterrupted time.",
+                  },
+                ],
+                "id": "T3jsSXFxgjePmacVeWp3n",
+                "type": "p",
+              },
+            ],
+            "id": "yUg5KfzAyYFkbypGcqFTu",
+            "type": "bullet",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Better Documentation",
+                  },
+                ],
+                "id": "DSzPfIHIQjzF59Nx7ieZN",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Decisions are searchable and scalable.",
+                  },
+                ],
+                "id": "LrHw6YfL8j5eDINyj3Rv8",
+                "type": "p",
+              },
+            ],
+            "id": "yjE36u5wB9Zi99tcRBfqO",
+            "type": "bullet",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Global Alignment",
+                  },
+                ],
+                "id": "n9JGOxpOyE05AJk14F7uS",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Inclusion across time zones improves.",
+                  },
+                ],
+                "id": "mxDRQDXGpL5qrmzzPjotj",
+                "type": "p",
+              },
+            ],
+            "id": "9GpO7ZxxWP9sIK5Fa5BKV",
+            "type": "bullet",
+          },
+        ],
+        "id": "cFYj8f3HG9ZDaimNkZGCN",
+        "type": "bullets",
+      },
+    ],
+    "id": "wwZjVaCxBom4dmaa9AgWU",
+    "layoutType": "left",
+    "rootImage": {
+      "layoutType": "left",
+      "query": "wide angle shot of a diverse team collaborating around a modern table with laptops open, bright natural light, positive and productive atmosphere, professional corporate style",
+    },
+  },
+]
+`;
+
+exports[`SlideParser golden fixtures > doc-remote-work > matches snapshot 1`] = `
+[
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "children": [
+          {
+            "text": "The Evolution and Acceleration of Remote Work",
+          },
+        ],
+        "id": "4gXCcZ3dXq0aWdTCvBhuL",
+        "type": "h1",
+      },
+      {
+        "children": [
+          {
+            "text": "Remote work is often perceived as a novel phenomenon born of necessity in 2020, yet its roots extend back decades. In the late twentieth century, remote arrangements were largely confined to specific sectors such as technology and academia, serving as a perk for specialized talent rather than a default operational mode. The definition of remote work has since expanded from occasional telecommuting to fully distributed organizations where physical presence is incidental rather than essential. This historical context is crucial for understanding current resistance to change; for many industries, the office was not just a workplace but a mechanism for oversight and socialization that technology now renders obsolete.",
+          },
+        ],
+        "id": "EayokvpzU9AL5hNOZSX9o",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "text": "The post-2020 period acted as a massive, uncontrolled experiment in distributed labor. What began as an emergency pivot quickly revealed significant latent advantages: reduced overhead costs, access to a global talent pool independent of geography, and increased employee autonomy. The acceleration was driven by technological maturity—cloud computing, high-bandwidth video conferencing, and asynchronous collaboration tools had become reliable enough to support critical business functions. Consequently, the narrative has shifted from "can we work remotely?" to "how do we optimize remote work for long-term sustainability?" The cost of real estate on balance sheets is no longer the primary driver for returning to offices; instead, strategic alignment and innovation dynamics have taken center stage.",
+          },
+        ],
+        "id": "eHjYWIbg5pvXceU2si6p1",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "text": "However, this transition was not without friction. Early phases were marked by technological inequity, with remote workers often lacking the ergonomic and digital infrastructure available in corporate hubs. Furthermore, the collapse of informal information exchange—the "water cooler" moments that historically facilitated cross-departmental awareness—created hidden costs for junior employees and new hires who relied on observation to learn organizational norms. Understanding this history highlights why current strategies must focus less on simply replicating office activities online and more on redesigning work processes to leverage the distinct advantages of distance.",
+          },
+        ],
+        "id": "lxEkzxVG8rLm7YCqbKWte",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "text": "The Infrastructure of Distributed Teams",
+          },
+        ],
+        "id": "2J5m4BpeCcA42VzAfSKq7",
+        "type": "h2",
+      },
+      {
+        "children": [
+          {
+            "text": "The sustainability of remote work depends heavily on the robustness of its digital infrastructure. In 2026, this extends beyond basic connectivity to include integrated software stacks that support asynchronous workflows. Organizations that thrive are those that treat their collaboration tools as primary products, investing in security, user experience, and interoperability. The decline of real-time synchronous meetings as the default mode of communication marks a significant cultural shift, prioritizing deep work and written documentation over immediate responsiveness.",
+          },
+        ],
+        "id": "9ArS4PZFSrqfwKjA1Q8Kl",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "text": "Regulatory and Legal Complexities",
+          },
+        ],
+        "id": "TpKQ2R7gLaNoomn549dxn",
+        "type": "h2",
+      },
+      {
+        "children": [
+          {
+            "text": "As remote work became permanent, it exposed significant gaps in labor law and tax regulation. Companies now navigate a complex web of jurisdictional requirements regarding employment status, minimum wage laws, and data privacy standards like GDPR. This legal landscape forces HR departments to adopt sophisticated compliance frameworks, turning geographic expansion from a logistical challenge into a regulatory one. The ability to hire globally is no longer just a talent strategy but a legal minefield that requires specialized expertise.",
+          },
+        ],
+        "id": "6PXSkvSuyEcO6sj2Vee0C",
+        "type": "p",
+      },
+    ],
+    "formatCategory": "document",
+    "id": "EwoaI4V2uenfkhF8jYt3g",
+    "rootImage": {
+      "query": "A minimalist, high-contrast architectural visualization of a modern open-plan office space during twilight. The desks are empty, illuminated only by the soft blue glow of multiple monitors displaying abstract data visualizations and code interfaces. In the background, large floor-to-ceiling windows reveal a sprawling cityscape at dusk, with lights beginning to twinkle in residential neighborhoods, symbolizing the connection between workspaces and home environments. The style is clean, corporate, and slightly melancholic, emphasizing silence and potential.",
+    },
+  },
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "children": [
+          {
+            "text": "Evaluating Productivity: Evidence and Outcomes",
+          },
+        ],
+        "id": "ZXdZftYy9nVAois4afJOL",
+        "type": "h1",
+      },
+      {
+        "children": [
+          {
+            "text": "The question of productivity remains the most contentious aspect of remote work analysis. Early studies, often conducted during the initial lockdowns, suggested a spike in output driven by reduced commuting time and fewer office interruptions. However, longitudinal data from 2024 to 2026 reveals a more complex picture. While individual task completion rates for focused, independent work have remained stable or improved, collaborative efficiency has shown mixed results. The key distinction lies not in whether remote work is more productive, but in what *type* of productivity it supports.",
+          },
+        ],
+        "id": "MWuJCM18HzVQlxeYPukDQ",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "text": "Research indicates that remote environments excel in analytical and creative tasks requiring deep concentration. Without the constant context switching induced by open-plan offices and instant messaging pings, employees report higher levels of flow state achievement. Conversely, brainstorming sessions, complex problem-solving requiring rapid iteration, and onboarding processes suffer in purely remote settings. The evidence suggests a "productivity paradox": individual output increases, but organizational innovation may decrease due to the fragmentation of shared knowledge and reduced serendipitous interactions.",
+          },
+        ],
+        "id": "6DkGbGx50t5LEztbIWH3p",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Metric",
+                  },
+                ],
+                "id": "WESr1FuhV0mJEkFNhMkw2",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Employee Retention Improvement in Fully Remote Tech Firms (2024-2026).",
+                  },
+                ],
+                "id": "de0KD3Sdm8pBYKefbo5Yg",
+                "type": "p",
+              },
+            ],
+            "id": "QIEuhEtOOV5NAiJiOpzSs",
+            "stat": "68%",
+            "type": "stats-item",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Metric",
+                  },
+                ],
+                "id": "nVXlyyav5y5JGqPwtCLFX",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Average Reduction in Office Overhead Costs.",
+                  },
+                ],
+                "id": "yahTOS5ME0ehQwryuATQd",
+                "type": "p",
+              },
+            ],
+            "id": "Sl9B2fgH2Ys5l1lTV18VQ",
+            "stat": "12%",
+            "type": "stats-item",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Metric",
+                  },
+                ],
+                "id": "qBOiDRBRibIZTXC20SLbJ",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Reported Increase in Cross-Team Misalignment Incidents.",
+                  },
+                ],
+                "id": "arwKF1N2MsDZvuUjcsUqm",
+                "type": "p",
+              },
+            ],
+            "id": "zr3JT02KMFsZ5aFLczSRw",
+            "stat": "24%",
+            "type": "stats-item",
+          },
+        ],
+        "id": "MJQpEBUZqp1G5K4tu3qMj",
+        "statsType": "plain",
+        "statstype": "plain",
+        "type": "stats",
+      },
+      {
+        "children": [
+          {
+            "text": "The divergence in outcomes is also heavily dependent on role seniority. Senior professionals with established networks and clear objectives tend to maintain or improve productivity levels remotely. In contrast, junior employees often experience slower skill acquisition and lower visibility, which can impede career progression and perceived performance. This disparity raises ethical concerns for organizations, as remote work may inadvertently create a two-tiered system where advancement is tied to physical proximity to leadership hubs.",
+          },
+        ],
+        "id": "po4e6E1xg7qICoYlpcA3k",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "text": "The Measurement Problem",
+          },
+        ],
+        "id": "uyLn43QJiqboV8Yf8zuxw",
+        "type": "h3",
+      },
+      {
+        "children": [
+          {
+            "text": "A significant barrier to accurate productivity assessment is the reliance on input-based metrics (hours logged, lines of code) rather than output-based outcomes. In remote settings, surveillance software has been largely rejected by top-tier organizations as it erodes trust and increases burnout. Instead, high-performing remote teams utilize OKRs (Objectives and Key Results) and project milestones to measure success. This shift requires managers to transition from monitoring activity to evaluating impact, a difficult cultural adjustment that remains incomplete in many traditional industries.",
+          },
+        ],
+        "id": "8xazZgijpBNJ4DPaMcgAg",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "text": "Sector-Specific Variance",
+          },
+        ],
+        "id": "6ERlEVbr9OAD6Z4WHmjGM",
+        "type": "h3",
+      },
+      {
+        "children": [
+          {
+            "text": "Productivity gains are not uniform across sectors. In software development, where work is inherently digital and modular, remote work has shown sustained benefits. In contrast, industries requiring physical collaboration, such as manufacturing or healthcare, have seen more limited applicability. Even within knowledge work, creative agencies report that client relationship building and high-stakes pitching suffer without face-to-face rapport. Therefore, a blanket policy on productivity is insufficient; teams must audit their specific workflow dependencies to determine the optimal work mode.",
+          },
+        ],
+        "id": "46U26H1CUe0n6HK4VwJpj",
+        "type": "p",
+      },
+    ],
+    "formatCategory": "document",
+    "id": "X41dBbzwu3sDz1LSHO417",
+  },
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "children": [
+          {
+            "text": "Cultivating Culture in a Distributed Environment",
+          },
+        ],
+        "id": "KjZFik3bCw7sq2JccLcMg",
+        "type": "h1",
+      },
+      {
+        "children": [
+          {
+            "text": "Culture is often mistakenly equated with social events or physical perks. In remote contexts, culture is defined by shared values, communication norms, and trust mechanisms. Building a cohesive remote culture requires intentional design rather than organic emergence. The absence of physical cues means that organizational behavior must be explicitly documented and ritualized. Without deliberate effort, remote cultures tend to fragment into silos, where each team develops its own micro-culture and language, leading to misalignment at the organizational level.",
+          },
+        ],
+        "id": "QoSs4T4mKXrIjiJGhEOwz",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "text": "The Role of Documentation",
+          },
+        ],
+        "id": "9OJatKUceytqV9TOL0l5g",
+        "type": "h2",
+      },
+      {
+        "children": [
+          {
+            "text": "Documentation is the backbone of remote culture. It serves as the institutional memory, ensuring that knowledge is not held by individuals in specific locations but is accessible to all. Companies with strong remote cultures maintain extensive wikis, decision logs, and recorded meetings. This "write-it-down" ethos reduces dependency on synchronous communication and allows for asynchronous collaboration across time zones. However, documentation can become stale if not rigorously maintained, creating a false sense of alignment while underlying processes have diverged.",
+          },
+        ],
+        "id": "1zktCcefMMIbw9AH87HhL",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "text": "Rituals and Social Connection",
+          },
+        ],
+        "id": "g4rmo42QZrBLbtz1MI9Wb",
+        "type": "h2",
+      },
+      {
+        "children": [
+          {
+            "text": "To combat isolation, successful remote organizations create virtual rituals that mimic the social fabric of an office. This includes regular all-hands meetings, virtual coffee chats, and online gaming sessions. However, these efforts often fall flat if they are perceived as forced or mandatory. Authentic connection arises from shared purpose and psychological safety. Leaders must model vulnerability and transparency, creating spaces where employees feel comfortable discussing challenges without fear of judgment. The goal is not to recreate the office party but to foster a sense of belonging through shared values and mutual support.",
+          },
+        ],
+        "id": "9mgkB4y31GaMymADhxkjo",
+        "type": "p",
+      },
+      {
+        "bulletType": "basic",
+        "children": [
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Trust Deficit",
+                  },
+                ],
+                "id": "fw5gY0rF3ktm92iacdHRy",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "The lack of visual supervision often leads to micromanagement, eroding trust and autonomy. Remote cultures must explicitly define success metrics to replace presence-based evaluation.",
+                  },
+                ],
+                "id": "CRtZLWtJ5a0EJHfRDyBLZ",
+                "type": "p",
+              },
+            ],
+            "id": "n0vPXoilgGeloC2mB4gbi",
+            "type": "bullet",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Communication Overload",
+                  },
+                ],
+                "id": "xE67iQt3vVCwInUmtndFK",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Without physical boundaries, remote workers often struggle to disconnect, leading to burnout. Cultures that enforce "right to disconnect" policies show higher long-term sustainability.",
+                  },
+                ],
+                "id": "mPTmx3GyQjoYr6p3Xt9O8",
+                "type": "p",
+              },
+            ],
+            "id": "969lFXWryEfjeD1c3HHLg",
+            "type": "bullet",
+          },
+          {
+            "children": [
+              {
+                "children": [
+                  {
+                    "text": "Inequity in Visibility",
+                  },
+                ],
+                "id": "TOhoZNvvHTE3KlB4M3ujW",
+                "type": "h3",
+              },
+              {
+                "children": [
+                  {
+                    "text": "Employees who are not physically present may be overlooked for promotions or high-impact projects. Proactive sponsorship programs are essential to mitigate this bias.",
+                  },
+                ],
+                "id": "avYiPbLv8604STgKXPWBn",
+                "type": "p",
+              },
+            ],
+            "id": "FnkCOLQ6qEXmRpIKtYyWa",
+            "type": "bullet",
+          },
+        ],
+        "id": "GpvR7WWH3DZXE5fL4MBYD",
+        "type": "bullets",
+      },
+      {
+        "children": [
+          {
+            "text": "Common failure modes in remote culture building include over-reliance on synchronous video calls, which can lead to Zoom fatigue and hinder deep work, and neglecting the needs of introverted workers who may thrive in asynchronous environments. Furthermore, ignoring time zone differences can create a "always-on" expectation for employees in different regions, exacerbating inequality and burnout. A healthy remote culture respects diverse working styles and ensures that inclusion is baked into the design of communication tools and processes.",
+          },
+        ],
+        "id": "NK8m27EvSj0CObLmMnCaP",
+        "type": "p",
+      },
+    ],
+    "formatCategory": "document",
+    "id": "KGUz3mFgtAQaiYgHECbaz",
+  },
+  {
+    "alignment": "center",
+    "content": [
+      {
+        "children": [
+          {
+            "text": "The Hybrid Future: Patterns and Recommendations",
+          },
+        ],
+        "id": "mvKrJyxbvVSqypMKqgpAm",
+        "type": "h1",
+      },
+      {
+        "children": [
+          {
+            "text": "The future of work is not purely remote nor strictly office-based, but a flexible hybrid model. However, "hybrid" is often implemented poorly, leading to confusion and inequity. Emerging patterns suggest that successful hybrid organizations treat the office as a destination for specific activities rather than a default workplace. The primary challenge lies in creating equitable experiences for both remote and in-office participants simultaneously, ensuring that those who are absent are not disadvantaged in decision-making or visibility.",
+          },
+        ],
+        "id": "3K78MAcLM4mYar6VtdVUB",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "text": "Emerging Work Models",
+          },
+        ],
+        "id": "Y04aov3tJ0UeGNHFujycu",
+        "type": "h2",
+      },
+      {
+        "children": [
+          {
+            "text": "Several models are gaining traction among forward-thinking organizations. The "Core Hours" model requires all team members to be available online during a specific window (e.g., 10 AM to 2 PM) while allowing flexibility outside of it. This supports asynchronous work while ensuring overlap for collaboration. Another pattern is the "Office-First, Remote-Ready" approach, where the office is designed for teamwork and innovation, but all meetings are recorded and documented for remote participants. This prevents the creation of a two-tier system where in-office employees dominate conversations.",
+          },
+        ],
+        "id": "jwr4tk7w3vri5pBu9Nw39",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "text": "Equity by Design",
+          },
+        ],
+        "id": "BRhY0UEHmUgTMi1WnS2EA",
+        "type": "h3",
+      },
+      {
+        "children": [
+          {
+            "text": "A critical recommendation for hybrid teams is to prioritize equity in communication protocols. All meetings should start with the assumption that some participants are remote. This includes ensuring everyone has a high-quality microphone, sharing agendas and materials beforehand, and using collaborative digital whiteboards instead of physical ones. Leaders must actively moderate discussions to ensure remote voices are heard, preventing "proximity bias" where in-office employees receive more attention.",
+          },
+        ],
+        "id": "edaHfqm4HKqJPGDOYkCKQ",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "text": "Strategic Recommendations for Leaders",
+          },
+        ],
+        "id": "RM57VHa59g7eDRbwH6W01",
+        "type": "h2",
+      },
+      {
+        "children": [
+          {
+            "text": "Organizations must move beyond policy documents and invest in the capabilities of managers. Middle management is the linchpin of hybrid success; they must be trained in leading distributed teams, fostering inclusion, and measuring outcomes rather than activity. Additionally, companies should regularly survey employees to assess the effectiveness of their hybrid policies, adjusting them based on feedback and business needs.",
+          },
+        ],
+        "id": "LJYUAXoT5H8rNLIEyy3eV",
+        "type": "p",
+      },
+      {
+        "children": [
+          {
+            "text": "Finally, the physical office itself must evolve. It should no longer be a space of individual desks but a hub for connection, learning, and complex collaboration. Investing in high-quality collaborative spaces, virtual meeting technology, and flexible booking systems enhances the value proposition of coming into the office. By making the office experience distinctly valuable and necessary, organizations can encourage voluntary attendance while respecting the flexibility that remote workers cherish. The ultimate goal is to create a fluid work environment where talent can thrive regardless of location, driving both innovation and well-being.",
+          },
+        ],
+        "id": "ZKc7nBEbJHz9hx6x21hTt",
+        "type": "p",
+      },
+    ],
+    "formatCategory": "document",
+    "id": "elFjdzk7yTfrCwLxDVq4t",
+    "rootImage": {
+      "query": "A dynamic collage of three distinct work scenarios: a person video-calling from a sunlit kitchen table with a cat nearby, another working on a laptop in a modern co-working space lounge, and a small group collaborating around a whiteboard in a bright office. The style is vibrant and optimistic, using warm colors to convey flexibility and balance.",
+    },
+  },
+]
+`;

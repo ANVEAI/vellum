@@ -1,0 +1,16 @@
+use_default_settings: true
+
+general:
+  instance_name: "local-searxng"
+
+server:
+  secret_key: "2e7a4a731e207bf29d6b4f50debd6896c3f79ce3b153b1089787c890d995a046"
+  limiter: false
+  image_proxy: false
+  port: 8888
+  bind_address: "127.0.0.1"
+
+search:
+  formats:
+    - html
+    - json

@@ -1,0 +1,280 @@
+/* Export render surface. Deck: one fixed 1280×720 page per slide.
+   Doc: A4 flow with a print-only cover, Contents page, and page furniture.
+   Margins are zero here; PDF page size and chrome margins come from the
+   pdf export options (top 70px / bottom 60px / 16mm sides for docs). */
+
+body {
+  margin: 0;
+  background: #ffffff;
+}
+
+.print-deck {
+  display: flex;
+  flex-direction: column;
+}
+.print-slide {
+  break-after: page;
+  border-radius: 0 !important;
+}
+.print-slide:last-child {
+  break-after: auto;
+}
+
+.print-doc .v-doc-wrap {
+  display: block;
+}
+.print-doc .v-doc-toc {
+  display: none;
+}
+.print-doc .v-doc {
+  max-width: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+/* Cover + printed Contents exist only on paper. Screen media (the live
+   reader bundle and the DOCX snapshot pass) never shows them. */
+.print-cover,
+.print-toc {
+  display: none;
+}
+
+@media print {
+  .print-deck ~ * {
+    display: none;
+  }
+
+  /* ---- cover page ---- */
+  .print-cover {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    /* A4 content box under the 70px/60px chrome margins, with slack. */
+    height: 258mm;
+    background: var(--presentation-background, #fff);
+    color: var(--presentation-text, #222);
+    break-after: page;
+  }
+  .print-cover-eyebrow {
+    margin: 0;
+    font-family: var(--presentation-heading-font, inherit);
+    font-size: 8.5pt;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--presentation-accent, #7c6cff);
+  }
+  .print-cover-push {
+    flex: 3 1 0;
+  }
+  .print-cover-push-lower {
+    flex: 1 1 0;
+  }
+  .print-cover-title {
+    margin: 0;
+    max-width: 88%;
+    font-family: var(--presentation-heading-font, inherit);
+    font-weight: var(--presentation-heading-weight, 700);
+    font-size: 44pt;
+    line-height: 1.06;
+    letter-spacing: -0.015em;
+    text-align: left;
+    color: var(--presentation-heading, #111);
+  }
+  .print-cover-rule {
+    width: 58pt;
+    height: 2px;
+    margin-top: 16pt;
+    background: var(--presentation-accent, #7c6cff);
+  }
+  .print-cover-meta {
+    margin: 0;
+    font-size: 9pt;
+    letter-spacing: 0.06em;
+    color: color-mix(in srgb, var(--presentation-text, #222) 62%, transparent);
+  }
+
+  /* ---- printed contents ---- */
+  .print-toc {
+    display: block;
+    min-height: 258mm;
+    background: var(--presentation-background, #fff);
+    color: var(--presentation-text, #222);
+    break-after: page;
+  }
+  .print-toc-heading {
+    margin: 0 0 14pt;
+    padding-bottom: 8pt;
+    border-bottom: 2px solid var(--presentation-accent, #7c6cff);
+    font-family: var(--presentation-heading-font, inherit);
+    font-weight: var(--presentation-heading-weight, 700);
+    font-size: 19pt;
+    color: var(--presentation-heading, #111);
+  }
+  .print-toc-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .print-toc-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12pt;
+    padding: 6.5pt 0;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--presentation-text, #222) 14%, transparent);
+  }
+  .print-toc-row:last-child {
+    border-bottom: none;
+  }
+  .print-toc-num {
+    font-family: var(--presentation-heading-font, inherit);
+    font-variant-numeric: tabular-nums;
+    font-size: 9pt;
+    font-weight: 600;
+    color: var(--presentation-accent, #7c6cff);
+  }
+  .print-toc-label {
+    font-size: 11pt;
+  }
+
+  /* ---- body typography & flow ---- */
+  .print-doc .v-doc {
+    font-size: 11pt;
+    line-height: 1.55;
+    orphans: 3;
+    widows: 3;
+    counter-reset: fig;
+  }
+  .print-doc .v-doc .v-content {
+    gap: 10pt;
+  }
+  .print-doc .v-doc .v-p {
+    font-size: 11pt;
+    line-height: 1.55;
+  }
+  .print-doc .v-doc li {
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+  .print-doc .v-doc .v-title {
+    font-size: 26pt;
+    line-height: 1.12;
+  }
+  .print-doc .v-doc .v-h1 {
+    font-size: 17pt;
+    line-height: 1.2;
+  }
+  .print-doc .v-doc .v-h2 {
+    font-size: 13pt;
+    line-height: 1.25;
+  }
+  .print-doc .v-doc .v-h3 {
+    font-size: 11.5pt;
+    line-height: 1.3;
+  }
+  .print-doc .v-doc .v-label {
+    font-size: 8.5pt;
+    letter-spacing: 0.18em;
+  }
+
+  /* Every H1 section opens a fresh page; long sections flow freely. */
+  .print-doc .v-doc-section {
+    padding: 0;
+    border-bottom: none;
+    break-before: page;
+    break-inside: auto;
+  }
+  .print-doc .v-doc-section:first-of-type {
+    break-before: auto;
+  }
+
+  .print-doc .v-title,
+  .print-doc .v-h1,
+  .print-doc .v-h2,
+  .print-doc .v-h3,
+  .print-doc .v-h4 {
+    break-after: avoid;
+    break-inside: avoid;
+  }
+  .print-doc .v-doc-figure,
+  .print-doc .v-img,
+  .print-doc .v-table,
+  .print-doc .v-quote,
+  .print-doc .v-callout {
+    break-inside: avoid;
+  }
+
+  /* ---- numbered figures ---- */
+  .print-doc .v-doc-figure {
+    margin: 0;
+    counter-increment: fig;
+  }
+  .print-doc .v-doc-figure .v-img {
+    max-width: 100%;
+  }
+  .print-doc .v-doc-figcaption {
+    display: block;
+    margin-top: 6pt;
+    font-size: 9pt;
+    line-height: 1.4;
+    color: color-mix(in srgb, var(--presentation-text, #222) 60%, transparent);
+  }
+  .print-doc .v-doc-figcaption::before {
+    content: "Figure " counter(fig);
+    font-weight: 600;
+  }
+
+  /* ---- pull quotes & callouts ---- */
+  .print-doc .v-quote {
+    margin: 16pt 0 12pt;
+    padding: 0;
+    border-left: none;
+  }
+  .print-doc .v-quote::before {
+    content: "";
+    display: block;
+    width: 44pt;
+    height: 2px;
+    margin-bottom: 10pt;
+    background: var(--presentation-accent, #7c6cff);
+  }
+  .print-doc .v-quote blockquote {
+    margin: 0;
+    font-size: 15.5pt;
+    font-style: italic;
+    line-height: 1.42;
+    color: var(--presentation-heading, #111);
+  }
+  .print-doc .v-quote figcaption {
+    margin-top: 7pt;
+    font-size: 9pt;
+    letter-spacing: 0.04em;
+    opacity: 0.65;
+  }
+  .print-doc .v-callout {
+    border-left: 3px solid var(--presentation-accent, #7c6cff);
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  /* ---- tables: horizontal rules only ---- */
+  .print-doc .v-table {
+    border-collapse: collapse;
+  }
+  .print-doc .v-table th,
+  .print-doc .v-table td {
+    border-left: none;
+    border-right: none;
+  }
+  .print-doc .v-table th {
+    font-weight: 700;
+    font-size: 9.5pt;
+    border-bottom: 2px solid var(--presentation-accent, #7c6cff);
+  }
+  .print-doc .v-table td {
+    font-size: 10pt;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--presentation-text, #222) 16%, transparent);
+  }
+}

@@ -1,0 +1,42 @@
+<PRESENTATION>
+<SECTION layout="left">
+<TITLE alignment="center">Reclaiming Deep Work</TITLE>
+<LABEL alignment="center">The Case for Async-First Culture</LABEL>
+<P alignment="center">Shifting from synchronous dependency to asynchronous clarity.</P>
+<CONTRIBUTOR alignment="center" />
+<IMG query="minimalist abstract background of a clean, uncluttered desk with soft morning light streaming through a window, symbolizing focus and calm, shallow depth of field, high-key lighting, professional aesthetic" />
+</SECTION>
+
+<SECTION layout="vertical">
+<TITLE alignment="left">The Problem: Synchronous Overload</TITLE>
+<H2 alignment="left">Meetings are draining capacity and stalling progress.</H2>
+<BULLETS bulletType="arrow">
+<DIV icon="clock"><H3>Time Drain</H3><P>Managers spend 23 hours weekly in meetings.</P></DIV>
+<DIV icon="hourglass"><H3>Decision Stalls</H3><P>Updates block actual problem-solving.</P></DIV>
+</BULLETS>
+<IMG query="cinematic shot of a stressed professional looking at multiple screens with calendar notifications popping up, dark office lighting, moody atmosphere, sense of urgency and overwhelm" />
+</SECTION>
+
+<SECTION layout="right">
+<TITLE alignment="left">The Async Advantage</TITLE>
+<H2 alignment="left">Written updates enable faster decisions.</H2>
+<COLUMNS>
+<DIV icon="document"><H3>Async Updates</H3><P>Clear, documented context for all.</P></DIV>
+<DIV icon="users"><H3>Focused Debate</H3><P>Meetings only for genuine alignment.</P></DIV>
+</COLUMNS>
+<STATS statstype="bar">
+<DIV stat="40%"><H3>Meeting Reduction</H3><P>In pilot teams adopting async-first practices.</P></DIV>
+<DIV stat="2x"><H3>Decision Speed</H3><P>Faster turnaround on key initiatives.</P></DIV>
+</STATS>
+</SECTION>
+
+<SECTION layout="left">
+<TITLE alignment="center">The Result: Velocity & Clarity</TITLE>
+<H2 alignment="center">Async-first is not just a process change; it is a capacity multiplier.</H2>
+<BULLETS bulletType="numbered">
+<DIV><H3>Less Context Switching</H3><P>Deep work gets uninterrupted time.</P></DIV>
+<DIV><H3>Better Documentation</H3><P>Decisions are searchable and scalable.</P></DIV>
+<DIV><H3>Global Alignment</H3><P>Inclusion across time zones improves.</P></DIV>
+</BULLETS>
+<IMG query="wide angle shot of a diverse team collaborating around a modern table with laptops open, bright natural light, positive and productive atmosphere, professional corporate style" />
+</SECTION>

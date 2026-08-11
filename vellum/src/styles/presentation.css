@@ -1,0 +1,55 @@
+/**
+ * Ported from allweonedev/presentation-ai (MIT License) — see THIRD_PARTY_LICENSES.md.
+ */
+
+/* Presentation Theme Styles */
+/* This file contains ONLY theme-related CSS variables and theme selectors */
+/* All component-specific styling should use Tailwind CSS in the respective components */
+
+/* Mystique Theme as default (light) */
+:root {
+  /* Colors */
+  --presentation-primary: #7c3aed;
+  --presentation-secondary: #c7d2fe;
+  --presentation-accent: #a78bfa;
+  --presentation-background: #faf7ff;
+  --presentation-text: #3f3f46;
+  --presentation-heading: #312e81;
+  --presentation-muted: #a3a3b7;
+
+  /* Fonts */
+  --presentation-heading-font: "Lora", serif;
+  --presentation-body-font: "Inter", sans-serif;
+
+  /* Transitions */
+  --presentation-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Mystique Theme (dark mode defaults) */
+[data-theme="dark"] {
+  --presentation-primary: #a78bfa;
+  --presentation-secondary: #6d28d9;
+  --presentation-accent: #c7d2fe;
+  --presentation-background: #232038;
+  --presentation-text: #ede9fe;
+  --presentation-heading: #e0e7ff;
+  --presentation-muted: #8b89a7;
+}
+
+/* Theme-specific styling for presentation slides */
+[data-theme="light"] [data-slide-content="true"] {
+  background-color: var(--presentation-background);
+}
+
+[data-theme="dark"] [data-slide-content="true"] {
+  background-color: var(--presentation-background);
+}
+
+/* Backdrop filter for presentation mode */
+[data-is-presenting="true"] {
+  backdrop-filter: brightness(1.05);
+}
+
+[data-theme="dark"] [data-is-presenting="true"] {
+  backdrop-filter: brightness(1.1);
+}

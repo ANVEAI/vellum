@@ -1,0 +1,431 @@
+/*
+ * Slide archetype layouts (P3-A3): compositions keyed by [data-archetype]
+ * on .v-slide. Position/scale only — block DOM order is untouched (frozen
+ * export contract). Slides without data-archetype keep the Phase-2 flex
+ * layouts from slides.css exactly.
+ */
+
+/* ---------- hero (cover) & closing ---------- */
+.v-slide[data-archetype="hero"] .v-content,
+.v-slide[data-archetype="closing"] .v-content {
+  justify-content: flex-end;
+  padding-bottom: 68px;
+  gap: var(--v-gap-3);
+}
+.v-slide[data-archetype="hero"] .v-title,
+.v-slide[data-archetype="closing"] .v-title,
+.v-slide[data-archetype="hero"] .v-h1,
+.v-slide[data-archetype="closing"] .v-h1 {
+  font-size: var(--presentation-fs-display, 84px);
+  line-height: 1.02;
+  letter-spacing: var(--presentation-track-display, -0.022em);
+  max-width: 92%;
+}
+.v-slide[data-archetype="hero"] .v-label,
+.v-slide[data-archetype="closing"] .v-label,
+.v-slide[data-archetype="divider"] .v-label,
+.v-slide[data-archetype="statement"] .v-label {
+  border: 0;
+  padding: 0 0 2px 0;
+  border-radius: 0;
+  letter-spacing: 0.22em;
+}
+.v-slide[data-archetype="hero"] .v-p,
+.v-slide[data-archetype="closing"] .v-p {
+  font-size: var(--presentation-fs-h4, 18px);
+  max-width: 78%;
+}
+
+/* ---------- agenda: numbered editorial list ---------- */
+.v-slide[data-archetype="agenda"] .v-content {
+  justify-content: center;
+  max-width: 74%;
+}
+.v-slide[data-archetype="agenda"] .v-bullets {
+  counter-reset: v-agenda;
+  gap: 0;
+}
+.v-slide[data-archetype="agenda"] .v-bullet {
+  counter-increment: v-agenda;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--presentation-text, #fff) 14%, transparent);
+}
+.v-slide[data-archetype="agenda"] .v-bullet:first-child {
+  border-top: 1px solid
+    color-mix(in srgb, var(--presentation-text, #fff) 14%, transparent);
+}
+.v-slide[data-archetype="agenda"] .v-bullet-marker {
+  flex: 0 0 72px;
+  padding: 0;
+  justify-content: flex-start;
+}
+.v-slide[data-archetype="agenda"] .v-bullet-marker > * {
+  display: none;
+}
+.v-slide[data-archetype="agenda"] .v-bullet-marker::before {
+  content: counter(v-agenda, decimal-leading-zero);
+  font-family: var(--presentation-heading-font, inherit);
+  font-size: var(--presentation-fs-h1, 44px);
+  font-weight: var(--presentation-heading-weight, 700);
+  line-height: 1;
+  color: color-mix(in srgb, var(--presentation-heading, #fff) 32%, transparent);
+}
+.v-slide[data-archetype="agenda"] .v-item-body .v-h3,
+.v-slide[data-archetype="agenda"] .v-item-body .v-h4 {
+  font-size: var(--presentation-fs-h3, 22px);
+  margin-bottom: 0;
+}
+.v-slide[data-archetype="agenda"] .v-item-body .v-p {
+  font-size: var(--presentation-fs-small, 16px);
+  opacity: 0.7;
+}
+
+/* ---------- section divider: ghost numeral + display heading ---------- */
+.v-slide[data-archetype="divider"] .v-content {
+  justify-content: center;
+  gap: var(--v-gap-3);
+  max-width: 80%;
+}
+.v-slide[data-archetype="divider"]::after {
+  content: attr(data-num);
+  position: absolute;
+  right: -28px;
+  bottom: -64px;
+  font-family: var(--presentation-heading-font, inherit);
+  font-size: calc(var(--presentation-fs-numeral, 160px) * 2.1);
+  font-weight: var(--presentation-heading-weight, 700);
+  line-height: 1;
+  color: color-mix(in srgb, var(--presentation-accent, #7c6cff) 11%, transparent);
+  pointer-events: none;
+}
+.v-slide[data-archetype="divider"] .v-h1,
+.v-slide[data-archetype="divider"] .v-h2,
+.v-slide[data-archetype="divider"] .v-title {
+  font-size: var(--presentation-fs-display, 84px);
+  line-height: 1.04;
+  letter-spacing: var(--presentation-track-display, -0.022em);
+}
+.v-slide[data-archetype="divider"] .v-p {
+  max-width: 62%;
+  opacity: 0.75;
+}
+
+/* ---------- statement / big number ---------- */
+.v-slide[data-archetype="statement"] { --v-pad-x: 96px; }
+.v-slide[data-archetype="statement"] .v-content {
+  justify-content: center;
+  gap: var(--v-gap-4);
+}
+.v-slide[data-archetype="statement"] .v-h1,
+.v-slide[data-archetype="statement"] .v-h2,
+.v-slide[data-archetype="statement"] .v-title {
+  font-size: var(--presentation-fs-display, 84px);
+  line-height: 1.05;
+  letter-spacing: var(--presentation-track-display, -0.022em);
+  max-width: 94%;
+}
+.v-slide[data-archetype="statement"] .v-stats {
+  grid-template-columns: 1fr;
+}
+.v-slide[data-archetype="statement"] .v-stat.v-card {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+.v-slide[data-archetype="statement"] .v-stat-value {
+  font-size: var(--presentation-fs-numeral, 160px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
+/* ---------- full-canvas quote ---------- */
+.v-slide[data-archetype="quote-full"] {
+  --v-pad-l: 110px;
+  --v-pad-r: 96px;
+}
+.v-slide[data-archetype="quote-full"] .v-content {
+  justify-content: center;
+}
+.v-slide[data-archetype="quote-full"] .v-quote {
+  border-left: 0;
+  padding-left: 0;
+  position: relative;
+}
+.v-slide[data-archetype="quote-full"] .v-quote::before {
+  content: "\201C";
+  position: absolute;
+  left: -58px;
+  top: -18px;
+  font-family: var(--presentation-heading-font, Georgia, serif);
+  font-size: 130px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--presentation-accent, #7c6cff) 45%, transparent);
+}
+.v-slide[data-archetype="quote-full"] .v-quote blockquote {
+  font-size: var(--presentation-fs-h1, 44px);
+  line-height: 1.22;
+}
+.v-slide[data-archetype="quote-full"] .v-quote figcaption {
+  margin-top: 20px;
+  font-size: var(--presentation-fs-body, 17px);
+}
+
+/* ---------- full-bleed image + scrim overlay ---------- */
+.v-slide[data-archetype="full-bleed"] .v-bg-img {
+  opacity: 1;
+}
+.v-slide[data-archetype="full-bleed"] .v-bg-img::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--presentation-background, #101216) 88%, transparent) 0%,
+    color-mix(in srgb, var(--presentation-background, #101216) 55%, transparent) 34%,
+    transparent 68%
+  );
+}
+.v-slide[data-archetype="full-bleed"] .v-content {
+  justify-content: flex-end;
+  padding-bottom: 60px;
+  max-width: 76%;
+  gap: var(--v-gap-2);
+}
+.v-slide[data-archetype="full-bleed"] .v-h1,
+.v-slide[data-archetype="full-bleed"] .v-title {
+  font-size: var(--presentation-fs-display, 84px);
+  line-height: 1.04;
+}
+
+/* ---------- asymmetric split (image workhorse) ---------- */
+.v-slide[data-archetype="split"] { --v-split: 38%; }
+.v-slide[data-archetype="split"] .v-content {
+  justify-content: center;
+}
+
+/* ---------- three-up: forced row + hairline policy ---------- */
+.v-slide[data-archetype="three-up"] .v-boxes,
+.v-slide[data-archetype="three-up"] .v-icons {
+  grid-template-columns: repeat(3, 1fr);
+  align-items: stretch;
+}
+[data-card-policy="hairline"] .v-slide[data-archetype="three-up"] .v-box.v-card,
+[data-card-policy="open"] .v-slide[data-archetype="three-up"] .v-box.v-card {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  border-left: 1px solid
+    color-mix(in srgb, var(--presentation-text, #fff) 16%, transparent);
+  padding: 4px 0 4px 20px;
+}
+[data-card-policy="hairline"]
+  .v-slide[data-archetype="three-up"]
+  .v-box.v-card:first-child,
+[data-card-policy="open"]
+  .v-slide[data-archetype="three-up"]
+  .v-box.v-card:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+/* ---------- KPI dashboard: hairline stat grid, big numerals ---------- */
+.v-slide[data-archetype="kpi"] .v-stats {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0;
+}
+.v-slide[data-archetype="kpi"] .v-stat.v-card {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  border-left: 1px solid
+    color-mix(in srgb, var(--presentation-text, #fff) 16%, transparent);
+  padding: 8px 22px;
+}
+.v-slide[data-archetype="kpi"] .v-stat.v-card:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+.v-slide[data-archetype="kpi"] {
+  --v-stat-size: calc(var(--presentation-fs-title, 64px) * 0.94);
+}
+.v-slide[data-archetype="kpi"] .v-stat-value {
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- chart focus ---------- */
+.v-slide[data-archetype="chart-focus"] .v-content {
+  justify-content: flex-start;
+  padding-top: 48px;
+}
+.v-slide[data-archetype="chart-focus"] .v-chart {
+  height: 430px;
+}
+
+/* Numerals everywhere prefer tabular figures. */
+.v-slide .v-stat-value,
+.v-slide .v-table td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- team grid: centered portrait cells, hairline discipline ---------- */
+.v-slide[data-archetype="team-grid"] .v-icons,
+.v-slide[data-archetype="team-grid"] .v-boxes {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--v-gap-4);
+  text-align: center;
+}
+.v-slide[data-archetype="team-grid"] .v-icons-item,
+.v-slide[data-archetype="team-grid"] .v-box {
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+.v-slide[data-archetype="team-grid"] .v-icon {
+  width: 64px;
+  height: 64px;
+  flex-basis: 64px;
+  border-radius: 999px;
+}
+.v-slide[data-archetype="team-grid"] .v-item-body {
+  text-align: center;
+}
+.v-slide[data-archetype="team-grid"] .v-item-body .v-h3 {
+  margin-top: 6px;
+}
+.v-slide[data-archetype="team-grid"] .v-item-body .v-p {
+  font-size: var(--presentation-fs-small, 16px);
+  opacity: 0.7;
+}
+
+/* ---------- testimonial: full-canvas voice with attribution weight ---------- */
+.v-slide[data-archetype="testimonial"] {
+  --v-pad-l: 90px;
+  --v-pad-r: 80px;
+}
+.v-slide[data-archetype="testimonial"] .v-content {
+  justify-content: center;
+  gap: var(--v-gap-3);
+}
+.v-slide[data-archetype="testimonial"] .v-quote {
+  border-left: 0;
+  padding-left: 0;
+}
+.v-slide[data-archetype="testimonial"] .v-quote blockquote {
+  font-size: var(--presentation-fs-h2, 32px);
+  line-height: 1.3;
+  font-style: italic;
+}
+.v-slide[data-archetype="testimonial"] .v-quote figcaption {
+  margin-top: 16px;
+  font-size: var(--presentation-fs-body, 17px);
+  font-weight: 600;
+  opacity: 1;
+  color: var(--presentation-accent, #7c6cff);
+}
+
+/* ---------- phase cards: numbered stage tiles (sequence → cards) ---------- */
+.v-slide[data-archetype="phase-cards"] .v-steps,
+.v-slide[data-archetype="phase-cards"] .v-seq,
+.v-slide[data-archetype="phase-cards"] .v-arrows {
+  gap: var(--v-gap-3);
+}
+.v-slide[data-archetype="phase-cards"] .v-seq {
+  flex-direction: row;
+  align-items: stretch;
+}
+.v-slide[data-archetype="phase-cards"] .v-seq-item {
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+.v-slide[data-archetype="phase-cards"] .v-step,
+.v-slide[data-archetype="phase-cards"] .v-seq-body,
+.v-slide[data-archetype="phase-cards"] .v-arrow-shape {
+  background: color-mix(in srgb, var(--presentation-text, #fff) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--presentation-text, #fff) 13%, transparent);
+  border-radius: var(--presentation-card-border-radius, 14px);
+  border-top: 3px solid var(--presentation-accent, #7c6cff);
+  /* Top reserve is derived from the numeral's own size (it is absolutely
+     positioned at 10px with an h2 font). A fixed 44px overlapped the card
+     text at every family scale — worst on `bold`, whose h2 is 36px. */
+  padding: calc(10px + var(--presentation-fs-h2, 32px) * 1.2 + 8px) 18px 18px;
+  position: relative;
+}
+.v-slide[data-archetype="phase-cards"] .v-step-head {
+  position: absolute;
+  inset: 10px auto auto 14px;
+}
+.v-slide[data-archetype="phase-cards"] .v-step-line { display: none; }
+.v-slide[data-archetype="phase-cards"] .v-seq-item > .v-num,
+.v-slide[data-archetype="phase-cards"] .v-step-head .v-num {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  z-index: 1;
+  background: none;
+  color: color-mix(in srgb, var(--presentation-accent, #7c6cff) 55%, transparent);
+  font-family: var(--presentation-heading-font, inherit);
+  font-size: var(--presentation-fs-h2, 32px);
+  width: auto;
+  height: auto;
+}
+.v-slide[data-archetype="phase-cards"] .v-arrow-sep { display: none; }
+
+/* ---------- metric bubbles: staggered circular stats ---------- */
+.v-slide[data-archetype="metric-bubbles"] .v-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Wrap rather than overflow: five bubbles fit a full-width slide but not a
+     column beside an image, and `.v-content { overflow: hidden }` was
+     silently clipping the extras. */
+  flex-wrap: wrap;
+  gap: var(--v-gap-5);
+}
+.v-slide[data-archetype="metric-bubbles"] .v-stat.v-card {
+  aspect-ratio: 1;
+  width: 210px;
+  max-width: 100%;
+  border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 26px;
+  background: radial-gradient(
+    circle at 32% 26%,
+    color-mix(in srgb, var(--presentation-accent, #7c6cff) 24%, transparent),
+    color-mix(in srgb, var(--presentation-accent, #7c6cff) 7%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--presentation-accent, #7c6cff) 35%, transparent);
+}
+.v-slide[data-archetype="metric-bubbles"] .v-stat.v-card:nth-child(even) {
+  width: 172px;
+  margin-top: 56px;
+}
+.v-slide[data-archetype="metric-bubbles"] {
+  --v-stat-size: calc(var(--presentation-fs-title, 64px) * 0.72);
+}
+.v-slide[data-archetype="metric-bubbles"] .v-item-body .v-p {
+  font-size: var(--presentation-fs-caption, 13px);
+}
+
+/* ---------- brand logo slot (hero/closing when a brand kit exists) ---------- */
+.v-brand-logo {
+  position: absolute;
+  /* On the text margin, not 12px/8px off it. */
+  top: var(--v-pad-y, 56px);
+  right: var(--v-pad-r, 64px);
+  height: 42px;
+  max-width: 190px;
+  object-fit: contain;
+  object-position: right top;
+}

@@ -1,0 +1,313 @@
+/* ============================================================
+ * Editor workspace — navigator | canvas | inspector.
+ *
+ * Column widths are tokens so the panel toggles and the
+ * responsive collapse both read from one place.
+ * ============================================================ */
+
+:root {
+  --w-navigator: 196px;
+  --w-inspector: 300px;
+}
+
+.editor-shell {
+  display: grid;
+  grid-template-columns: var(--w-navigator) minmax(0, 1fr) var(--w-inspector);
+  grid-template-rows: minmax(0, 1fr);
+  /* Fill whatever the flex column leaves rather than assuming the viewport
+     minus two bars — an error banner above the shell used to push the status
+     bar off the bottom of an overflow-hidden page. */
+  flex: 1 1 0;
+  min-height: 0;
+}
+.editor-shell[data-nav="off"] { grid-template-columns: 0 minmax(0, 1fr) var(--w-inspector); }
+.editor-shell[data-inspector="off"] { grid-template-columns: var(--w-navigator) minmax(0, 1fr) 0; }
+.editor-shell[data-nav="off"][data-inspector="off"] { grid-template-columns: 0 minmax(0, 1fr) 0; }
+.editor-shell[data-nav="off"] .editor-nav,
+.editor-shell[data-inspector="off"] .editor-inspector { display: none; }
+
+/* ---------------- navigator ---------------- */
+.editor-nav {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--hairline);
+}
+.editor-navlist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Thumbnails measure their own width; the scrollbar must never change it. */
+  scrollbar-gutter: stable;
+  padding: var(--s-4);
+}
+
+/* One thumbnail row: number gutter + framed slide. */
+.nav-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s-3);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+.nav-item-num {
+  font-size: var(--t-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+  text-align: right;
+  user-select: none;
+}
+.nav-item[data-selected="true"] .nav-item-num {
+  color: var(--text-primary);
+  font-weight: var(--w-semibold);
+}
+/* The selection ring sits OUTSIDE the frame — never tint the thumbnail,
+   it is content, not chrome. */
+.nav-item-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-sm);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 1px var(--hairline);
+  transition: box-shadow var(--dur-instant) var(--ease-out);
+}
+.nav-item:hover .nav-item-frame { box-shadow: 0 0 0 1px var(--hairline-strong); }
+.nav-item[data-selected="true"] .nav-item-frame {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.nav-item[data-dragging="true"] { opacity: 0.4; }
+/* Insertion line for drag-reorder. */
+.nav-item[data-drop="before"]::before,
+.nav-item[data-drop="after"]::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  right: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+.nav-item[data-drop="before"]::before { top: -5px; }
+.nav-item[data-drop="after"]::after { bottom: -5px; }
+
+.nav-item-menu {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  opacity: 0;
+  transition: opacity var(--dur-instant) var(--ease-out);
+}
+.nav-item:hover .nav-item-menu,
+.nav-item[data-selected="true"] .nav-item-menu,
+.nav-item-menu:focus-within { opacity: 1; }
+
+/* ---------------- canvas ---------------- */
+.editor-canvas {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-well);
+}
+/* Size container: the stage reads the available height in cqh so one slide
+   always fits the frame without measuring in JS. */
+.editor-stage-area {
+  flex: 1;
+  min-height: 0;
+  container-type: size;
+  display: grid;
+  place-items: center;
+  padding: var(--s-6);
+}
+.editor-stage {
+  width: 100%;
+  width: min(100%, calc((100cqh - var(--s-6) * 2) * 16 / 9));
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-drag);
+}
+/* Documents scroll instead of fitting one page. */
+.editor-doc-area {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--s-7) var(--s-6);
+}
+/* The document's own furniture (TOC sidebar, running heads) lives outside
+   .v-doc, so without this it renders on the editor's dark well instead of the
+   document's paper. Must sit INSIDE ThemeScope to read --presentation-*. */
+.editor-doc-page {
+  background: var(--presentation-background, #fff);
+  color: var(--presentation-text, #222);
+  border-radius: var(--r-lg);
+  padding: var(--s-7) var(--s-6);
+  box-shadow: var(--shadow-drag);
+}
+
+/* ---------------- inspector ---------------- */
+.editor-inspector {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--hairline);
+}
+.editor-inspector-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Layout picker: archetype wireframes. */
+.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-3);
+}
+.layout-tile {
+  display: block;
+  padding: 0;
+  border-radius: var(--r-sm);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 1px var(--hairline);
+  color: var(--text-secondary);
+  cursor: pointer;
+  overflow: hidden;
+  transition: box-shadow var(--dur-instant) var(--ease-out);
+}
+.layout-tile:hover { box-shadow: 0 0 0 1px var(--hairline-strong); }
+.layout-tile[aria-checked="true"] {
+  box-shadow: 0 0 0 2px var(--accent);
+  color: var(--text-primary);
+}
+.layout-tile-art {
+  aspect-ratio: 16 / 9;
+  background: var(--bg-well);
+  border-bottom: 1px solid var(--hairline);
+}
+.layout-tile-name {
+  display: block;
+  padding: 3px var(--s-2);
+  font-size: var(--t-micro);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 9-point focal picker: which part of a cropped image stays in view. */
+.insp-row-focus { align-items: start; }
+.focus-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  /* 3 × 24px cells + gaps + padding: keeps each dot at the 24px minimum
+     touch target rather than the 18px a tighter grid produced. */
+  width: 84px;
+  aspect-ratio: 1;
+  padding: 3px;
+  border-radius: var(--r-sm);
+  background: var(--bg-well);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+.focus-dot {
+  border-radius: 2px;
+  background: var(--text-quaternary);
+  cursor: pointer;
+  transition: background-color var(--dur-instant) var(--ease-out);
+}
+.focus-dot:hover:not(:disabled) { background: var(--text-tertiary); }
+.focus-dot[aria-checked="true"] { background: var(--accent); }
+.focus-dot:disabled { opacity: 0.35; cursor: default; }
+
+/* ---------------- status bar ---------------- */
+.editor-status {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  height: var(--h-statusbar);
+  padding: 0 var(--s-5);
+  border-top: 1px solid var(--hairline);
+  background: var(--bg-panel);
+  font-size: var(--t-micro);
+  color: var(--text-tertiary);
+}
+
+/* ---------------- responsive ---------------- */
+@media (max-width: 1280px) {
+  :root { --w-navigator: 168px; --w-inspector: 276px; }
+}
+
+/* Tablet and below: the navigator becomes a horizontal filmstrip above the
+   canvas (it used to simply vanish under 1024px), and the inspector floats. */
+@media (max-width: 1024px) {
+  .editor-shell,
+  .editor-shell[data-nav="off"],
+  .editor-shell[data-inspector="off"],
+  .editor-shell[data-nav="off"][data-inspector="off"] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .editor-nav {
+    border-right: 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  /* Filmstrip: thumbnails scroll horizontally, "Add" parks at the end. */
+  .editor-nav { flex-direction: row; align-items: stretch; }
+  .editor-navlist {
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* Filmstrip items are a fixed width, so no gutter is needed here. */
+    scrollbar-gutter: auto;
+    padding: var(--s-3) var(--s-4);
+  }
+  .editor-nav-add {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border-top: 0;
+    border-left: 1px solid var(--hairline);
+  }
+  .nav-item {
+    grid-template-columns: minmax(0, 1fr);
+    width: 116px;
+    flex: 0 0 auto;
+  }
+  /* Keep the number outside the frame — the thumbnail is content. */
+  .nav-item-frame { order: 1; }
+  .nav-item-num { order: 2; text-align: center; }
+  .nav-item[data-drop="before"]::before,
+  .nav-item[data-drop="after"]::after {
+    left: auto;
+    right: auto;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    height: auto;
+  }
+  .nav-item[data-drop="before"]::before { left: -5px; }
+  .nav-item[data-drop="after"]::after { right: -5px; }
+
+  .editor-inspector {
+    position: fixed;
+    top: var(--h-toolbar);
+    right: 0;
+    bottom: var(--h-statusbar);
+    width: var(--w-inspector);
+    z-index: var(--z-popover);
+    box-shadow: var(--shadow-modal);
+  }
+  .editor-shell[data-inspector="on"] .editor-inspector { display: flex; }
+  .editor-shell:not([data-inspector="on"]) .editor-inspector { display: none; }
+}

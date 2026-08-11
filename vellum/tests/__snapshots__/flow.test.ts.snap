@@ -1,0 +1,159 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`layoutFlow > matches the canonical graph snapshot 1`] = `
+{
+  "edges": [
+    {
+      "from": "a",
+      "points": [
+        [
+          500,
+          70,
+        ],
+        [
+          500,
+          176.33,
+        ],
+      ],
+      "to": "b",
+    },
+    {
+      "from": "b",
+      "label": "yes",
+      "points": [
+        [
+          500,
+          254.33,
+        ],
+        [
+          500,
+          305,
+        ],
+        [
+          250,
+          305,
+        ],
+        [
+          250,
+          355.67,
+        ],
+      ],
+      "to": "c",
+    },
+    {
+      "from": "b",
+      "label": "no",
+      "points": [
+        [
+          500,
+          254.33,
+        ],
+        [
+          500,
+          307.5,
+        ],
+        [
+          750,
+          307.5,
+        ],
+        [
+          750,
+          360.67,
+        ],
+      ],
+      "to": "d",
+    },
+    {
+      "from": "c",
+      "points": [
+        [
+          250,
+          413.67,
+        ],
+        [
+          250,
+          470.34,
+        ],
+        [
+          500,
+          470.34,
+        ],
+        [
+          500,
+          527,
+        ],
+      ],
+      "to": "e",
+    },
+  ],
+  "height": 600,
+  "nodes": [
+    {
+      "h": 48,
+      "id": "a",
+      "label": "Ingest",
+      "layer": 0,
+      "lines": [
+        "Ingest",
+      ],
+      "shape": "process",
+      "w": 120,
+      "x": 500,
+      "y": 46,
+    },
+    {
+      "h": 78,
+      "id": "b",
+      "label": "Valid?",
+      "layer": 1,
+      "lines": [
+        "Valid?",
+      ],
+      "shape": "decision",
+      "w": 150,
+      "x": 500,
+      "y": 215.33,
+    },
+    {
+      "h": 58,
+      "id": "c",
+      "label": "Store",
+      "layer": 2,
+      "lines": [
+        "Store",
+      ],
+      "shape": "store",
+      "w": 120,
+      "x": 250,
+      "y": 384.67,
+    },
+    {
+      "h": 48,
+      "id": "d",
+      "label": "Reject",
+      "layer": 2,
+      "lines": [
+        "Reject",
+      ],
+      "shape": "process",
+      "w": 120,
+      "x": 750,
+      "y": 384.67,
+    },
+    {
+      "h": 54,
+      "id": "e",
+      "label": "Done",
+      "layer": 3,
+      "lines": [
+        "Done",
+      ],
+      "shape": "terminal",
+      "w": 120,
+      "x": 500,
+      "y": 554,
+    },
+  ],
+  "width": 1000,
+}
+`;

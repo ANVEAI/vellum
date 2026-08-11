@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Document {
+  id              String   @id @default(cuid())
+  kind            String // "deck" | "doc"
+  title           String   @default("Untitled")
+  prompt          String?
+  outline         String? // markdown outline, editable between stages
+  researchContext String? // SearXNG context injected into generation
+  slides          String   @default("[]") // JSON PlateSlide[] — canonical content for BOTH kinds
+  themeName       String   @default("mystique") // builtin theme key, or "custom"
+  customThemeId   String?
+  customTheme     CustomTheme? @relation(fields: [customThemeId], references: [id])
+  genParams       String? // JSON: {nCards, language, tone, audience, imageModel}
+  templateId      String? // generation blueprint id (src/lib/templates/library.ts)
+  qualityReport   String? // JSON QA/QC report (lint + LLM critique)
+  sources         String? // JSON DeckSource[] — numbered citation registry
+  status          String   @default("draft") // draft|outlining|generating|ready|error
+  errorMessage    String?
+  rawXml          String? // last raw LLM stream (debugging + golden capture)
+  images          GeneratedImage[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model CustomTheme {
+  id        String     @id @default(cuid())
+  name      String
+  data      String // JSON ThemeProperties — always written through Zod theme schema
+  documents Document[]
+  createdAt DateTime   @default(now())
+}
+
+model GeneratedImage {
+  id         String    @id @default(cuid())
+  documentId String?
+  document   Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  slideId    String? // FNV-1a slide id (deterministic across re-parses)
+  nodeId     String? // target IMG node id
+  prompt     String
+  provider   String // comfyui | gemini | pexels | none
+  status     String    @default("pending") // pending|running|done|failed
+  path       String? // relative under data/images/
+  error      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([documentId, status])
+}
+
+model Setting {
+  key   String @id
+  value String // JSON
+}

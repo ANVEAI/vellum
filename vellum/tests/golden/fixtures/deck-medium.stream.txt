@@ -1,0 +1,61 @@
+<PRESENTATION>
+<SECTION layout="left">
+<TITLE alignment="center">A Homeowner's Guide to Going Solar</TITLE>
+<CONTRIBUTOR />
+<P alignment="center">Practical steps, costs, and decisions for residential solar adoption.</P>
+<IMG query="bright and optimistic illustration of a modern suburban home with sleek blue solar panels on the roof, surrounded by green trees and a clear blue sky, soft natural lighting, friendly and approachable style" />
+</SECTION>
+
+<SECTION layout="left">
+<LABEL alignment="center">Why Solar Now</LABEL>
+<TITLE alignment="center">The Economic Shift</TITLE>
+<BOXES boxType="solid" orientation="horizontal"><DIV><H3>90% Cost Drop</H3><P>Panel prices have plummeted since 2010, making solar significantly more affordable.</P></DIV><DIV><H3>Grid Parity</H3><P>In most markets, solar power now costs less than or equal to traditional grid electricity.</P></DIV><DIV><H3>Immediate ROI</H3><P>Lower upfront costs mean faster payback periods and better long-term savings.</P></DIV></BOXES>
+<IMG query="split screen composition: left side shows a declining cost graph trending down, right side shows a happy family standing in front of their solar-equipped home, warm lighting, clean and professional style" />
+</SECTION>
+
+<SECTION layout="vertical">
+<LABEL alignment="center">The Basics</LABEL>
+<TITLE alignment="center">How Solar Panels Work</TITLE>
+<ICONS variant="icon" orientation="top">
+<DIV icon="sun"><H3>Absorption</H3><P>Panels capture sunlight and convert photons into direct current (DC) electricity.</P></DIV>
+<DIV icon="settings"><H3>Inversion</H3><P>An inverter transforms DC power into alternating current (AC) for home use.</P></DIV>
+<DIV icon="chart"><H3>Metering</H3><P>Net metering tracks energy produced vs. consumed for billing credits.</P></DIV>
+</ICONS>
+<IMG query="close-up detailed view of a photovoltaic solar cell under bright light, showing the grid structure and blue silicon texture, technical but accessible illustration style" />
+</SECTION>
+
+<SECTION layout="right">
+<LABEL alignment="center">Timeline</LABEL>
+<TITLE alignment="center">Installation Steps</TITLE>
+<STEPS variant="arrow">
+<DIV icon="file"><H3>1. Assessment</H3><P>Evaluate roof space and energy needs.</P></DIV>
+<DIV icon="gavel"><H3>2. Permits</H3><P>Secure local approvals and utility agreements.</P></DIV>
+<DIV icon="hammer"><H3>3. Install</H3><P>Professional mounting and wiring (1-3 days).</P></DIV>
+<DIV icon="check"><H3>4. Inspection</H3><P>Final review and grid connection approval.</P></DIV>
+</STEPS>
+<CALLOUT variant="info">Typical Timeline: 6-8 weeks from sign-off to activation.</CALLOUT>
+<IMG query="diagram showing a streamlined workflow icon set for assessment, permits, installation, and inspection, connected by arrows, clean white background, minimalist design" />
+</SECTION>
+
+<SECTION layout="left">
+<LABEL alignment="center">Investment</LABEL>
+<TITLE alignment="center">Costs and Payback</TITLE>
+<STATS statstype="bar"><DIV stat="6-9 years"><H3>Avg. Payback</H3><P>Time to break even after incentives.</P></DIV><DIV stat="25+ years"><H3>Lifespan</H3><P>Effective energy generation period.</P></DIV><DIV stat="30%"><H3>Federal Credit</H3><P>Tax incentive available in many regions.</P></DIV></STATS>
+<P>The initial investment is offset by long-term electricity bill savings and potential home value increase.</P>
+<IMG query="infographic style visualization of a piggy bank growing alongside solar panels, with coins flying into the bank, bright and colorful financial illustration" />
+</SECTION>
+
+<SECTION layout="right">
+<LABEL alignment="center">Selection</LABEL>
+<TITLE alignment="center">Choosing an Installer</TITLE>
+<COLUMNS><DIV><H3>Certifications</H3><P>Look for NABCEP certification and local licensing.</P></DIV><DIV><H3>Comparisons</H3><P>Compare warranties, panel brands, and production estimates.</P></DIV><DIV><H3>References</H3><P>Check recent customer reviews and portfolio photos.</P></DIV></COLUMNS>
+<IMG query="handshake between a homeowner and a solar installer in front of a completed installation, trustworthy and professional atmosphere, natural lighting" />
+</SECTION>
+
+<SECTION layout="left">
+<LABEL alignment="center">Future-Proofing</LABEL>
+<TITLE alignment="center">The Road Ahead</TITLE>
+<ARROWS orientation="horizontal"><DIV><H3>Battery Storage</H3><P>Store excess energy for night or emergencies.</P></DIV><DIV><H3>EV Charging</H3><P>Pair your system with an electric vehicle charger.</P></DIV><DIV><H3>Community Solar</H3><P>Join shared solar projects if rooftop isn't viable.</P></DIV></ARROWS>
+<CALLOUT variant="success">Solar is just the start. Storage and smart grids are the future.</CALLOUT>
+<IMG query="modern home with integrated solar panels, a sleek battery storage unit in the garage, and an electric car charging nearby, futuristic but realistic interior-exterior blend" />
+</SECTION>
