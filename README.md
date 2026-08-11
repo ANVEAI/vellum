@@ -13,10 +13,11 @@ The application lives in **[`vellum/`](vellum/)** — see
 
 | Path | What it is |
 |---|---|
+| `HANDOFF.md` | Full context in one file — start here if you're new to this. |
 | `vellum/` | The application. Next.js 15, TypeScript, SQLite/Prisma. |
 | `docs/` | Architecture notes, load-bearing constraints, engineering reports. |
+| `scripts/` | `install.ps1`, `data-snapshot.ps1`, optional companion setup. |
 | `searxng_config/` | Local SearXNG settings used for research grounding. |
-| `scripts/` | Optional setup for companion services. |
 
 **Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) before changing anything
 in the generation, layout or export paths** — it documents the invariants that
@@ -54,31 +55,48 @@ Attribution for the ported code is in
 
 ## Setup on a new machine
 
+Install [Node.js](https://nodejs.org) 20+ and [Ollama](https://ollama.com), then:
+
 ```powershell
-git clone <this-repo> aai-ppt
+git clone https://github.com/ANVEAI/vellum aai-ppt
 cd aai-ppt
-powershell -ExecutionPolicy Bypass -File scripts\setup-dependencies.ps1
+powershell -ExecutionPolicy Bypass -File scripts\install.ps1
 ```
 
-Then:
+That installs dependencies, writes `.env` with a generated password and a fresh
+64-hex session secret, applies the database migrations, pulls the two Ollama
+models, builds the icon search index, builds the app, and starts it on
+<http://localhost:3210>. It prints the login password and the LAN address when
+it finishes. Re-running is safe — each step detects whether it is already done.
 
-```powershell
-cd vellum
-npm install
-copy .env.example .env      # set APP_PASSWORD and a 64-hex SESSION_SECRET
-npx prisma migrate deploy   # creates data\app.db
-npx tsx scripts\fetch-fonts.ts
-npx tsx scripts\embed-icons.ts   # icon search index; needs Ollama running
-```
+Fonts are committed, so nothing is downloaded from the web during setup beyond
+npm packages and the Ollama models.
 
-Start everything:
+| Switch | Effect |
+|---|---|
+| `-Password "..."` | set the login password instead of generating one |
+| `-RestoreFrom lib.zip` | restore an existing library (see below) |
+| `-SkipModels` | skip the Ollama pull (about 23 GB) |
+| `-NoStart` | set up without building or launching |
+
+Day to day after that:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File vellum\scripts\start-all.ps1
 ```
 
-The app comes up on <http://localhost:3210>; the script also prints the LAN
-address for other devices on your network.
+### Bringing an existing library along
+
+Decks, generated images and the icon index live under `vellum/data/`, which is
+not in git. To move them between machines, stop the app and run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\data-snapshot.ps1 -Mode export -Path C:\vellum-library.zip
+```
+
+Then hand the zip to the installer on the new machine with `-RestoreFrom`. The
+snapshot is verified after packing — it fails loudly rather than producing an
+archive with images but no database.
 
 ### Services it expects
 
