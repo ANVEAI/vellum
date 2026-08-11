@@ -210,6 +210,15 @@ Step "Creating the database schema"
 Invoke-Step "npx" @("prisma", "migrate", "deploy") "prisma migrate deploy failed"
 Ok "schema applied to data\app.db"
 
+# migrate deploy applies migrations but does not emit the typed client, and a
+# clean "npm ci" leaves node_modules\.prisma\client as a 4 KB stub. Without
+# this, every db.* call types as any and the build dies on noImplicitAny in
+# src\app\(app)\dashboard\page.tsx. A dev machine never sees it because
+# "prisma migrate dev" generates as a side effect. Offline (engines ship in
+# node_modules\@prisma\engines) and idempotent, so it is safe on a re-run.
+Invoke-Step "npx" @("prisma", "generate") "prisma generate failed"
+Ok "Prisma client generated"
+
 # ---------------------------------------------------------------------------
 Step "Ollama models"
 
@@ -267,7 +276,13 @@ if ($NoStart) {
 } elseif (Test-Port 3210) {
   Warn ":3210 is occupied - not starting"
 } else {
-  Start-Process -WindowStyle Hidden -FilePath "npm" -ArgumentList "run","start" -WorkingDirectory $App
+  # npm.cmd, not npm. Start-Process goes through ShellExecute, where an exact
+  # filename match beats PATHEXT expansion - and C:\Program Files\nodejs holds
+  # an extensionless "npm" (a Bourne script) next to npm.cmd and npm.ps1. So
+  # -FilePath "npm" picks the shell script, launches nothing, and returns no
+  # error, leaving this step to time out. The & npm calls elsewhere in this
+  # file are fine: those use PowerShell's own resolution, which picks npm.ps1.
+  Start-Process -WindowStyle Hidden -FilePath "npm.cmd" -ArgumentList "run","start" -WorkingDirectory $App
   $up = $false
   foreach ($i in 1..40) {
     Start-Sleep -Seconds 1
