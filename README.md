@@ -14,8 +14,15 @@ The application lives in **[`vellum/`](vellum/)** — see
 | Path | What it is |
 |---|---|
 | `vellum/` | The application. Next.js 15, TypeScript, SQLite/Prisma. |
+| `docs/` | Architecture notes, load-bearing constraints, engineering reports. |
 | `searxng_config/` | Local SearXNG settings used for research grounding. |
-| `scripts/` | One-time setup for the upstream dependencies. |
+| `scripts/` | Optional setup for companion services. |
+
+**Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) before changing anything
+in the generation, layout or export paths** — it documents the invariants that
+look arbitrary but aren't (the parser's reset-and-reparse contract, why layout
+planning is backward-looking, why slide height must never derive from a
+measured width, and the frozen `[data-block-idx]` export contract).
 
 ## What's *not* in this repository — and what you actually need
 
