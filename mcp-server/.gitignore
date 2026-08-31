@@ -1,0 +1,6 @@
+# Build output — reproducible from src/ via `npm run build`.
+dist/
+
+# Export artifacts written by vellum.export_document. These are generated
+# deliverables (a single PPTX can be 20 MB+); never source control.
+.exports/
