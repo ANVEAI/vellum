@@ -68,8 +68,31 @@ Generation takes **minutes** on a local model, so it never blocks a tool call:
 vellum.health                       # is Ollama up? catches the common failure in ms
 vellum.generate_presentation        # -> { jobId, documentId }
 vellum.get_generation_status        # poll every few seconds
-vellum.export_document              # -> { path, bytes, sha256 }
+vellum.export_document              # -> file as MCP content + JSON summary
 ```
+
+### How exports come back
+
+`export_document` returns the file as MCP content, not a filesystem path — a path is
+useless to a client on another machine.
+
+| File size | Delivery |
+|---|---|
+| ≤ `VELLUM_MCP_EMBED_MAX_BYTES` (default 5 MB) | embedded `resource` block, base64 |
+| larger | `resource_link` pointing at `GET /exports/<file>` on this server |
+
+A JSON summary (`documentId`, `slideCount`, `bytes`, `sha256`) always accompanies it in a
+text block, so the model has something to describe.
+
+> [!IMPORTANT]
+> The link is built from `VELLUM_MCP_PUBLIC_URL`, defaulting to
+> `http://{HTTP_HOST}:{HTTP_PORT}`. **It must match the origin the consuming platform
+> registered** — a server-supplied URL is an SSRF vector, and hosts correctly refuse to
+> fetch off-origin. If you put this behind a proxy or a different external address, set
+> `VELLUM_MCP_PUBLIC_URL` to that address or the link will be rejected.
+
+Under `--transport=stdio` there is no HTTP listener, so a file too large to embed falls
+back to a path plus an explicit note rather than a link that would 404.
 
 To review the plan before spending minutes on content — the outline *is* the slide-count
 contract, so this is the cheapest quality lever:

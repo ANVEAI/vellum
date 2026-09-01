@@ -65,7 +65,25 @@ const envSchema = z.object({
   VELLUM_MCP_QUEUE_WAIT_MS: int(600_000, 1_000, 3_600_000),
 
   // --- Export artifacts ----------------------------------------------------
-  VELLUM_MCP_EXPORT_DIR: z.string().default("./exports"),
+  /** Must stay in sync with .gitignore — exported decks are 20 MB+ each. */
+  VELLUM_MCP_EXPORT_DIR: z.string().default("./.exports"),
+  /**
+   * Origin the MCP server is reachable at, used to build `resource_link` URIs
+   * for exports.
+   *
+   * This MUST equal the origin the consuming platform registered, because a
+   * server-supplied URL is an SSRF vector and hosts refuse to fetch anything
+   * off-origin. Defaults to http://{HTTP_HOST}:{HTTP_PORT}, which is exactly
+   * the origin of the registered /mcp endpoint, so the default is correct
+   * whenever the consumer registered this server's own address.
+   */
+  VELLUM_MCP_PUBLIC_URL: z.string().optional(),
+  /**
+   * Files at or below this size are returned as an embedded base64 resource;
+   * larger ones as a resource_link. Base64 inflates ~33%, so keep this well
+   * under any JSON-RPC message limit in the path.
+   */
+  VELLUM_MCP_EMBED_MAX_BYTES: int(5_000_000, 0, 25_000_000),
   VELLUM_MCP_ARTIFACT_TTL_MS: int(86_400_000, 60_000, 2_592_000_000),
   VELLUM_MCP_ARTIFACT_MAX_BYTES: int(2_000_000_000, 1_000_000, 100_000_000_000),
 
@@ -89,6 +107,9 @@ export type Config = Readonly<{
   queueDepth: number;
   queueWaitMs: number;
   exportDir: string;
+  /** Origin used to build export resource_link URIs. Never has a trailing slash. */
+  publicUrl: string;
+  embedMaxBytes: number;
   artifactTtlMs: number;
   artifactMaxBytes: number;
   logLevel: "debug" | "info" | "warn" | "error" | "silent";
@@ -149,6 +170,10 @@ export function loadConfig(
     queueDepth: e.VELLUM_MCP_QUEUE_DEPTH,
     queueWaitMs: e.VELLUM_MCP_QUEUE_WAIT_MS,
     exportDir: e.VELLUM_MCP_EXPORT_DIR,
+    publicUrl: (
+      e.VELLUM_MCP_PUBLIC_URL ?? `http://${e.VELLUM_MCP_HTTP_HOST}:${e.VELLUM_MCP_HTTP_PORT}`
+    ).replace(/\/+$/, ""),
+    embedMaxBytes: e.VELLUM_MCP_EMBED_MAX_BYTES,
     artifactTtlMs: e.VELLUM_MCP_ARTIFACT_TTL_MS,
     artifactMaxBytes: e.VELLUM_MCP_ARTIFACT_MAX_BYTES,
     logLevel: e.VELLUM_MCP_LOG_LEVEL,

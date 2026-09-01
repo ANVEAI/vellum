@@ -34,10 +34,59 @@ export interface ToolDefinition {
   ) => Promise<unknown>;
 }
 
+/**
+ * The content-block shapes we emit.
+ *
+ * `resource_link` points at bytes the host fetches itself; `resource` embeds
+ * them base64. Both are MCP-native, so a browser client on another machine can
+ * actually retrieve a file — which a filesystem path never allowed.
+ */
+export type ContentBlock =
+  | { type: "text"; text: string }
+  | {
+      type: "resource_link";
+      uri: string;
+      name: string;
+      mimeType?: string;
+      description?: string;
+    }
+  | {
+      type: "resource";
+      resource: { uri: string; mimeType?: string; blob: string };
+    };
+
 export interface McpToolResult {
-  content: { type: "text"; text: string }[];
+  content: ContentBlock[];
   structuredContent?: unknown;
   isError?: boolean;
+}
+
+const CONTENT_MARKER = Symbol.for("vellum.mcp.contentEnvelope");
+
+export interface ContentEnvelope {
+  [CONTENT_MARKER]: true;
+  blocks: ContentBlock[];
+  payload: unknown;
+  summary?: string;
+}
+
+/**
+ * Let a handler return content blocks alongside its JSON payload.
+ *
+ * The payload still becomes `structuredContent` and is still size-checked; the
+ * blocks bypass that check because a base64 blob is legitimately large and is
+ * not competing for the model's context the way a JSON body is.
+ */
+export function withContent(
+  payload: unknown,
+  blocks: ContentBlock[],
+  summary?: string,
+): ContentEnvelope {
+  return { [CONTENT_MARKER]: true, blocks, payload, ...(summary ? { summary } : {}) };
+}
+
+export function isContentEnvelope(value: unknown): value is ContentEnvelope {
+  return typeof value === "object" && value !== null && CONTENT_MARKER in value;
 }
 
 /** Above this, the JSON is not echoed into the text block as well. */
@@ -46,6 +95,13 @@ const INLINE_TEXT_LIMIT = 1_000;
 const MAX_RESULT_BYTES = 65_536;
 
 export function ok(payload: unknown, summary?: string): McpToolResult {
+  let extraBlocks: ContentBlock[] = [];
+  if (isContentEnvelope(payload)) {
+    extraBlocks = payload.blocks;
+    summary = summary ?? payload.summary;
+    payload = payload.payload;
+  }
+
   const safe = redact(payload);
   const json = JSON.stringify(safe);
 
@@ -63,7 +119,9 @@ export function ok(payload: unknown, summary?: string): McpToolResult {
   // small threshold the text block carries a terse summary instead.
   const text = json.length <= INLINE_TEXT_LIMIT ? json : (summary ?? terse(safe));
 
-  return { content: [{ type: "text", text }], structuredContent: safe };
+  // Blocks first, then the JSON summary — the host renders the artifact, the
+  // model still gets something to describe.
+  return { content: [...extraBlocks, { type: "text", text }], structuredContent: safe };
 }
 
 export function toolError(message: string, details?: Record<string, unknown>): McpToolResult {

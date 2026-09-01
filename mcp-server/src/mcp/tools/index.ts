@@ -9,8 +9,9 @@
  * Descriptions are written FOR a model: what the tool does, what it costs, what
  * it requires first, and what to call next.
  */
+import { readFileSync } from "node:fs";
 import { z } from "zod";
-import type { ToolDefinition } from "../tool.js";
+import { withContent, type ToolDefinition } from "../tool.js";
 import {
   IMAGE_MODELS,
   IMAGE_STYLES,
@@ -453,18 +454,24 @@ export const TOOLS: ToolDefinition[] = [
     name: "vellum.export_document",
     title: "Export to PDF, PowerPoint or Word",
     description:
-      "Export a finished document. The file is WRITTEN TO DISK and the tool returns its path, " +
-      "size and sha256 — the bytes are never returned inline, because a real deck is tens of " +
-      "megabytes. All three formats render through a headless browser and can take up to five " +
-      "minutes for a large deck, so if one format fails with a browser error the others will too. " +
-      "Fails immediately if the document has no slides yet.",
+      "Export a finished document and return the file itself. Small files come back embedded; " +
+      "larger ones as a downloadable link the client can fetch. The JSON summary alongside it " +
+      "carries the document id, slide count and size. All three formats render through a headless " +
+      "browser and can take up to five minutes for a large deck, so if one format fails with a " +
+      "browser error the others will too. Fails immediately if the document has no slides yet.",
     inputSchema: {
       documentId,
       format: z.enum(["pdf", "pptx", "docx"]).optional().describe("Default 'pdf'."),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    handler: (a, ctx, s) =>
-      s.exports.export(a.documentId as string, assertFormat((a.format as string) ?? "pdf"), ctx.signal),
+    handler: async (a, ctx, s) => {
+      const artifact = await s.exports.export(
+        a.documentId as string,
+        assertFormat((a.format as string) ?? "pdf"),
+        ctx.signal,
+      );
+      return exportContent(artifact, s.config);
+    },
   },
 
   /* ----------------------------------------------------------------- recover */
@@ -720,6 +727,84 @@ function handleOf(job: { jobId: string; documentId?: string; status: string }, n
     cancelWith: "vellum.cancel_generation",
     note: `${note} This takes minutes — poll every few seconds.`,
   };
+}
+
+/**
+ * Turn an export into MCP content the caller can actually use.
+ *
+ * A filesystem path is useless to a browser client on another machine, so the
+ * bytes are returned as content instead:
+ *
+ *   - at or under `embedMaxBytes`, an embedded base64 `resource`
+ *   - above it, a `resource_link` pointing at this server's own /exports route
+ *
+ * The link is built from `config.publicUrl`, which defaults to the HTTP
+ * transport's own host and port — i.e. the same origin the consumer registered.
+ * That matters: hosts refuse to follow off-origin URLs from a tool result,
+ * because a server-supplied URL is an SSRF vector.
+ *
+ * Under stdio there is no HTTP listener, so no link can be honoured. In that
+ * case a file too large to embed falls back to the path with an explicit note,
+ * rather than handing back a URL that would 404.
+ */
+function exportContent(
+  artifact: import("../../domain/exports.js").ArtifactResult,
+  config: import("../../infra/config.js").Config,
+) {
+  const payload = {
+    documentId: artifact.documentId,
+    format: artifact.format,
+    filename: artifact.suggestedFilename ?? artifact.filename,
+    slideCount: artifact.slideCount,
+    bytes: artifact.bytes,
+    sha256: artifact.sha256,
+  };
+
+  const displayName = artifact.suggestedFilename ?? artifact.filename;
+  const summary =
+    `Exported "${displayName}" — ${artifact.slideCount} slides, ` +
+    `${(artifact.bytes / 1_000_000).toFixed(1)} MB ${artifact.format.toUpperCase()}.`;
+
+  if (artifact.bytes <= config.embedMaxBytes) {
+    const blob = readFileSync(artifact.path).toString("base64");
+    return withContent(
+      { ...payload, delivery: "embedded" },
+      [
+        {
+          type: "resource",
+          resource: { uri: `file://${artifact.path}`, mimeType: artifact.mimeType, blob },
+        },
+      ],
+      summary,
+    );
+  }
+
+  if (config.transport !== "http") {
+    return {
+      ...payload,
+      delivery: "path",
+      path: artifact.path,
+      note:
+        `The file is ${(artifact.bytes / 1_000_000).toFixed(1)} MB, too large to embed, and this ` +
+        `server is running on stdio so it cannot serve a download link. Read it from the path, ` +
+        `or run the server with --transport=http to get a fetchable link.`,
+    };
+  }
+
+  const uri = `${config.publicUrl}/exports/${artifact.filename}`;
+  return withContent(
+    { ...payload, delivery: "link", uri },
+    [
+      {
+        type: "resource_link",
+        uri,
+        name: displayName,
+        mimeType: artifact.mimeType,
+        description: `${artifact.slideCount}-slide ${artifact.format.toUpperCase()} export`,
+      },
+    ],
+    summary,
+  );
 }
 
 async function startGeneration(

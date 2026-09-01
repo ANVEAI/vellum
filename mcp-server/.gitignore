@@ -3,4 +3,8 @@ dist/
 
 # Export artifacts written by vellum.export_document. These are generated
 # deliverables (a single PPTX can be 20 MB+); never source control.
+# Both spellings: the configured default is .exports/, but an operator who
+# points VELLUM_MCP_EXPORT_DIR at ./exports should not be one `git add` away
+# from committing a 26 MB deck.
 .exports/
+exports/

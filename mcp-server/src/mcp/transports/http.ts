@@ -10,6 +10,8 @@
  * version, so anything that can reach the port has full read/write access to
  * the Vellum library; do not expose it beyond a trusted network.
  */
+import { createReadStream, statSync, type Stats } from "node:fs";
+import path from "node:path";
 import express from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Container } from "../../container.js";
@@ -40,6 +42,52 @@ export async function startHttp(container: Container): Promise<void> {
     } catch (err) {
       res.status(503).json({ ok: false, error: err instanceof Error ? err.message : String(err) });
     }
+  });
+
+  /**
+   * Serve an exported artifact.
+   *
+   * This is what makes `resource_link` usable: the URI handed back by
+   * vellum.export_document points here, on this server's own origin, so a host
+   * that refuses off-origin fetches (correctly — a server-supplied URL is an
+   * SSRF vector) can still retrieve the file.
+   *
+   * Two guards, because this is the only route that maps a caller-supplied
+   * string onto the filesystem:
+   *   1. a strict allowlist matching the artifact naming scheme, and
+   *   2. a resolved-path prefix check against the export directory.
+   */
+  const ARTIFACT_NAME = /^[A-Za-z0-9_-]+\.(pdf|pptx|docx)$/;
+  const ARTIFACT_MIME: Record<string, string> = {
+    pdf: "application/pdf",
+    pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  };
+
+  app.get("/exports/:file", (req, res) => {
+    const name = req.params.file;
+    if (!ARTIFACT_NAME.test(name)) {
+      res.status(400).json({ error: "Invalid artifact name" });
+      return;
+    }
+    const dir = path.resolve(config.exportDir);
+    const full = path.resolve(dir, name);
+    if (full !== path.join(dir, name) || !full.startsWith(dir + path.sep)) {
+      res.status(400).json({ error: "Invalid artifact path" });
+      return;
+    }
+    let stat: Stats;
+    try {
+      stat = statSync(full);
+    } catch {
+      res.status(404).json({ error: "Artifact not found or expired" });
+      return;
+    }
+    const ext = name.slice(name.lastIndexOf(".") + 1);
+    res.setHeader("Content-Type", ARTIFACT_MIME[ext] ?? "application/octet-stream");
+    res.setHeader("Content-Length", String(stat.size));
+    res.setHeader("Content-Disposition", `attachment; filename="${name}"`);
+    createReadStream(full).pipe(res);
   });
 
   app.post("/mcp", async (req, res) => {
