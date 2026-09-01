@@ -59,6 +59,27 @@ describe("tool result content blocks", () => {
     expect(plain.content[0]?.type).toBe("text");
   });
 
+  it("keeps a download URL out of everything the model can read", () => {
+    // The host intercepts the resource_link and re-serves the file from its own
+    // origin. A URL anywhere the model can see it gets pasted into prose as a
+    // download link — but it is a loopback address on the server, dead in any
+    // browser, and prose is invisible to the interception path.
+    const uri = "http://127.0.0.1:8765/exports/abc-pptx-6b9fdee0.pptx";
+    const result = ok(
+      withContent({ documentId: "abc", slideCount: 15, bytes: 26_173_340, delivery: "link" }, [
+        { type: "resource_link", uri, name: "Deck.pptx", mimeType: "application/x" },
+      ]),
+    );
+
+    const link = result.content.find((c) => c.type === "resource_link");
+    expect(link).toMatchObject({ uri });
+
+    // ...and nowhere else.
+    expect(JSON.stringify(result.structuredContent)).not.toContain("http");
+    const text = result.content.find((c) => c.type === "text") as { text: string };
+    expect(text.text).not.toContain("http");
+  });
+
   it("uses the supplied summary as the text block when the JSON is large", () => {
     const payload = { documentId: "abc", filler: "y".repeat(2_000) };
     const result = ok(withContent(payload, [], "Exported \"Deck.pdf\" — 12 slides, 17.7 MB PDF."));

@@ -454,9 +454,11 @@ export const TOOLS: ToolDefinition[] = [
     name: "vellum.export_document",
     title: "Export to PDF, PowerPoint or Word",
     description:
-      "Export a finished document and return the file itself. Small files come back embedded; " +
-      "larger ones as a downloadable link the client can fetch. The JSON summary alongside it " +
-      "carries the document id, slide count and size. All three formats render through a headless " +
+      "Export a finished document and return the file itself as an attachment. The client " +
+      "receives the file directly and presents it to the user — do NOT write out or invent a " +
+      "download URL in your reply, and do not tell the user where the file is stored; just say " +
+      "what you exported. The JSON summary alongside it carries the document id, slide count and " +
+      "size, which is what you should describe. All three formats render through a headless " +
       "browser and can take up to five minutes for a large deck, so if one format fails with a " +
       "browser error the others will too. Fails immediately if the document has no slides yet.",
     inputSchema: {
@@ -793,7 +795,18 @@ function exportContent(
 
   const uri = `${config.publicUrl}/exports/${artifact.filename}`;
   return withContent(
-    { ...payload, delivery: "link", uri },
+    // The URI is deliberately NOT in the payload. It lives only in the
+    // resource_link block, for two reasons:
+    //
+    //  1. Anything in structuredContent reaches the model, and a model that can
+    //     see a URL will paste it into its prose — which reads like a download
+    //     link but is a loopback address on the server, dead in any browser.
+    //  2. The host intercepts the content block and re-serves the file from its
+    //     own origin. Prose is invisible to that path, so a URL in the text
+    //     actively competes with the mechanism that makes the file reachable.
+    //
+    // The model still gets everything it needs to describe the artifact.
+    { ...payload, delivery: "link" },
     [
       {
         type: "resource_link",
