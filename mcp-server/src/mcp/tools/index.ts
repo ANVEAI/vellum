@@ -29,12 +29,36 @@ const READ_ONLY = { readOnlyHint: true, idempotentHint: true, openWorldHint: fal
 /* Shared generation parameters                                                */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * A plain string, deliberately NOT an enum of all 20 template ids.
+ *
+ * The enum was roughly 40% of generate_presentation's schema bytes, and
+ * multi-argument tool calls are where local models' output format frays — a
+ * malformed call costs the whole turn. Ids are discoverable through
+ * vellum.list_templates and validated in the handler against the same list, so
+ * a wrong value still gets a precise error naming the valid ids. Discoverability
+ * is preserved; the per-call schema cost is not paid.
+ */
+const templateIdSchema = z
+  .string()
+  .optional()
+  .describe(
+    'Blueprint id from vellum.list_templates, e.g. "pitch-deck". Omit for no template.',
+  );
+
+/** How many slides, as a REQUIRED field on generate_presentation — see below. */
+const nCardsSchema = z
+  .number()
+  .int()
+  .min(1)
+  .max(30)
+  .describe(
+    "How many slides to produce (1-30). The outline stage enforces this; editing the " +
+      "outline afterwards changes it again.",
+  );
+
 const genParamShape = {
-  nCards: z
-    .number()
-    .int()
-    .min(1)
-    .max(30)
+  nCards: nCardsSchema
     .optional()
     .describe(
       "How many slides/sections to produce (1-30). Overrides the template default. " +
@@ -179,8 +203,15 @@ export const TOOLS: ToolDefinition[] = [
       "Without an idempotencyKey, calling this twice creates TWO documents.",
     inputSchema: {
       prompt: z.string().min(1).max(4000).describe("What the deck should be about."),
-      templateId: z.enum(TEMPLATE_IDS as [string, ...string[]]).optional(),
+      templateId: templateIdSchema,
       ...genParamShape,
+      // REQUIRED here, optional on the other generation tools. A duplicate key
+      // keeps its position from the spread but takes this value, so nCards stays
+      // second in the property order and becomes mandatory. Two required fields
+      // and no enums is the smallest call the model can be asked to emit, which
+      // is the point: multi-argument calls are where local models' tool output
+      // frays, and this is the tool that has to survive it.
+      nCards: nCardsSchema,
       useBrandTheme: z.boolean().optional().describe("Apply the saved brand kit instead of the template theme."),
       sourceText: z
         .string()
@@ -203,7 +234,7 @@ export const TOOLS: ToolDefinition[] = [
       "poll vellum.get_generation_status. Documents export to PDF and DOCX.",
     inputSchema: {
       prompt: z.string().min(1).max(4000),
-      templateId: z.enum(TEMPLATE_IDS as [string, ...string[]]).optional(),
+      templateId: templateIdSchema,
       ...genParamShape,
       sourceText: z.string().max(80_000).optional(),
       stopAfterOutline: z.boolean().optional(),
@@ -283,7 +314,7 @@ export const TOOLS: ToolDefinition[] = [
     inputSchema: {
       prompt: z.string().min(1).max(4000),
       kind: z.enum(["deck", "doc"]).optional(),
-      templateId: z.enum(TEMPLATE_IDS as [string, ...string[]]).optional(),
+      templateId: templateIdSchema,
       ...genParamShape,
       sourceText: z.string().max(80_000).optional(),
     },
@@ -697,10 +728,21 @@ async function startGeneration(
   s: import("../../domain/services.js").Services,
   kind: "deck" | "doc",
 ) {
+  // templateId is a plain string in the schema (see templateIdSchema), so the
+  // validation the enum used to do happens here instead — and gives a better
+  // error than Vellum's bare "Unknown templateId", without a round trip.
+  const templateId = a.templateId as string | undefined;
+  if (templateId && !TEMPLATE_IDS.includes(templateId)) {
+    throw invalidInput(
+      `Unknown templateId "${templateId}". Valid ids: ${TEMPLATE_IDS.join(", ")}. ` +
+        `Call vellum.list_templates to see what each one is for, or omit templateId.`,
+    );
+  }
+
   const input = {
     prompt: a.prompt as string,
     kind,
-    templateId: a.templateId as string | undefined,
+    templateId,
     useBrandTheme: a.useBrandTheme as boolean | undefined,
     genParams: collectGenParams(a),
     sourceText: a.sourceText as string | undefined,
