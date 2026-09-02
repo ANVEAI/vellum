@@ -25,6 +25,7 @@ import {
 } from "@/components/slides/render/document-view";
 import "@/styles/slides.css";
 import "./print.css";
+import { assetUrl } from "@/lib/client/base-path";
 
 /** Stable long-form date for the printed cover (en-US keeps SSR/hydration in sync). */
 function coverDate(): string {
@@ -91,7 +92,7 @@ function PrintRootImage({ slide }: { slide: PlateSlide }) {
     // eslint-disable-next-line @next/next/no-img-element
     <img
       className="v-rootimg"
-      src={root.url}
+      src={assetUrl(root.url)}
       alt={root.query ?? ""}
       style={{ objectFit: fit, objectPosition: objectPosition(focus) }}
       data-root-img
@@ -152,7 +153,7 @@ function PrintSlide({ slide, index }: { slide: PlateSlide; index: number }) {
       {theme.brandLogo &&
         (slide.archetype === "hero" || slide.archetype === "closing") && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="v-brand-logo" src={theme.brandLogo} alt="" data-brand-logo />
+          <img className="v-brand-logo" src={assetUrl(theme.brandLogo)} alt="" data-brand-logo />
         )}
       {/* Citations render on screen but were missing here, so every export
           silently dropped its sources. */}

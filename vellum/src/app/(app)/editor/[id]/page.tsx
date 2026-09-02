@@ -44,6 +44,7 @@ import { Navigator } from "./components/navigator";
 import { Inspector, type ImageState, type InspectorScope } from "./components/inspector";
 import "@/styles/slides.css";
 import "@/styles/editor.css";
+import { apiFetch, withBase } from "@/lib/client/base-path";
 
 /** First chart node (with its content index) on a slide, if any. */
 function findChartNode(
@@ -154,7 +155,7 @@ export default function EditorPage() {
   const loadDocument = useRef(async () => {
     // Never clobber edits that have not reached the server yet.
     if (dirtyRef.current) return;
-    const res = await fetch(`/api/documents/${params.id}`);
+    const res = await apiFetch(`/api/documents/${params.id}`);
     if (!res.ok) {
       setError(res.status === 404 ? "not-found" : "load-failed");
       return;
@@ -194,7 +195,7 @@ export default function EditorPage() {
     const tick = async () => {
       if (stopped) return;
       try {
-        const res = await fetch(`/api/documents/${params.id}/assets`);
+        const res = await apiFetch(`/api/documents/${params.id}/assets`);
         if (res.ok) {
           const data = (await res.json()) as {
             pending: number;
@@ -247,7 +248,7 @@ export default function EditorPage() {
     async (next: PlateSlide[]) => {
       setSaveState("saving");
       try {
-        const res = await fetch(`/api/documents/${params.id}`, {
+        const res = await apiFetch(`/api/documents/${params.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ slides: JSON.stringify(next) }),
@@ -302,8 +303,9 @@ export default function EditorPage() {
       if (slideTimer.current) clearTimeout(slideTimer.current);
       if (titleTimer.current) clearTimeout(titleTimer.current);
       if (dirtyRef.current) {
+        // sendBeacon takes a raw URL, so basePath has to be applied by hand.
         navigator.sendBeacon?.(
-          `/api/documents/${params.id}`,
+          withBase(`/api/documents/${params.id}`),
           new Blob([JSON.stringify({ slides: JSON.stringify(slidesRef.current) })], {
             type: "application/json",
           }),
@@ -318,7 +320,7 @@ export default function EditorPage() {
       setDoc((d) => (d ? { ...d, title } : d));
       if (titleTimer.current) clearTimeout(titleTimer.current);
       titleTimer.current = setTimeout(() => {
-        void fetch(`/api/documents/${params.id}`, {
+        void apiFetch(`/api/documents/${params.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title }),
@@ -506,7 +508,7 @@ export default function EditorPage() {
         return;
       }
       try {
-        const res = await fetch(`/api/documents/${params.id}/images`, {
+        const res = await apiFetch(`/api/documents/${params.id}/images`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ slideId: id, nodeId: "__root__", prompt }),
@@ -541,7 +543,7 @@ export default function EditorPage() {
       try {
         const form = new FormData();
         form.append("file", file);
-        const res = await fetch("/api/images/upload", { method: "POST", body: form });
+        const res = await apiFetch("/api/images/upload", { method: "POST", body: form });
         if (!res.ok) {
           const data = (await res.json().catch(() => null)) as { error?: string } | null;
           throw new Error(data?.error ?? `Upload failed (${res.status})`);
@@ -567,7 +569,7 @@ export default function EditorPage() {
     async (slideId: string, instruction?: string) => {
       setRegenerating(slideId);
       try {
-        const res = await fetch("/api/generation/slide", {
+        const res = await apiFetch("/api/generation/slide", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ documentId: params.id, slideId, instruction }),
@@ -600,7 +602,7 @@ export default function EditorPage() {
   const generateAiTheme = useCallback(async () => {
     setThemeBusy(true);
     try {
-      const res = await fetch("/api/generation/theme", {
+      const res = await apiFetch("/api/generation/theme", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ documentId: params.id }),
@@ -625,7 +627,7 @@ export default function EditorPage() {
   const pickTheme = useCallback(
     (themeName: string) => {
       setDoc((d) => (d ? { ...d, themeName } : d));
-      void fetch(`/api/documents/${params.id}`, {
+      void apiFetch(`/api/documents/${params.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
@@ -639,7 +641,7 @@ export default function EditorPage() {
   const applyBrandTheme = useCallback(async () => {
     setBrandBusy(true);
     try {
-      const res = await fetch(`/api/documents/${params.id}/brand-theme`, {
+      const res = await apiFetch(`/api/documents/${params.id}/brand-theme`, {
         method: "POST",
       });
       if (!res.ok) {
@@ -665,7 +667,7 @@ export default function EditorPage() {
       if (!style) delete next.imageStyle;
       const encoded = JSON.stringify(next);
       setDoc((d) => (d ? { ...d, genParams: encoded } : d));
-      void fetch(`/api/documents/${params.id}`, {
+      void apiFetch(`/api/documents/${params.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ genParams: encoded }),
@@ -685,7 +687,7 @@ export default function EditorPage() {
     });
     if (!ok) return;
     try {
-      const res = await fetch(`/api/documents/${params.id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/documents/${params.id}`, { method: "DELETE" });
       if (!res.ok && res.status !== 404) {
         throw new Error(`Delete failed (${res.status})`);
       }
@@ -704,7 +706,7 @@ export default function EditorPage() {
 
   const rerunQuality = useCallback(async () => {
     try {
-      const res = await fetch(`/api/documents/${params.id}/quality`, { method: "POST" });
+      const res = await apiFetch(`/api/documents/${params.id}/quality`, { method: "POST" });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       setDoc((d) => (d ? { ...d, status: "reviewing" } : d));
       toast({ title: "Re-running the quality check…" });
@@ -1170,7 +1172,7 @@ export default function EditorPage() {
                   type="button"
                   className="btn btn-sm btn-secondary"
                   onClick={async () => {
-                    await fetch(`/api/documents/${params.id}/assets`, { method: "POST" });
+                    await apiFetch(`/api/documents/${params.id}/assets`, { method: "POST" });
                     setFailedImages(0);
                     setPendingImages(1);
                   }}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { withBase } from "@/lib/client/base-path";
 
 export default function GlobalError({
   error,
@@ -24,7 +25,13 @@ export default function GlobalError({
           <button type="button" className="btn btn-primary" onClick={reset}>
             Try again
           </button>
-          <a href="/dashboard" className="btn btn-secondary">
+          {/*
+            Deliberately a raw anchor rather than next/link: this is the error
+            boundary, so a full page load is the reliable way out of a broken
+            client state — client-side navigation may be exactly what failed.
+            That means basePath has to be applied by hand.
+          */}
+          <a href={withBase("/dashboard")} className="btn btn-secondary">
             Back to library
           </a>
         </div>

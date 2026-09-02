@@ -5,7 +5,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/atkinson-hyperlegible-400.woff2") format("woff2");
+  src: url("../../public/fonts/atkinson-hyperlegible-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -13,7 +13,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/atkinson-hyperlegible-700.woff2") format("woff2");
+  src: url("../../public/fonts/atkinson-hyperlegible-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -21,7 +21,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/bitter-400.woff2") format("woff2");
+  src: url("../../public/fonts/bitter-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -29,7 +29,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/bitter-500.woff2") format("woff2");
+  src: url("../../public/fonts/bitter-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -37,7 +37,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/bitter-600.woff2") format("woff2");
+  src: url("../../public/fonts/bitter-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -45,7 +45,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/bitter-700.woff2") format("woff2");
+  src: url("../../public/fonts/bitter-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -53,7 +53,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/bitter-800.woff2") format("woff2");
+  src: url("../../public/fonts/bitter-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -61,7 +61,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/bricolage-grotesque-400.woff2") format("woff2");
+  src: url("../../public/fonts/bricolage-grotesque-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -69,7 +69,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/bricolage-grotesque-500.woff2") format("woff2");
+  src: url("../../public/fonts/bricolage-grotesque-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -77,7 +77,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/bricolage-grotesque-600.woff2") format("woff2");
+  src: url("../../public/fonts/bricolage-grotesque-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -85,7 +85,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/bricolage-grotesque-700.woff2") format("woff2");
+  src: url("../../public/fonts/bricolage-grotesque-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -93,7 +93,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/bricolage-grotesque-800.woff2") format("woff2");
+  src: url("../../public/fonts/bricolage-grotesque-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -101,7 +101,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/commissioner-400.woff2") format("woff2");
+  src: url("../../public/fonts/commissioner-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -109,7 +109,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/commissioner-500.woff2") format("woff2");
+  src: url("../../public/fonts/commissioner-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -117,7 +117,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/commissioner-600.woff2") format("woff2");
+  src: url("../../public/fonts/commissioner-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -125,7 +125,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/commissioner-700.woff2") format("woff2");
+  src: url("../../public/fonts/commissioner-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -133,7 +133,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/commissioner-800.woff2") format("woff2");
+  src: url("../../public/fonts/commissioner-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -141,7 +141,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/cormorant-garamond-400.woff2") format("woff2");
+  src: url("../../public/fonts/cormorant-garamond-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -149,7 +149,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/cormorant-garamond-500.woff2") format("woff2");
+  src: url("../../public/fonts/cormorant-garamond-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -157,7 +157,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/cormorant-garamond-600.woff2") format("woff2");
+  src: url("../../public/fonts/cormorant-garamond-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -165,7 +165,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/cormorant-garamond-700.woff2") format("woff2");
+  src: url("../../public/fonts/cormorant-garamond-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -173,7 +173,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/dm-sans-400.woff2") format("woff2");
+  src: url("../../public/fonts/dm-sans-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -181,7 +181,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/dm-sans-500.woff2") format("woff2");
+  src: url("../../public/fonts/dm-sans-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -189,7 +189,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/dm-sans-600.woff2") format("woff2");
+  src: url("../../public/fonts/dm-sans-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -197,7 +197,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/dm-sans-700.woff2") format("woff2");
+  src: url("../../public/fonts/dm-sans-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -205,7 +205,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/dm-sans-800.woff2") format("woff2");
+  src: url("../../public/fonts/dm-sans-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -213,7 +213,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/dm-serif-display-400.woff2") format("woff2");
+  src: url("../../public/fonts/dm-serif-display-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -221,7 +221,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/epilogue-400.woff2") format("woff2");
+  src: url("../../public/fonts/epilogue-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -229,7 +229,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/epilogue-500.woff2") format("woff2");
+  src: url("../../public/fonts/epilogue-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -237,7 +237,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/epilogue-600.woff2") format("woff2");
+  src: url("../../public/fonts/epilogue-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -245,7 +245,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/epilogue-700.woff2") format("woff2");
+  src: url("../../public/fonts/epilogue-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -253,7 +253,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/epilogue-800.woff2") format("woff2");
+  src: url("../../public/fonts/epilogue-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -261,7 +261,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/fraunces-400.woff2") format("woff2");
+  src: url("../../public/fonts/fraunces-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -269,7 +269,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/fraunces-500.woff2") format("woff2");
+  src: url("../../public/fonts/fraunces-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -277,7 +277,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/fraunces-600.woff2") format("woff2");
+  src: url("../../public/fonts/fraunces-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -285,7 +285,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/fraunces-700.woff2") format("woff2");
+  src: url("../../public/fonts/fraunces-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -293,7 +293,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/fraunces-800.woff2") format("woff2");
+  src: url("../../public/fonts/fraunces-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -301,7 +301,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/hanken-grotesk-400.woff2") format("woff2");
+  src: url("../../public/fonts/hanken-grotesk-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -309,7 +309,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/hanken-grotesk-500.woff2") format("woff2");
+  src: url("../../public/fonts/hanken-grotesk-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -317,7 +317,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/hanken-grotesk-600.woff2") format("woff2");
+  src: url("../../public/fonts/hanken-grotesk-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -325,7 +325,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/hanken-grotesk-700.woff2") format("woff2");
+  src: url("../../public/fonts/hanken-grotesk-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -333,7 +333,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/hanken-grotesk-800.woff2") format("woff2");
+  src: url("../../public/fonts/hanken-grotesk-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -341,7 +341,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/ibm-plex-sans-400.woff2") format("woff2");
+  src: url("../../public/fonts/ibm-plex-sans-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -349,7 +349,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/ibm-plex-sans-500.woff2") format("woff2");
+  src: url("../../public/fonts/ibm-plex-sans-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -357,7 +357,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/ibm-plex-sans-600.woff2") format("woff2");
+  src: url("../../public/fonts/ibm-plex-sans-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -365,7 +365,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/ibm-plex-sans-700.woff2") format("woff2");
+  src: url("../../public/fonts/ibm-plex-sans-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -373,7 +373,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/inter-400.woff2") format("woff2");
+  src: url("../../public/fonts/inter-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -381,7 +381,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/inter-500.woff2") format("woff2");
+  src: url("../../public/fonts/inter-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -389,7 +389,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/inter-600.woff2") format("woff2");
+  src: url("../../public/fonts/inter-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -397,7 +397,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/inter-700.woff2") format("woff2");
+  src: url("../../public/fonts/inter-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -405,7 +405,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/inter-800.woff2") format("woff2");
+  src: url("../../public/fonts/inter-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -413,7 +413,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/inter-tight-400.woff2") format("woff2");
+  src: url("../../public/fonts/inter-tight-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -421,7 +421,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/inter-tight-500.woff2") format("woff2");
+  src: url("../../public/fonts/inter-tight-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -429,7 +429,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/inter-tight-600.woff2") format("woff2");
+  src: url("../../public/fonts/inter-tight-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -437,7 +437,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/inter-tight-700.woff2") format("woff2");
+  src: url("../../public/fonts/inter-tight-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -445,7 +445,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/inter-tight-800.woff2") format("woff2");
+  src: url("../../public/fonts/inter-tight-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -453,7 +453,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/jetbrains-mono-400.woff2") format("woff2");
+  src: url("../../public/fonts/jetbrains-mono-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -461,7 +461,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/jetbrains-mono-500.woff2") format("woff2");
+  src: url("../../public/fonts/jetbrains-mono-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -469,7 +469,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/jetbrains-mono-600.woff2") format("woff2");
+  src: url("../../public/fonts/jetbrains-mono-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -477,7 +477,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/jetbrains-mono-700.woff2") format("woff2");
+  src: url("../../public/fonts/jetbrains-mono-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -485,7 +485,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/jetbrains-mono-800.woff2") format("woff2");
+  src: url("../../public/fonts/jetbrains-mono-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -493,7 +493,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/karla-400.woff2") format("woff2");
+  src: url("../../public/fonts/karla-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -501,7 +501,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/karla-500.woff2") format("woff2");
+  src: url("../../public/fonts/karla-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -509,7 +509,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/karla-600.woff2") format("woff2");
+  src: url("../../public/fonts/karla-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -517,7 +517,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/karla-700.woff2") format("woff2");
+  src: url("../../public/fonts/karla-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -525,7 +525,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/karla-800.woff2") format("woff2");
+  src: url("../../public/fonts/karla-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -533,7 +533,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/lato-400.woff2") format("woff2");
+  src: url("../../public/fonts/lato-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -541,7 +541,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/lato-700.woff2") format("woff2");
+  src: url("../../public/fonts/lato-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -549,7 +549,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/libre-baskerville-400.woff2") format("woff2");
+  src: url("../../public/fonts/libre-baskerville-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -557,7 +557,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/libre-baskerville-500.woff2") format("woff2");
+  src: url("../../public/fonts/libre-baskerville-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -565,7 +565,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/libre-baskerville-600.woff2") format("woff2");
+  src: url("../../public/fonts/libre-baskerville-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -573,7 +573,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/libre-baskerville-700.woff2") format("woff2");
+  src: url("../../public/fonts/libre-baskerville-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -581,7 +581,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/lora-400.woff2") format("woff2");
+  src: url("../../public/fonts/lora-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -589,7 +589,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/lora-500.woff2") format("woff2");
+  src: url("../../public/fonts/lora-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -597,7 +597,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/lora-600.woff2") format("woff2");
+  src: url("../../public/fonts/lora-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -605,7 +605,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/lora-700.woff2") format("woff2");
+  src: url("../../public/fonts/lora-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -613,7 +613,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/manrope-400.woff2") format("woff2");
+  src: url("../../public/fonts/manrope-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -621,7 +621,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/manrope-500.woff2") format("woff2");
+  src: url("../../public/fonts/manrope-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -629,7 +629,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/manrope-600.woff2") format("woff2");
+  src: url("../../public/fonts/manrope-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -637,7 +637,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/manrope-700.woff2") format("woff2");
+  src: url("../../public/fonts/manrope-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -645,7 +645,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/manrope-800.woff2") format("woff2");
+  src: url("../../public/fonts/manrope-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -653,7 +653,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/merriweather-400.woff2") format("woff2");
+  src: url("../../public/fonts/merriweather-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -661,7 +661,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/merriweather-500.woff2") format("woff2");
+  src: url("../../public/fonts/merriweather-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -669,7 +669,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/merriweather-600.woff2") format("woff2");
+  src: url("../../public/fonts/merriweather-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -677,7 +677,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/merriweather-700.woff2") format("woff2");
+  src: url("../../public/fonts/merriweather-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -685,7 +685,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/merriweather-800.woff2") format("woff2");
+  src: url("../../public/fonts/merriweather-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -693,7 +693,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/montserrat-400.woff2") format("woff2");
+  src: url("../../public/fonts/montserrat-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -701,7 +701,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/montserrat-500.woff2") format("woff2");
+  src: url("../../public/fonts/montserrat-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -709,7 +709,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/montserrat-600.woff2") format("woff2");
+  src: url("../../public/fonts/montserrat-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -717,7 +717,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/montserrat-700.woff2") format("woff2");
+  src: url("../../public/fonts/montserrat-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -725,7 +725,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/montserrat-800.woff2") format("woff2");
+  src: url("../../public/fonts/montserrat-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -733,7 +733,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/nunito-400.woff2") format("woff2");
+  src: url("../../public/fonts/nunito-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -741,7 +741,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/nunito-500.woff2") format("woff2");
+  src: url("../../public/fonts/nunito-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -749,7 +749,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/nunito-600.woff2") format("woff2");
+  src: url("../../public/fonts/nunito-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -757,7 +757,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/nunito-700.woff2") format("woff2");
+  src: url("../../public/fonts/nunito-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -765,7 +765,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/nunito-800.woff2") format("woff2");
+  src: url("../../public/fonts/nunito-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -773,7 +773,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/onest-400.woff2") format("woff2");
+  src: url("../../public/fonts/onest-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -781,7 +781,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/onest-500.woff2") format("woff2");
+  src: url("../../public/fonts/onest-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -789,7 +789,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/onest-600.woff2") format("woff2");
+  src: url("../../public/fonts/onest-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -797,7 +797,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/onest-700.woff2") format("woff2");
+  src: url("../../public/fonts/onest-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -805,7 +805,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/onest-800.woff2") format("woff2");
+  src: url("../../public/fonts/onest-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -813,7 +813,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/outfit-400.woff2") format("woff2");
+  src: url("../../public/fonts/outfit-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -821,7 +821,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/outfit-500.woff2") format("woff2");
+  src: url("../../public/fonts/outfit-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -829,7 +829,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/outfit-600.woff2") format("woff2");
+  src: url("../../public/fonts/outfit-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -837,7 +837,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/outfit-700.woff2") format("woff2");
+  src: url("../../public/fonts/outfit-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -845,7 +845,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/outfit-800.woff2") format("woff2");
+  src: url("../../public/fonts/outfit-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -853,7 +853,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/playfair-display-400.woff2") format("woff2");
+  src: url("../../public/fonts/playfair-display-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -861,7 +861,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/playfair-display-500.woff2") format("woff2");
+  src: url("../../public/fonts/playfair-display-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -869,7 +869,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/playfair-display-600.woff2") format("woff2");
+  src: url("../../public/fonts/playfair-display-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -877,7 +877,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/playfair-display-700.woff2") format("woff2");
+  src: url("../../public/fonts/playfair-display-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -885,7 +885,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/playfair-display-800.woff2") format("woff2");
+  src: url("../../public/fonts/playfair-display-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -893,7 +893,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/plus-jakarta-sans-400.woff2") format("woff2");
+  src: url("../../public/fonts/plus-jakarta-sans-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -901,7 +901,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/plus-jakarta-sans-500.woff2") format("woff2");
+  src: url("../../public/fonts/plus-jakarta-sans-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -909,7 +909,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/plus-jakarta-sans-600.woff2") format("woff2");
+  src: url("../../public/fonts/plus-jakarta-sans-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -917,7 +917,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/plus-jakarta-sans-700.woff2") format("woff2");
+  src: url("../../public/fonts/plus-jakarta-sans-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -925,7 +925,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/plus-jakarta-sans-800.woff2") format("woff2");
+  src: url("../../public/fonts/plus-jakarta-sans-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -933,7 +933,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/poppins-400.woff2") format("woff2");
+  src: url("../../public/fonts/poppins-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -941,7 +941,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/poppins-500.woff2") format("woff2");
+  src: url("../../public/fonts/poppins-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -949,7 +949,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/poppins-600.woff2") format("woff2");
+  src: url("../../public/fonts/poppins-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -957,7 +957,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/poppins-700.woff2") format("woff2");
+  src: url("../../public/fonts/poppins-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -965,7 +965,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/poppins-800.woff2") format("woff2");
+  src: url("../../public/fonts/poppins-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -973,7 +973,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/prata-400.woff2") format("woff2");
+  src: url("../../public/fonts/prata-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -981,7 +981,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/public-sans-400.woff2") format("woff2");
+  src: url("../../public/fonts/public-sans-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -989,7 +989,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/public-sans-500.woff2") format("woff2");
+  src: url("../../public/fonts/public-sans-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -997,7 +997,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/public-sans-600.woff2") format("woff2");
+  src: url("../../public/fonts/public-sans-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -1005,7 +1005,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/public-sans-700.woff2") format("woff2");
+  src: url("../../public/fonts/public-sans-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -1013,7 +1013,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/public-sans-800.woff2") format("woff2");
+  src: url("../../public/fonts/public-sans-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -1021,7 +1021,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/quicksand-400.woff2") format("woff2");
+  src: url("../../public/fonts/quicksand-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -1029,7 +1029,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/quicksand-500.woff2") format("woff2");
+  src: url("../../public/fonts/quicksand-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -1037,7 +1037,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/quicksand-600.woff2") format("woff2");
+  src: url("../../public/fonts/quicksand-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -1045,7 +1045,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/quicksand-700.woff2") format("woff2");
+  src: url("../../public/fonts/quicksand-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -1053,7 +1053,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/raleway-400.woff2") format("woff2");
+  src: url("../../public/fonts/raleway-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -1061,7 +1061,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/raleway-500.woff2") format("woff2");
+  src: url("../../public/fonts/raleway-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -1069,7 +1069,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/raleway-600.woff2") format("woff2");
+  src: url("../../public/fonts/raleway-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -1077,7 +1077,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/raleway-700.woff2") format("woff2");
+  src: url("../../public/fonts/raleway-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -1085,7 +1085,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/raleway-800.woff2") format("woff2");
+  src: url("../../public/fonts/raleway-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -1093,7 +1093,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/rubik-400.woff2") format("woff2");
+  src: url("../../public/fonts/rubik-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -1101,7 +1101,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/rubik-500.woff2") format("woff2");
+  src: url("../../public/fonts/rubik-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -1109,7 +1109,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/rubik-600.woff2") format("woff2");
+  src: url("../../public/fonts/rubik-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -1117,7 +1117,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/rubik-700.woff2") format("woff2");
+  src: url("../../public/fonts/rubik-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -1125,7 +1125,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/rubik-800.woff2") format("woff2");
+  src: url("../../public/fonts/rubik-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -1133,7 +1133,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/sora-400.woff2") format("woff2");
+  src: url("../../public/fonts/sora-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -1141,7 +1141,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/sora-500.woff2") format("woff2");
+  src: url("../../public/fonts/sora-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -1149,7 +1149,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/sora-600.woff2") format("woff2");
+  src: url("../../public/fonts/sora-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -1157,7 +1157,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/sora-700.woff2") format("woff2");
+  src: url("../../public/fonts/sora-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -1165,7 +1165,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/sora-800.woff2") format("woff2");
+  src: url("../../public/fonts/sora-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -1173,7 +1173,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/source-sans-pro-400.woff2") format("woff2");
+  src: url("../../public/fonts/source-sans-pro-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -1181,7 +1181,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/source-sans-pro-600.woff2") format("woff2");
+  src: url("../../public/fonts/source-sans-pro-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -1189,7 +1189,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/source-sans-pro-700.woff2") format("woff2");
+  src: url("../../public/fonts/source-sans-pro-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -1197,7 +1197,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/source-serif-4-400.woff2") format("woff2");
+  src: url("../../public/fonts/source-serif-4-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -1205,7 +1205,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/source-serif-4-500.woff2") format("woff2");
+  src: url("../../public/fonts/source-serif-4-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -1213,7 +1213,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/source-serif-4-600.woff2") format("woff2");
+  src: url("../../public/fonts/source-serif-4-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -1221,7 +1221,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/source-serif-4-700.woff2") format("woff2");
+  src: url("../../public/fonts/source-serif-4-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -1229,7 +1229,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/source-serif-4-800.woff2") format("woff2");
+  src: url("../../public/fonts/source-serif-4-800.woff2") format("woff2");
 }
 
 @font-face {
@@ -1237,7 +1237,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/source-serif-pro-400.woff2") format("woff2");
+  src: url("../../public/fonts/source-serif-pro-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -1245,7 +1245,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/source-serif-pro-600.woff2") format("woff2");
+  src: url("../../public/fonts/source-serif-pro-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -1253,7 +1253,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/source-serif-pro-700.woff2") format("woff2");
+  src: url("../../public/fonts/source-serif-pro-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -1261,7 +1261,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/space-grotesk-400.woff2") format("woff2");
+  src: url("../../public/fonts/space-grotesk-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -1269,7 +1269,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/space-grotesk-500.woff2") format("woff2");
+  src: url("../../public/fonts/space-grotesk-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -1277,7 +1277,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/space-grotesk-600.woff2") format("woff2");
+  src: url("../../public/fonts/space-grotesk-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -1285,7 +1285,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/space-grotesk-700.woff2") format("woff2");
+  src: url("../../public/fonts/space-grotesk-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -1293,7 +1293,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/work-sans-400.woff2") format("woff2");
+  src: url("../../public/fonts/work-sans-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -1301,7 +1301,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/work-sans-500.woff2") format("woff2");
+  src: url("../../public/fonts/work-sans-500.woff2") format("woff2");
 }
 
 @font-face {
@@ -1309,7 +1309,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/work-sans-600.woff2") format("woff2");
+  src: url("../../public/fonts/work-sans-600.woff2") format("woff2");
 }
 
 @font-face {
@@ -1317,7 +1317,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/work-sans-700.woff2") format("woff2");
+  src: url("../../public/fonts/work-sans-700.woff2") format("woff2");
 }
 
 @font-face {
@@ -1325,5 +1325,5 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/work-sans-800.woff2") format("woff2");
+  src: url("../../public/fonts/work-sans-800.woff2") format("woff2");
 }

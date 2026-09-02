@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { Icon, type IconName } from "./icon";
 import { cx } from "./primitives";
 import { useThemeMode } from "./theme-mode";
+import { apiFetch } from "@/lib/client/base-path";
 
 export interface Command {
   id: string;
@@ -141,7 +142,7 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
   // Recent documents are fetched lazily, only while the palette is open.
   useEffect(() => {
     if (!open) return;
-    void fetch("/api/documents")
+    void apiFetch("/api/documents")
       .then((r) => r.json())
       .then((docs: RecentDoc[]) => setRecent(docs.slice(0, 6)))
       .catch(() => setRecent([]));
@@ -201,7 +202,7 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
         group: "Account",
         icon: "logout",
         run: () => {
-          void fetch("/api/auth/logout", { method: "POST" }).then(() => {
+          void apiFetch("/api/auth/logout", { method: "POST" }).then(() => {
             router.replace("/login");
           });
         },

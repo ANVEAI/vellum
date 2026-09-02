@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function NotFound() {
   return (
     <main className="grid min-h-screen place-items-center px-6">
@@ -6,9 +8,9 @@ export default function NotFound() {
         <p className="t-body mt-1.5 text-ink-2">
           That document doesn’t exist, or it was deleted.
         </p>
-        <a href="/dashboard" className="btn btn-primary mt-5">
+        <Link href="/dashboard" className="btn btn-primary mt-5">
           Back to library
-        </a>
+        </Link>
       </div>
     </main>
   );

@@ -19,6 +19,7 @@ import { SlideMetaContext } from "@/components/slides/render/slide-meta";
 import { ThemeScope } from "@/components/slides/theme-scope";
 import { IconButton, cx } from "@/components/ui/primitives";
 import "@/styles/slides.css";
+import { apiFetch } from "@/lib/client/base-path";
 
 const SHORTCUTS: Array<[string, string]> = [
   ["→ / Space / Page Down", "Next slide"],
@@ -69,7 +70,7 @@ export default function PresentPage() {
 
   useEffect(() => {
     void (async () => {
-      const res = await fetch(`/api/documents/${params.id}`).catch(() => null);
+      const res = await apiFetch(`/api/documents/${params.id}`).catch(() => null);
       if (!res || !res.ok) {
         setLoadState("gone");
         return;

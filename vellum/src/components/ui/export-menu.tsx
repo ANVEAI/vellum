@@ -6,6 +6,7 @@
  * JSON error page and destroyed their session state.
  */
 import { useState } from "react";
+import { withBase } from "@/lib/client/base-path";
 import { Icon } from "./icon";
 import { MenuItem, Popover, Spinner } from "./primitives";
 import { useToast } from "./toast";
@@ -52,7 +53,10 @@ export async function downloadExport(
   format: Format,
   title?: string,
 ): Promise<void> {
-  const url = `/api/export/${format.ext}/${id}`;
+  // Prefixed once, here: this URL is both fetched and, on the fallback paths
+  // below, handed straight to the browser's download manager via an <a href>.
+  // Neither of those goes through Next's routing, so basePath must be explicit.
+  const url = withBase(`/api/export/${format.ext}/${id}`);
   let res: Response;
   try {
     res = await fetch(url);

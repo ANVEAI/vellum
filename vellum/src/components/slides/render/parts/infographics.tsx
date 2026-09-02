@@ -38,6 +38,7 @@ import {
   type FlowDirection,
   type PositionedFlowNode,
 } from "@/lib/diagram/flow";
+import { assetUrl } from "@/lib/client/base-path";
 
 /* ---------- local helpers (mirrors of the renderer's tiny utilities) ---------- */
 
@@ -151,9 +152,13 @@ function ItemContent({ nodes }: { nodes: Descendant[] | undefined }) {
 
 /** Masked glyph span (theme accent colors the Phosphor SVG via CSS mask). */
 function maskStyle(url: string): React.CSSProperties {
+  // Icon URLs are persisted into the slides JSON as canonical root-relative
+  // paths (/static/icons/…), exactly like image URLs, so the prefix is applied
+  // here at render time rather than baked into stored data.
+  const resolved = assetUrl(url);
   return {
-    WebkitMaskImage: `url(${url})`,
-    maskImage: `url(${url})`,
+    WebkitMaskImage: `url(${resolved})`,
+    maskImage: `url(${resolved})`,
   };
 }
 

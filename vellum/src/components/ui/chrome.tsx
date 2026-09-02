@@ -8,6 +8,7 @@ import { Icon } from "./icon";
 import { Button, IconButton, MenuItem, Popover, cx } from "./primitives";
 import { useCommandPalette } from "./command-palette";
 import { useThemeMode, type ThemeMode } from "./theme-mode";
+import { apiFetch } from "@/lib/client/base-path";
 
 /** Flat monochrome mark — the chrome carries no gradients. */
 export function Wordmark({ compact = false }: { compact?: boolean }) {
@@ -148,7 +149,7 @@ export function TopNav({ right }: { right?: React.ReactNode }) {
             icon="logout"
             label="Log out"
             onClick={async () => {
-              await fetch("/api/auth/logout", { method: "POST" });
+              await apiFetch("/api/auth/logout", { method: "POST" });
               router.replace("/login");
             }}
           />

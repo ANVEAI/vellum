@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/toast";
 import "@/styles/slides.css";
+import { apiFetch } from "@/lib/client/base-path";
 
 type Step = "form" | "outline" | "generating";
 
@@ -209,7 +210,7 @@ export default function NewDocumentPage() {
   );
 
   useEffect(() => {
-    void fetch("/api/settings")
+    void apiFetch("/api/settings")
       .then((r) => r.json())
       .then((s: { brand?: { colors?: string[] } }) => {
         if ((s.brand?.colors?.length ?? 0) > 0) setBrandAvailable(true);
@@ -243,7 +244,7 @@ export default function NewDocumentPage() {
     const id = documentIdRef.current;
     if (!id || landedRef.current) return;
     documentIdRef.current = null;
-    await fetch(`/api/documents/${id}`, { method: "DELETE" }).catch(() => undefined);
+    await apiFetch(`/api/documents/${id}`, { method: "DELETE" }).catch(() => undefined);
   }, []);
 
   const leave = useCallback(async () => {
@@ -273,7 +274,7 @@ export default function NewDocumentPage() {
     try {
       let documentId = documentIdRef.current;
       if (!documentId) {
-        const createRes = await fetch("/api/documents", {
+        const createRes = await apiFetch("/api/documents", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
@@ -299,7 +300,7 @@ export default function NewDocumentPage() {
 
         // Preview with the theme the document actually got (template pairing
         // or brand kit) instead of falling back to the default.
-        void fetch(`/api/documents/${documentId}`)
+        void apiFetch(`/api/documents/${documentId}`)
           .then((r) => r.json())
           .then((d: { themeName: string; customTheme?: { data: string } | null }) => {
             let custom: unknown = null;
@@ -315,7 +316,7 @@ export default function NewDocumentPage() {
 
       // Imported source grounds the outline instead of web research.
       if (importedRef.current) {
-        await fetch(`/api/documents/${documentId}`, {
+        await apiFetch(`/api/documents/${documentId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
@@ -325,7 +326,7 @@ export default function NewDocumentPage() {
         });
       }
 
-      const res = await fetch("/api/generation/outline", {
+      const res = await apiFetch("/api/generation/outline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
@@ -387,13 +388,13 @@ export default function NewDocumentPage() {
     };
 
     try {
-      await fetch(`/api/documents/${documentId}`, {
+      await apiFetch(`/api/documents/${documentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({ outline: markdownFromCards(title, cards), title }),
       });
-      const res = await fetch("/api/generation/content", {
+      const res = await apiFetch("/api/generation/content", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,

@@ -14,7 +14,10 @@ import path from "node:path";
 // jszip ships with pptxgenjs, so this adds no dependency.
 import JSZip from "jszip";
 
-const BASE = process.env.APP_ORIGIN ?? "http://localhost:3210";
+const ORIGIN = process.env.APP_ORIGIN ?? "http://localhost:3210";
+/** Set when the app runs under a URL prefix; empty otherwise. */
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const BASE = `${ORIGIN}${BASE_PATH}`;
 const PASSWORD = process.env.APP_PASSWORD ?? "EPqTWxQ0zxbt";
 
 const results: Array<{ name: string; ok: boolean; detail?: string }> = [];

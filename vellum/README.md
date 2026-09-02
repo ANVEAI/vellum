@@ -68,6 +68,40 @@ Two caveats:
   for a home or lab network; put it behind a reverse proxy with TLS before
   exposing it anywhere less trusted. Never port-forward :3210 to the internet.
 
+### Running under a URL prefix
+
+Vellum can serve everything under a path instead of the origin root, so another
+site can reverse-proxy it (`https://host/vellum/*` → `http://127.0.0.1:3210/vellum/*`).
+
+```powershell
+# vellum\.env
+NEXT_PUBLIC_BASE_PATH=/vellum
+```
+
+Then **rebuild** — this is a build-time value, baked into the client bundle, so
+a restart alone will not pick it up:
+
+```powershell
+npm run build ; npm run start
+```
+
+Every URL moves under the prefix: pages, `/api/*`, `/_next/*`, fonts, and the
+stored image and icon URLs. Two consequences worth knowing before you flip it:
+
+- **The bare origin stops answering.** `http://host:3210/dashboard` becomes a
+  404; only `http://host:3210/vellum/dashboard` works. Unauthenticated requests
+  redirect to `/vellum/login`.
+- **Nothing in the database changes.** Image and icon URLs stay canonical
+  (`/api/images/file/<name>`, `/static/icons/…`) and are prefixed at render
+  time, so switching the prefix on or off needs no migration.
+
+Rollback is to empty the variable and rebuild. `APP_ORIGIN` stays the bare
+origin — the headless exporter appends the prefix itself.
+
+The E2E scripts read the same variable, so they run against a prefixed instance
+unchanged. On Git Bash, export it as `MSYS_NO_PATHCONV=1 NEXT_PUBLIC_BASE_PATH=/vellum`
+or MSYS rewrites the leading `/` into a Windows path.
+
 First-time setup pieces (already done on this machine):
 
 - `scripts/setup-comfyui.ps1` — clones ComfyUI, venv, torch cu128, downloads FLUX.1-schnell fp8 (~17 GB)

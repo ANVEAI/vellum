@@ -5,6 +5,7 @@
  * Every per-slide action that used to live in a hover-only toolbar has a
  * permanent home here.
  */
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 import type { ArchetypeId } from "@/lib/design/archetypes";
@@ -400,9 +401,9 @@ function DesignScope({
         </div>
         <p className="t-caption mt-3 text-ink-3">
           Uses the palette saved in{" "}
-          <a href="/settings" className="underline underline-offset-2">
+          <Link href="/settings" className="underline underline-offset-2">
             Settings
-          </a>
+          </Link>
           . Add a logo, a brand deck or a company URL there first.
         </p>
       </Section>

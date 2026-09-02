@@ -6,6 +6,7 @@
  */
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { createSessionCookieValue, SESSION_COOKIE } from "@/lib/auth/session";
+import { BASE_PATH } from "@/lib/client/base-path";
 
 const APP_ORIGIN = process.env.APP_ORIGIN ?? "http://localhost:3210";
 
@@ -54,7 +55,10 @@ export async function openPrintPage(
   origin: string,
   documentId: string,
 ): Promise<void> {
-  await page.goto(`${origin}/print/${documentId}`, {
+  // APP_ORIGIN stays the bare origin; the prefix is appended here so the
+  // headless browser hits the same URL a real one would. The session cookie
+  // minted for this context keeps path "/", so it is sent either way.
+  await page.goto(`${origin}${BASE_PATH}/print/${documentId}`, {
     waitUntil: "networkidle",
     timeout: 60_000,
   });

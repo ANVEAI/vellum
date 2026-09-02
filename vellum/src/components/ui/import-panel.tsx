@@ -8,6 +8,7 @@
 import { useRef, useState } from "react";
 import { Icon } from "./icon";
 import { Button, SegmentedControl, Spinner, cx } from "./primitives";
+import { apiFetch } from "@/lib/client/base-path";
 
 type ImportMode = "verbatim" | "summarize";
 type Source = "file" | "paste";
@@ -58,7 +59,7 @@ export function ImportPanel({
     setResult(null);
     setSourceName(name);
     try {
-      const res = await fetch("/api/import", {
+      const res = await apiFetch("/api/import", {
         method: "POST",
         ...(typeof body === "string"
           ? { headers: { "Content-Type": "application/json" }, body }

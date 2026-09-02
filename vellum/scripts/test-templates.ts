@@ -8,7 +8,10 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs
 import path from "node:path";
 import { templates } from "../src/lib/templates/library";
 
-const BASE = process.env.APP_ORIGIN ?? "http://localhost:3210";
+const ORIGIN = process.env.APP_ORIGIN ?? "http://localhost:3210";
+/** Set when the app runs under a URL prefix; empty otherwise. */
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const BASE = `${ORIGIN}${BASE_PATH}`;
 const PASSWORD = process.env.APP_PASSWORD ?? "EPqTWxQ0zxbt";
 const PROMPTS: Record<string, string> = {
   "pitch-deck": "An AI-powered cold-chain logistics startup raising a $3M seed round",

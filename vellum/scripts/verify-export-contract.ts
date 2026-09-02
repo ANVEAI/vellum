@@ -9,7 +9,10 @@
  */
 import { chromium } from "playwright";
 
-const BASE = process.env.APP_ORIGIN ?? "http://localhost:3210";
+const ORIGIN = process.env.APP_ORIGIN ?? "http://localhost:3210";
+/** Set when the app runs under a URL prefix; empty otherwise. */
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const BASE = `${ORIGIN}${BASE_PATH}`;
 const PASSWORD = process.env.APP_PASSWORD ?? "EPqTWxQ0zxbt";
 
 const SUB_LOCATORS: Record<string, string[]> = {
@@ -49,7 +52,7 @@ async function main() {
   const context = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const [name, value] = cookie.split("=");
   await context.addCookies([
-    { name, value, url: BASE },
+    { name, value, url: ORIGIN },
   ]);
   const page = await context.newPage();
   await page.goto(`${BASE}/print/${id}`, { waitUntil: "networkidle", timeout: 60_000 });

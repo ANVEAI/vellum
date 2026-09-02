@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useId, useState } from "react";
 import { Wordmark } from "@/components/ui/chrome";
 import { Spinner } from "@/components/ui/primitives";
+import { apiFetch } from "@/lib/client/base-path";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await apiFetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),

@@ -14,6 +14,7 @@ import { footnoteLine, slideRefs } from "@/lib/slides/citations";
 import { objectPosition, readPlacement } from "@/lib/slides/image-fit";
 import { useSlideMeta } from "./slide-meta";
 import { SlideContent } from "./renderer";
+import { assetUrl } from "@/lib/client/base-path";
 
 /** Citation band: "¹ Reuters · ² Gartner" under the content, when cited. */
 function Footnotes({ slide }: { slide: PlateSlide }) {
@@ -39,7 +40,7 @@ function RootImage({ slide }: { slide: PlateSlide }) {
       // eslint-disable-next-line @next/next/no-img-element
       <img
         className="v-rootimg"
-        src={root.url}
+        src={assetUrl(root.url)}
         alt={root.query ?? ""}
         // The same fit/focus the PPTX exporter reads, so the crop the user
         // sets in the editor is the crop that ships.
@@ -107,7 +108,7 @@ export function SlideSurface({
       {theme.brandLogo &&
         (slide.archetype === "hero" || slide.archetype === "closing") && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="v-brand-logo" src={theme.brandLogo} alt="" />
+          <img className="v-brand-logo" src={assetUrl(theme.brandLogo)} alt="" />
         )}
     </div>
   );

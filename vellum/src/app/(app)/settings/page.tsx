@@ -18,6 +18,7 @@ import {
   cx,
 } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/toast";
+import { apiFetch, assetUrl } from "@/lib/client/base-path";
 
 interface Settings {
   llm: { ollamaUrl: string; model: string; think: boolean };
@@ -141,7 +142,7 @@ export default function SettingsPage() {
   const load = useCallback(async () => {
     setLoadError(null);
     try {
-      const res = await fetch("/api/settings");
+      const res = await apiFetch("/api/settings");
       if (!res.ok) throw new Error(`Settings failed to load (${res.status})`);
       setSettings((await res.json()) as Settings);
     } catch (err) {
@@ -151,7 +152,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     void load();
-    void fetch("/api/health")
+    void apiFetch("/api/health")
       .then((r) => r.json())
       .then(setHealth)
       .catch(() =>
@@ -171,7 +172,7 @@ export default function SettingsPage() {
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(async () => {
         try {
-          const res = await fetch("/api/settings", {
+          const res = await apiFetch("/api/settings", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(next),
@@ -198,9 +199,9 @@ export default function SettingsPage() {
       if (input.file) {
         const form = new FormData();
         form.append("file", input.file);
-        res = await fetch("/api/brand", { method: "POST", body: form });
+        res = await apiFetch("/api/brand", { method: "POST", body: form });
       } else {
-        res = await fetch("/api/brand", {
+        res = await apiFetch("/api/brand", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: input.url }),
@@ -245,7 +246,7 @@ export default function SettingsPage() {
     if (model) setTestingModel(model);
     else setTesting(true);
     try {
-      const res = await fetch("/api/images/generate", {
+      const res = await apiFetch("/api/images/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -638,7 +639,7 @@ export default function SettingsPage() {
                   {s.brand.logoUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={s.brand.logoUrl}
+                      src={assetUrl(s.brand.logoUrl)}
                       alt={`${s.brand.name || "Brand"} logo`}
                       className="h-9 max-w-[130px] rounded-[4px] bg-white object-contain p-1"
                       style={{ boxShadow: "inset 0 0 0 1px var(--hairline)" }}

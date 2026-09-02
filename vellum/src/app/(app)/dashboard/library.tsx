@@ -20,6 +20,7 @@ import {
 import { downloadExport, formatsFor } from "@/components/ui/export-menu";
 import { useToast } from "@/components/ui/toast";
 import "@/styles/slides.css";
+import { apiFetch } from "@/lib/client/base-path";
 
 export interface LibraryCard {
   id: string;
@@ -92,7 +93,7 @@ export function Library({ cards }: { cards: LibraryCard[] }) {
   const duplicate = async (card: LibraryCard) => {
     setBusy(card.id);
     try {
-      const res = await fetch(`/api/documents/${card.id}/duplicate`, { method: "POST" });
+      const res = await apiFetch(`/api/documents/${card.id}/duplicate`, { method: "POST" });
       if (!res.ok) throw new Error(`Duplicate failed (${res.status})`);
       toast({ title: "Duplicated", description: card.title, tone: "success" });
       router.refresh();
@@ -113,7 +114,7 @@ export function Library({ cards }: { cards: LibraryCard[] }) {
     setRenaming(null);
     if (!card || !title || title === card.title) return;
     try {
-      const res = await fetch(`/api/documents/${card.id}`, {
+      const res = await apiFetch(`/api/documents/${card.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title }),
@@ -163,7 +164,7 @@ export function Library({ cards }: { cards: LibraryCard[] }) {
     // Hide it immediately; put it back if the server disagrees.
     setRemoved((current) => new Set(current).add(card.id));
     try {
-      const res = await fetch(`/api/documents/${card.id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/documents/${card.id}`, { method: "DELETE" });
       // 404 means it is already gone — that is the desired end state.
       if (!res.ok && res.status !== 404) {
         throw new Error(`Delete failed (${res.status})`);

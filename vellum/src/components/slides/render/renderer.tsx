@@ -28,6 +28,7 @@ import {
   mapAntvItemsToNode,
   parseAntvItems,
 } from "./parts/infographic-math";
+import { assetUrl } from "@/lib/client/base-path";
 
 function isText(node: Descendant): node is TText {
   return typeof (node as TText).text === "string" && !(node as TElement).type;
@@ -95,8 +96,9 @@ function ItemIcon({ node, index }: { node: TElement; index?: number }) {
         <span
           className="v-icon-glyph"
           style={{
-            WebkitMaskImage: `url(${url})`,
-            maskImage: `url(${url})`,
+            // Stored canonical (/static/icons/…); prefixed at render, as images are.
+            WebkitMaskImage: `url(${assetUrl(url)})`,
+            maskImage: `url(${assetUrl(url)})`,
           }}
         />
       </span>
@@ -684,7 +686,7 @@ function Img({ node }: { node: TElement }) {
   if (url) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img className="v-img" src={url} alt={query} />
+      <img className="v-img" src={assetUrl(url)} alt={query} />
     );
   }
   return (

@@ -15,7 +15,10 @@ import { readFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
 
-const BASE = process.env.APP_ORIGIN ?? "http://localhost:3210";
+const ORIGIN = process.env.APP_ORIGIN ?? "http://localhost:3210";
+/** Set when the app runs under a URL prefix; empty otherwise. */
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const BASE = `${ORIGIN}${BASE_PATH}`;
 const PASSWORD = process.env.APP_PASSWORD ?? "EPqTWxQ0zxbt";
 const OUT = path.resolve("data/exports/ui");
 
@@ -95,7 +98,7 @@ async function main() {
     viewport: { width: 1440, height: 900 },
     acceptDownloads: true,
   });
-  await context.addCookies([{ name, value, url: BASE }]);
+  await context.addCookies([{ name, value, url: ORIGIN }]);
   const page = await context.newPage();
   try {
     await page.goto(`${BASE}/editor/${id}`, { waitUntil: "domcontentloaded" });
