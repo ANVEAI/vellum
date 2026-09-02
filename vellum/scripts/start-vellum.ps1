@@ -1,10 +1,15 @@
-# Start vellum in production mode on :3210, reachable from the LAN.
+# Start vellum in production mode on :3210, LOOPBACK ONLY.
 # Always rebuilds: dev and prod share the .next directory, so a stale dev
 # build must never be served (and vice versa - don't run `npm run build`
 # while `npm run dev` is running).
 #
-# Next binds :: (dual-stack) by default, which already covers every
-# interface. Do NOT pass -H 0.0.0.0; that would drop IPv6.
+# Vellum has one shared password and no per-user ownership, so it is not safe
+# on the LAN. It binds 127.0.0.1 (see the -H flag in package.json's start
+# script) and users reach its editor only through ANVE's authenticated proxy
+# at https://<host>:8443/vellum, which enforces per-user deck ownership.
+# Because that is IPv4-only, APP_ORIGIN in .env is pinned to the 127.0.0.1
+# literal: "localhost" can resolve to ::1 first, and the headless-Chromium
+# exporter would then fail every PDF/PPTX export.
 #
 # NOTE: keep this file pure ASCII (Windows PowerShell 5.1 reads .ps1 as ANSI).
 # Derived from this script's own location, so the checkout works under any
