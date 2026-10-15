@@ -49,6 +49,13 @@
   /* Width of the image rail. Archetypes override this one value rather than
      re-stating flex-basis and width in three places. */
   --v-split: 40%;
+  /* Narrowest a row item may get before it wraps to the next line. Below
+     about this width a short heading plus one sentence breaks to a word or
+     two per line and then runs past the bottom of the slide. Row components
+     used to divide the slide into N equal columns with no lower bound, so
+     eight items got 150px each; .v-boxes and .v-stats already avoided that
+     with their own minmax() and keep their tuned values. */
+  --v-item-min: 200px;
 
   position: relative;
   display: flex;
@@ -234,7 +241,7 @@ img.v-img {
 .v-icons { display: grid; gap: var(--v-gap-3); }
 .v-icons-side { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .v-icons-side .v-icons-item { display: flex; gap: var(--v-gap-3); align-items: flex-start; }
-.v-icons-top { grid-auto-flow: column; grid-auto-columns: 1fr; }
+.v-icons-top { grid-template-columns: repeat(auto-fit, minmax(var(--v-item-min), 1fr)); }
 .v-icons-top .v-icons-item { display: flex; flex-direction: column; gap: var(--v-gap-1); align-items: flex-start; }
 
 /* ---- boxes ---- */
@@ -243,8 +250,8 @@ img.v-img {
 .v-box-head { display: flex; }
 
 /* ---- arrows (horizontal flow) ---- */
-.v-arrows { display: flex; align-items: stretch; gap: var(--v-gap-1); }
-.v-arrow-item { display: flex; align-items: center; gap: var(--v-gap-1); flex: 1; min-width: 0; }
+.v-arrows { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--v-gap-1); }
+.v-arrow-item { display: flex; align-items: center; gap: var(--v-gap-1); flex: 1 1 var(--v-item-min); min-width: 0; }
 .v-arrow-shape { flex: 1; }
 .v-arrow-sep { color: var(--presentation-accent, #7c6cff); font-size: 26px; font-weight: 700; }
 
@@ -254,8 +261,8 @@ img.v-img {
 .v-seq-body { flex: 1; }
 
 /* ---- steps ---- */
-.v-steps { display: flex; gap: var(--v-gap-2); }
-.v-step { flex: 1; display: flex; flex-direction: column; gap: var(--v-gap-1); min-width: 0; }
+.v-steps { display: flex; flex-wrap: wrap; gap: var(--v-gap-2); }
+.v-step { flex: 1 1 var(--v-item-min); display: flex; flex-direction: column; gap: var(--v-gap-1); min-width: 0; }
 .v-step-head { display: flex; align-items: center; gap: var(--v-gap-1); }
 .v-step-line { flex: 1; height: 2px; background: color-mix(in srgb, var(--presentation-accent, #7c6cff) 45%, transparent); }
 .v-step-body { display: flex; flex-direction: column; gap: var(--v-gap-1); }
@@ -329,7 +336,18 @@ img.v-img {
 }
 
 /* ---- columns ---- */
-.v-columns { display: grid; grid-template-columns: repeat(var(--v-cols, 2), 1fr); gap: var(--v-gap-4); }
+/* auto-fit, not a fixed track count: the same column group renders in a
+   full-width content box on one slide and in the ~60% box left over beside
+   an image rail on the next. A fixed count cannot know which, so five lanes
+   beside a rail came out at 250px each. Falling back on the readable
+   minimum makes the lane count a function of the room actually available,
+   the way .v-boxes and .v-stats already work. --v-cols survives as the
+   family's upper bound on how many may share a row. */
+.v-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--v-item-min), 1fr));
+  gap: var(--v-gap-4);
+}
 .v-column { display: flex; flex-direction: column; gap: var(--v-gap-1); min-width: 0; }
 
 /* ---- media / blocks ---- */

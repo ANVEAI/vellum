@@ -200,6 +200,12 @@
   height: 2px;
 }
 .v-timeline--h .v-timeline-item { flex: 1 1 0; min-width: 0; }
+/* Too many events for one row: wrap them rather than slicing the row into
+   unreadable columns. The line is hidden by the renderer in this mode, so
+   the dots lose their rail and come off with it. */
+.v-timeline.v-timeline--wrap { flex-wrap: wrap; padding-top: 0; }
+.v-timeline--wrap .v-timeline-item { flex: 1 1 var(--v-item-min); }
+.v-timeline--wrap .v-timeline-dot { display: none; }
 .v-timeline--h .v-timeline-dot { left: 10px; top: -28px; }
 .v-timeline.v-timeline--h.v-timeline--numbered { padding-top: 46px; padding-left: 0; }
 .v-timeline--h.v-timeline--numbered .v-timeline-line { top: 15px; left: 8px; }

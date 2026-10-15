@@ -22,6 +22,9 @@ import { kickImageQueue } from "@/lib/generation/pipeline/asset-queue";
 import { formatTemplateGuidance, getTemplate } from "@/lib/templates/library";
 import { planDeck, replanSlide } from "@/lib/design/planner";
 import { lintSlides } from "@/lib/qa/lint";
+import { lintOptionsFor } from "@/lib/qa/run";
+import { resolveThemeOrDefault } from "@/lib/themes/resolve";
+import { resolveDesignTokens } from "@/lib/design/tokens";
 import { buildSourcesSlide, slideRefs } from "@/lib/slides/citations";
 import type { DeckSource } from "@/lib/generation/research/searxng";
 
@@ -70,6 +73,15 @@ export async function POST(request: NextRequest) {
     ? (JSON.parse(document.genParams) as GenParams)
     : {};
   const { title, cards } = parseOutlineMarkdown(document.outline);
+  // One word budget for the whole run: the theme family's own token. The
+  // prompt, the generation gate and the post-run QA all have to measure
+  // against the same number — they used to disagree by a factor of three
+  // (prompt 60/90, gate 90, QA the family token, which is 28 on `bold`).
+  const budgetTokens = resolveDesignTokens(
+    resolveThemeOrDefault(document.themeName, null),
+    document.themeName ?? undefined,
+  );
+  const wordBudget = budgetTokens.content.maxWordsPerSlide;
   const mode = document.kind === "doc" ? "document" : "deck";
   const template = document.templateId
     ? getTemplate(document.templateId)
@@ -120,6 +132,7 @@ export async function POST(request: NextRequest) {
           templateGuidance: template
             ? formatTemplateGuidance(template)
             : undefined,
+          wordBudget,
         };
         const { system, user } =
           mode === "document"
@@ -277,11 +290,13 @@ export async function POST(request: NextRequest) {
           "no-quantification",
           "overflow-risk",
           "too-many-columns",
+          "repeated-heading",
         ]);
         const hardIssues = lintSlides(
           slides,
           document.outline,
           mode === "document" ? "doc" : "deck",
+          lintOptionsFor(document.themeName, document.sources),
         ).filter((issue) => issue.slideId && HARD_CODES.has(issue.code));
         // Majors first: the budget is three regenerations, and spending one
         // on a minor advisory while a major fault ships is the wrong trade.
@@ -295,7 +310,11 @@ export async function POST(request: NextRequest) {
               )
               .map((i) => [i.slideId as string, i] as const),
           ).entries(),
-        ].slice(0, 3);
+          // Each target costs one more LLM round trip, so this is a budget,
+          // not a guarantee. Three covered the original three hard codes;
+          // overflow, column fan-out and repeated labels are all per-slide
+          // faults that can show up together on a dense deck.
+        ].slice(0, 5);
         if (gateTargets.length > 0) {
           sse.event("status", {
             status: `Refining ${gateTargets.length} weak slide${gateTargets.length > 1 ? "s" : ""}`,

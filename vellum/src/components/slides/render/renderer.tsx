@@ -288,18 +288,31 @@ function Steps({ node }: { node: TElement }) {
 }
 
 function Timeline({ node }: { node: TElement }) {
+  const tokens = useDesignTokens();
   const items = groupItems(node);
   // Parser-normalized attributes (booleans are real booleans, but tolerate
   // string forms for hand-built nodes).
+  //
   const horizontal = node.orientation === "horizontal";
+  // A horizontal timeline divides the slide into one equal column per item
+  // with no wrapping, so eight events across 1280px leave 150px each and
+  // every label breaks to one word per line, clipped inside its own card.
+  // Past the family's row budget the row wraps instead. The connecting line
+  // is a single absolutely positioned span, which cannot follow content onto
+  // a second row, so it is dropped when that happens — two tidy rows without
+  // a line beat one row of unreadable slivers. Stacking them vertically was
+  // tried and is worse: eight stacked events are taller than the slide.
+  const wrapped = horizontal && items.length > tokens.structure.maxItemsPerRow;
   const double = !horizontal && node.sidedness === "double";
   const numbered = node.numbered === true || node.numbered === "true";
-  const hideLine = node.showLine === false || node.showLine === "false";
+  const hideLine =
+    node.showLine === false || node.showLine === "false" || wrapped;
   return (
     <div
       className={cx(
         "v-timeline",
         horizontal && "v-timeline--h",
+        wrapped && "v-timeline--wrap",
         double && "v-timeline--double",
         numbered && "v-timeline--numbered",
         hideLine && "v-timeline--noline",

@@ -27,6 +27,37 @@ export interface DeckPromptInput {
   currentDate: string;
   imageStyle?: "generated" | "stock";
   templateGuidance?: string; // formatted template blueprint guidance
+  /**
+   * Words a standard content slide may carry, from the theme family's
+   * `maxWordsPerSlide` token. Omitted falls back to the corporate figure.
+   *
+   * This has to be the same number the design system and the lint use. It
+   * was a hardcoded 60 (ceiling 90) for every theme, while the families
+   * range from 28 to 70 — so on a dense family the model was invited to
+   * write more than twice what the slide could hold, and no amount of
+   * render-time fitting could recover the difference.
+   */
+  wordBudget?: number;
+}
+
+/**
+ * Density scales the family's budget rather than replacing it. The wording
+ * alone ("use short labels") carried no number, so a request for minimal
+ * density on a 28-word family still produced 70-word slides.
+ */
+const DENSITY_FACTOR: Record<TextDensity, number> = {
+  minimal: 0.6,
+  concise: 1,
+  detailed: 1.25,
+  extensive: 1.5,
+};
+
+/** The family budget adjusted for density, floored so it stays writable. */
+export function slideWordBudget(
+  base: number | undefined,
+  density: TextDensity,
+): number {
+  return Math.max(18, Math.round((base ?? 60) * DENSITY_FACTOR[density]));
 }
 
 const GENERATED_IMAGE_STYLE = `Image instruction:
@@ -34,15 +65,28 @@ const GENERATED_IMAGE_STYLE = `Image instruction:
 - Keep slide text/content in the requested presentation language.
 - Write image prompts in English unless the user explicitly requested another language for generated visuals.
 
-Create prompts that:
-- Describe the visual scene, composition, and mood
-- Include style references (photorealistic, illustration, cinematic, etc.)
-- Mention lighting, colors, and atmosphere
-- Compose with clear negative space (sky, wall, calm gradient area) on one side so slide text can sit beside or over the image
-- Are relevant to the slide topic
-- Do NOT include on-image text unless explicitly required by the slide content
-- Do NOT use placeholders, brackets, or vague references
-- Do NOT mention AI tools, models, or generation technology
+The image is a PHOTOGRAPH OR ILLUSTRATION OF A SUBJECT that sits behind or beside
+the slide's text. It is never a picture of the slide itself. The renderer draws
+every card, label, number, timeline, chart and icon natively — an image that
+tries to draw them competes with the real ones and loses.
+
+Describe only a subject and its setting:
+- The thing itself: people, places, objects, materials, landscapes, machinery
+- Style (photorealistic, illustration, cinematic), lighting, colour, atmosphere
+- Clear negative space (sky, wall, calm gradient) on one side for slide text
+- Relevant to the slide topic
+
+Never ask the image for any of these, however the user's brief is worded:
+- Written language of any kind — words, labels, captions, titles, numbers,
+  quoted strings, signage, or a ring/box/arrow "labeled" something. Image models
+  render these as convincing gibberish, which is worse than leaving them out.
+- Slide furniture: cards, panels, pills, bullet lists, tables, charts, graphs,
+  timelines, diagrams, flow arrows, org charts, UI, dashboards, mockups, icons
+- Hex colour codes or pixel measurements
+- Placeholders, brackets, vague references, or AI tools and model names
+
+If the slide's brief describes a diagram or a labelled layout, build it from the
+components above and give the image a plain subject instead — or omit the image.
 
 \`\`\`xml
 <IMG query="cinematic wide-angle view of a futuristic smart city powered by renewable energy, gleaming solar arrays and vertical gardens, morning haze, warm sunlight cutting through glass towers, clean aerial composition with leading lines, crisp details, high contrast, optimistic mood" />
@@ -74,15 +118,18 @@ const WRITING_RULES = `WRITING RULES — these override style preferences:
 11. So-what test: if a reader could only answer "so what?" by reading the body, rewrite the heading.
 12. NOTES carry the argument and caveats in spoken voice; the slide carries the claim and evidence. Never duplicate sentences between them.`;
 
-const DECK_RHYTHM = `Design the deck's RHYTHM like a professional designer — vary composition, don't repeat one pattern:
-- Slide 1 is the hero: role="hero", a short powerful title, ideally layout="background" with a strong full-bleed image, under 30 words total.
-- When the deck has 3+ distinct parts, open each part with a section divider: role="divider", layout="background" or no image, just a heading (and one short line), under 20 words.
-- Give the single most important number its own moment: role="statement" with one STATS item or one bold claim, under 20 words.
+function deckRhythm(budget: number): string {
+  const breath = Math.max(12, Math.round(budget * 0.55));
+  return `Design the deck's RHYTHM like a professional designer — vary composition, don't repeat one pattern:
+- Slide 1 is the hero: role="hero", a short powerful title, ideally layout="background" with a strong full-bleed image, under ${breath} words total.
+- When the deck has 3+ distinct parts, open each part with a section divider: role="divider", layout="background" or no image, just a heading (and one short line), under ${breath} words.
+- Give the single most important number its own moment: role="statement" with one STATS item or one bold claim, under ${breath} words.
 - Use role="quote" for a slide that is only a QUOTE. Use role="kpi" when a slide is 3-5 headline STATS.
 - End with role="closing": the call to action or takeaway, mirroring the hero's brevity.
-- Word budgets: hero/divider/statement/closing ≤ 30 words; standard content slides ≤ 60; never exceed 90.
+- WORD BUDGET, measured over every word on the slide including the heading: hero/divider/statement/closing at most ${breath}; standard content slides at most ${budget}. This is a hard limit set by the theme's type size, not a style preference — a slide that exceeds it is physically cut off at the bottom edge. If a section needs more, say less: cut qualifiers, drop the third example, move detail into <NOTES>. Never split one outline section across two slides.
 - Write ACTION TITLES: each content slide's heading is a full-sentence claim stating the takeaway (e.g. "Churn fell 34% after onboarding redesign"), not a topic label (not "Churn").
 - Alternate image sides across consecutive image slides (layout="left" then "right"). After two dense data slides, give the audience a breath: an image-led or statement slide.`;
+}
 
 const FORMAT_GUIDANCE = `Use the available formats intentionally according to each slide's content and purpose:
 - Pick list-style components for grouped points.
@@ -130,13 +177,14 @@ export function buildDeckPrompt(input: DeckPromptInput): {
 } {
   const totalSlides = input.outline.length;
   const density = input.textDensity ?? "concise";
+  const budget = slideWordBudget(input.wordBudget, density);
   const imageStyle =
     input.imageStyle === "stock" ? STOCK_IMAGE_STYLE : GENERATED_IMAGE_STYLE;
 
   const styleRules = [
     input.tone ? `Match the requested tone: ${input.tone}.` : "",
     input.audience ? `Write for this audience: ${input.audience}.` : "",
-    densityGuidance(density),
+    `${densityGuidance(density)} Keep every slide at or under ${budget} words.`,
   ]
     .filter(Boolean)
     .map((rule) => `- ${rule}`)
@@ -170,7 +218,7 @@ ${WRITING_RULES}
 
 # DECK RHYTHM
 
-${DECK_RHYTHM}
+${deckRhythm(budget)}
 
 # FORMAT GUIDANCE
 

@@ -346,6 +346,38 @@ export function lintSlides(
       });
     }
 
+    // The same label printed more than once on one slide.
+    //
+    // A deck generated from a design brief that described both labelled
+    // diagram rings and a definition list came back with "Machine Learning",
+    // "Deep Learning" and "Gen AI" each rendered three times on one slide:
+    // once as a column heading, once as a ring label, once opening its
+    // paragraph. Nothing flagged it, because every existing duplicate check
+    // compares ACROSS slides.
+    const headingCounts = new Map<string, number>();
+    walkNodes(slide.content as Descendant[], (node) => {
+      if (!/^h[1-6]$/.test(String(node.type))) return;
+      const text = textOf(node.children as Descendant[])
+        .trim()
+        .toLowerCase();
+      // Single words repeat legitimately (table headers, yes/no); a repeated
+      // multi-word label is the model saying the same thing twice.
+      if (text.split(/\s+/).length < 2) return;
+      headingCounts.set(text, (headingCounts.get(text) ?? 0) + 1);
+    });
+    const repeated = [...headingCounts.entries()].filter(([, n]) => n > 1);
+    if (kind === "deck" && repeated.length > 0) {
+      const [worstText, worstCount] = repeated.sort((a, b) => b[1] - a[1])[0];
+      issues.push({
+        slideId: slide.id,
+        severity: "major",
+        code: "repeated-heading",
+        issue: `${label}: "${worstText.slice(0, 40)}" appears ${worstCount} times on one slide${repeated.length > 1 ? ` (and ${repeated.length - 1} other repeat${repeated.length > 2 ? "s" : ""})` : ""}.`,
+        suggestion:
+          "Say each label once. Keep the definition or the diagram caption, not both.",
+      });
+    }
+
     // Redundancy: the first item restating the heading (Mayer).
     if (
       kind === "deck" &&

@@ -171,4 +171,51 @@ describe("qa lint", () => {
     expect(issues.some((i) => i.code === "too-many-columns")).toBe(false);
     expect(issues.some((i) => i.code === "empty-column")).toBe(false);
   });
+
+  it("flags the same label repeated on one slide", () => {
+    const s = slide("a", [
+      { type: "h1", children: [t("What exactly is AI?")] },
+      {
+        type: "column_group",
+        children: [
+          { type: "column", children: [{ type: "h4", children: [t("Machine Learning")] }] },
+          { type: "column", children: [{ type: "h4", children: [t("Machine Learning")] }] },
+        ],
+      },
+    ]);
+    const issues = lintSlides([s], null, "deck");
+    const hit = issues.find((i) => i.code === "repeated-heading");
+    expect(hit?.severity).toBe("major");
+    expect(hit?.issue).toContain("2 times");
+  });
+
+  it("does not flag a single-word heading repeated", () => {
+    const s = slide("a", [
+      { type: "h1", children: [t("Comparison of the two options")] },
+      {
+        type: "column_group",
+        children: [
+          { type: "column", children: [{ type: "h4", children: [t("Before")] }] },
+          { type: "column", children: [{ type: "h4", children: [t("Before")] }] },
+        ],
+      },
+    ]);
+    const issues = lintSlides([s], null, "deck");
+    expect(issues.some((i) => i.code === "repeated-heading")).toBe(false);
+  });
+
+  it("does not flag distinct headings", () => {
+    const s = slide("a", [
+      { type: "h1", children: [t("Two routes to the same outcome")] },
+      {
+        type: "column_group",
+        children: [
+          { type: "column", children: [{ type: "h4", children: [t("Machine Learning")] }] },
+          { type: "column", children: [{ type: "h4", children: [t("Deep Learning")] }] },
+        ],
+      },
+    ]);
+    const issues = lintSlides([s], null, "deck");
+    expect(issues.some((i) => i.code === "repeated-heading")).toBe(false);
+  });
 });
