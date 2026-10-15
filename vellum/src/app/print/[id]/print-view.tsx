@@ -6,7 +6,6 @@ import type { Descendant, TElement } from "@/lib/slides/plate-shim";
 import { Node } from "@/components/slides/render/renderer";
 import { SLIDE_W, SLIDE_H } from "@/components/slides/render/slide-frame";
 import {
-  MIN_FIT,
   fitCacheKey,
   useAutoFit,
 } from "@/components/slides/render/use-auto-fit";
@@ -121,7 +120,7 @@ function PrintSlide({ slide, index }: { slide: PlateSlide; index: number }) {
   // Identical autofit path to the editor, so PDF and PPTX shrink exactly the
   // same slides by exactly the same amount.
   const contentRef = React.useRef<HTMLDivElement>(null);
-  const fit = useAutoFit(
+  const { fit, overflowing, settled } = useAutoFit(
     contentRef,
     fitCacheKey(slide.id, JSON.stringify(slide.content).length),
   );
@@ -131,6 +130,9 @@ function PrintSlide({ slide, index }: { slide: PlateSlide; index: number }) {
       data-slide-idx={index}
       data-archetype={slide.archetype || undefined}
       data-fit={fit === 1 ? undefined : String(fit)}
+      // Published so the exporter can wait for the autofit search to finish
+      // rather than sleeping for the worst case.
+      data-fit-settled={settled ? "" : undefined}
       data-num={String(index + 1).padStart(2, "0")}
       style={{
         ["--v-fit" as string]: String(fit),
@@ -160,7 +162,7 @@ function PrintSlide({ slide, index }: { slide: PlateSlide; index: number }) {
       <PrintFootnotes slide={slide} />
       <div
         ref={contentRef}
-        className={`v-content${fit <= MIN_FIT ? " v-content--overflow" : ""}`}
+        className={`v-content${overflowing ? " v-content--overflow" : ""}`}
         data-slide-content="true"
       >
         {slide.content.map((node, blockIdx) =>

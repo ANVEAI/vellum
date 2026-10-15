@@ -6,7 +6,7 @@
  * surface, present mode, and the print route (print uses scale=1).
  */
 import React, { useEffect, useRef, useState } from "react";
-import { MIN_FIT, fitCacheKey, useAutoFit } from "./use-auto-fit";
+import { fitCacheKey, useAutoFit } from "./use-auto-fit";
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 import { useDesignTokens, useSlideTheme } from "@/components/slides/theme-scope";
 import { surfaceForSlide } from "@/lib/design/planner";
@@ -68,7 +68,7 @@ export function SlideSurface({
   const tokens = useDesignTokens();
   const rhythmSurface = surfaceForSlide(tokens.structure, slide, index);
   const contentRef = useRef<HTMLDivElement>(null);
-  const fit = useAutoFit(
+  const { fit, overflowing } = useAutoFit(
     contentRef,
     fitCacheKey(slide.id, JSON.stringify(slide.content).length),
   );
@@ -103,7 +103,10 @@ export function SlideSurface({
           <RootImage slide={slide} />
         </div>
       )}
-      <SlideContent nodes={slide.content} contentRef={contentRef} atFloor={fit <= MIN_FIT} />
+      {/* Top-align when the content genuinely still overflows, not merely
+          when the ladder bottomed out — centring a slide that does not fit
+          clips the heading off the top as well as the tail. */}
+      <SlideContent nodes={slide.content} contentRef={contentRef} atFloor={overflowing} />
       <Footnotes slide={slide} />
       {theme.brandLogo &&
         (slide.archetype === "hero" || slide.archetype === "closing") && (

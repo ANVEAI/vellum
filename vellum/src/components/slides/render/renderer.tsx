@@ -29,6 +29,8 @@ import {
   parseAntvItems,
 } from "./parts/infographic-math";
 import { assetUrl } from "@/lib/client/base-path";
+import { columnLanes } from "@/lib/slides/walk";
+import { useDesignTokens } from "@/components/slides/theme-scope";
 
 function isText(node: Descendant): node is TText {
   return typeof (node as TText).text === "string" && !(node as TElement).type;
@@ -499,10 +501,31 @@ function Stats({ node }: { node: TElement }) {
   );
 }
 
+/**
+ * Balanced lanes.
+ *
+ * Two things are enforced here rather than taken on trust from the model:
+ * empty lanes are dropped, and the track count is capped at the family's
+ * `maxItemsPerRow`. Surplus lanes wrap onto another row instead of making
+ * every track narrower, which is what keeps a lane wide enough to read.
+ *
+ * `--v-cols` used to be the raw child count, with no cap and no filter. A
+ * slide whose model emitted thirteen <DIV>s therefore got thirteen equal
+ * tracks across 1280px, and its text wrapped until it ran past the bottom of
+ * the slide — the type scale cannot rescue a column that is 90px wide.
+ * `maxItemsPerRow` has been declared per family since the design tokens
+ * landed and was read by nothing; this is the consumer it was written for.
+ */
 function ColumnsGroup({ node }: { node: TElement }) {
-  const cols = groupItems(node);
+  const tokens = useDesignTokens();
+  const cols = columnLanes(node);
+  if (cols.length === 0) return null;
+  const perRow = Math.max(
+    1,
+    Math.min(cols.length, tokens.structure.maxItemsPerRow),
+  );
   return (
-    <div className="v-columns" style={{ ["--v-cols" as string]: cols.length }}>
+    <div className="v-columns" style={{ ["--v-cols" as string]: perRow }}>
       {cols.map((col, i) => (
         <div key={i} className="v-column">
           <Children nodes={col.children} />

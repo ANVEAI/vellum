@@ -95,8 +95,23 @@ export async function openPrintPage(
     ).then(() => undefined),
   );
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
-  // Autofit measures once fonts have settled and then re-renders; give that
-  // pass a frame to land so exports match what the editor shows.
+  // Autofit steps down a ladder, re-measuring after each step, so it can take
+  // several frames per slide. Wait for every slide to publish that its search
+  // finished rather than sleeping for the worst case — an export taken
+  // mid-search bakes in a larger type scale than the one the editor settles
+  // on, and the two then disagree.
+  await page
+    .waitForFunction(
+      () => {
+        const slides = [...document.querySelectorAll(".print-slide")];
+        return (
+          slides.length === 0 ||
+          slides.every((s) => s.hasAttribute("data-fit-settled"))
+        );
+      },
+      { timeout: 20_000 },
+    )
+    .catch(() => undefined);
   await page.evaluate(
     () =>
       new Promise<void>((resolve) =>

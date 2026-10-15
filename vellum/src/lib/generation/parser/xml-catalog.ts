@@ -134,7 +134,9 @@ export const COMPONENT_INSTRUCTIONS = `Component instructions:
 - Use <CONTRIBUTOR /> only as an empty standalone metadata block. Do not add attributes or body text to it.
 - Treat <LABEL>, <QUOTE>, <CALLOUT>, and <CODE> as normal content blocks that can be used anywhere headings and paragraphs can be used, including inside COLUMNS.
 - Use COLUMNS only for balanced lanes. Every column item must have parallel content, similar text length, and the same heading level; do not mix an H1-style item with H3/H4-style items in sibling columns.
-- Keep columns visually balanced even when they include images, charts, infographics, or nested supported content.`;
+- Keep columns visually balanced even when they include images, charts, infographics, or nested supported content.
+- A COLUMNS group takes 2 or 3 <DIV> lanes, never more. The slide is 1280px wide, so a fourth lane leaves each one too narrow to read and the text runs off the bottom. A list of six items is one BULLETS or BOXES group, not six lanes.
+- Never emit an empty <DIV> inside COLUMNS. Leave the lane out entirely.`;
 
 /**
  * Document mode reuses the same tag vocabulary with a different envelope and

@@ -19,6 +19,32 @@ export function walkNodes(
   }
 }
 
+/**
+ * The lanes of a <COLUMNS> group that actually carry something.
+ *
+ * The model routinely emits empty <DIV>s inside a column group. They are
+ * invisible but they were not free: `--v-cols` was the raw child count, so
+ * each one still claimed an equal `1fr` grid track and squeezed the lanes
+ * that did have content. One generated slide reached thirteen lanes on a
+ * 1280px canvas — about 90px each — at which point text wraps a word per
+ * line and runs off the bottom of the slide.
+ *
+ * The planner and the renderer both count lanes, and they must agree, so the
+ * definition lives here rather than in either of them.
+ */
+export function columnLanes(node: TElement): TElement[] {
+  return (node.children ?? []).filter(
+    (child): child is TElement =>
+      isElement(child) &&
+      (child.children ?? []).some((grandchild) =>
+        isElement(grandchild)
+          ? true
+          : typeof (grandchild as { text?: string }).text === "string" &&
+            (grandchild as { text: string }).text.trim().length > 0,
+      ),
+  );
+}
+
 export interface ImageRequest {
   slideId: string;
   nodeId?: string;

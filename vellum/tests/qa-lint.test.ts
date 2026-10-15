@@ -123,4 +123,52 @@ describe("qa lint", () => {
     const issues = lintSlides([s], null, "deck");
     expect(issues.some((i) => i.code === "no-quantification")).toBe(false);
   });
+
+  it("flags column fan-out as major", () => {
+    const lanes = Array.from({ length: 6 }, (_, i) => ({
+      type: "column",
+      children: [{ type: "p", children: [t(`Lane ${i + 1} carries some text.`)] }],
+    }));
+    const s = slide("a", [
+      { type: "h1", children: [t("Too many lanes")] },
+      { type: "column_group", children: lanes },
+    ]);
+    const issues = lintSlides([s], null, "deck");
+    const hit = issues.find((i) => i.code === "too-many-columns");
+    expect(hit?.severity).toBe("major");
+    expect(hit?.issue).toContain("6 lanes");
+  });
+
+  it("flags empty column lanes separately", () => {
+    const s = slide("a", [
+      { type: "h1", children: [t("Blank lanes")] },
+      {
+        type: "column_group",
+        children: [
+          { type: "column", children: [{ type: "p", children: [t("Real content here.")] }] },
+          { type: "column", children: [] },
+          { type: "column", children: [t("  ")] },
+        ],
+      },
+    ]);
+    const issues = lintSlides([s], null, "deck");
+    const hit = issues.find((i) => i.code === "empty-column");
+    expect(hit?.issue).toContain("2 empty lanes");
+  });
+
+  it("accepts a two-lane column group", () => {
+    const s = slide("a", [
+      { type: "h1", children: [t("Balanced lanes")] },
+      {
+        type: "column_group",
+        children: [
+          { type: "column", children: [{ type: "p", children: [t("Left lane text, 40% share.")] }] },
+          { type: "column", children: [{ type: "p", children: [t("Right lane text, 60% share.")] }] },
+        ],
+      },
+    ]);
+    const issues = lintSlides([s], null, "deck");
+    expect(issues.some((i) => i.code === "too-many-columns")).toBe(false);
+    expect(issues.some((i) => i.code === "empty-column")).toBe(false);
+  });
 });

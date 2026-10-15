@@ -68,6 +68,23 @@ Corollary: any scroller holding self-measuring elements needs
 `scrollbar-gutter: stable` (`.editor-navlist`, and the `.scroll-stable`
 utility for present mode's overview grid).
 
+### A per-slide CSS variable must be declared on the slide
+
+`--presentation-fs-*` are derived from `--v-fs-*` times `--v-fit`. That
+derivation is declared on `[data-family], .v-slide` — **both selectors, and
+the second one is load-bearing**.
+
+A custom property substitutes its `var()` references on the element that
+*declares* it, not on the element where the final value is used. With
+`[data-family]` alone, `var(--v-fit, 1)` resolved against the theme wrapper,
+where `--v-fit` is never set, so every slide inherited a scale computed at
+exactly 1. Autofit wrote `--v-fit` onto the slide and nothing read it: the
+factor was computed, published as `data-fit`, consumed by the PPTX exporter
+to size its text, and ignored by the browser. Slides clipped at full size
+while reporting a fit, and exported text was smaller than rendered text.
+
+Anything else that wants to vary per slide has the same requirement.
+
 ### Text autofit is one-way
 
 `useAutoFit` multiplies **only the type scale** (`--presentation-fs-*` derive
@@ -166,6 +183,7 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
 | `npx tsx scripts/e2e-export.ts <deck>` | PDF structure + a real browser download, byte-compared |
 | `npx tsx scripts/e2e-template-count.ts pitch-deck 6 10 12` | slide count honours the request |
 | `npx tsx scripts/nav-stability.ts <deck>` | navigator geometry at the 8/9/10 boundary |
+| `npx tsx scripts/geometry-audit.ts <doc...>` | per slide: clipped content, blocks escaping the canvas, overlapping blocks |
 | `npx tsx scripts/export-parity.ts <deck>` | no stretched images in the PPTX |
 | `npx tsx scripts/verify-export-contract.ts <deck>` | `[data-block-idx]` intact |
 | `npx tsx scripts/gc-orphans.ts` | orphaned assets (dry run by default) |

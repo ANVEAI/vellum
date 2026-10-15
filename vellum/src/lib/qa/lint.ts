@@ -3,7 +3,7 @@
  */
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 import type { Descendant, TElement, TText } from "@/lib/slides/plate-shim";
-import { walkNodes } from "@/lib/slides/walk";
+import { columnLanes, walkNodes } from "@/lib/slides/walk";
 import { parseOutlineMarkdown } from "@/lib/generation/prompts/outline";
 import { SUPPORTED_CHART_TYPES } from "@/lib/charts/build-option";
 
@@ -251,6 +251,30 @@ export function lintSlides(
               break;
             }
           }
+        }
+      }
+      // Column fan-out is a structural fault, not a style preference. The
+      // renderer caps the grid so the slide stays readable, but a model
+      // emitting eight lanes has misread the layout — that content is almost
+      // always a flat list wearing a column group as a disguise.
+      if (type === "column_group") {
+        const lanes = columnLanes(node).length;
+        if (lanes > 3) {
+          issues.push({
+            slideId: slide.id, severity: "major", code: "too-many-columns",
+            issue: `${label}: a COLUMNS group has ${lanes} lanes.`,
+            suggestion:
+              "Use 2-3 lanes. A longer list belongs in one BULLETS or BOXES group, not a lane each.",
+          });
+        }
+        const empties =
+          (node.children ?? []).filter((c) => !isText(c)).length - lanes;
+        if (empties > 0) {
+          issues.push({
+            slideId: slide.id, severity: "minor", code: "empty-column",
+            issue: `${label}: a COLUMNS group has ${empties} empty lane${empties === 1 ? "" : "s"}.`,
+            suggestion: "Remove empty <DIV> lanes rather than leaving them blank.",
+          });
         }
       }
       if (type === "stats") {

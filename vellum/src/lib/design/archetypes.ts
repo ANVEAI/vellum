@@ -8,6 +8,7 @@
  */
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 import type { Descendant, TElement, TText } from "@/lib/slides/plate-shim";
+import { columnLanes } from "@/lib/slides/walk";
 
 export type ArchetypeId =
   | "hero"
@@ -84,6 +85,14 @@ export interface ContentSignature {
   hasQuoteOnly: boolean;
   hasTable: boolean;
   headingText: string;
+  /**
+   * Non-empty <COLUMNS> lanes on the slide, 0 when there is no column group.
+   *
+   * Kept separate from `groupItemCount` deliberately: it only ever
+   * DISQUALIFIES an archetype, so adding it cannot reroute a slide into some
+   * new treatment it was not already eligible for.
+   */
+  columnCount: number;
 }
 
 function isText(n: Descendant): n is TText {
@@ -127,12 +136,16 @@ export function signatureOf(slide: PlateSlide): ContentSignature {
     .filter(Boolean).length;
   let groupItems = 0;
   let statCount = 0;
+  let columnCount = 0;
   for (const el of els) {
     const type = String(el.type);
     if (GROUPS.has(type)) {
       const items = (el.children ?? []).filter((c) => !isText(c)).length;
       groupItems = Math.max(groupItems, items);
       if (type === "stats") statCount = items;
+    }
+    if (type === "column_group") {
+      columnCount = Math.max(columnCount, columnLanes(el).length);
     }
   }
   const contentTypes = types.filter(
@@ -161,11 +174,35 @@ export function signatureOf(slide: PlateSlide): ContentSignature {
       types.includes("quote"),
     hasTable: types.includes("table"),
     headingText: heading ? textOf(heading.children).trim() : "",
+    columnCount,
   };
 }
 
+/**
+ * Archetypes that render their lead heading at `--presentation-fs-display`.
+ *
+ * They are the "breath" treatments: one short line, very large. A slide
+ * carrying multiple column lanes is the opposite of that, and pairing the
+ * two is how a 22-word slide ended up overflowing its canvas by 109px —
+ * `groupItemCount` did not count column lanes, so a 13-lane slide read as
+ * `groupItemCount: 0` and qualified as a statement.
+ */
+const DISPLAY_TYPE_ARCHETYPES = new Set<ArchetypeId>([
+  "hero",
+  "closing",
+  "divider",
+  "statement",
+  "full-bleed",
+]);
+
 /** Content validity: can this slide actually wear this archetype? */
 export function accepts(id: ArchetypeId, sig: ContentSignature): boolean {
+  // Display type needs room. More than one lane of columns means the slide is
+  // carrying parallel content, which never fits at 84px however few words it
+  // adds up to. Checked before the per-archetype rules so it cannot be missed
+  // when a new display treatment is added to the set above.
+  if (sig.columnCount > 1 && DISPLAY_TYPE_ARCHETYPES.has(id)) return false;
+
   switch (id) {
     case "hero":
     case "closing":

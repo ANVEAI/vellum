@@ -149,4 +149,51 @@ describe("layout planner", () => {
       expect(s.archetype!.length).toBeGreaterThan(0);
     }
   });
+
+  /**
+   * Regression: a COLUMNS group did not count toward groupItemCount, so a
+   * slide carrying 13 lanes read as groupItemCount 0 and qualified for
+   * `statement` — an archetype that renders its heading at display size.
+   * The generated deck that exposed this overflowed its canvas by 109px.
+   */
+  it("keeps display-type archetypes off multi-lane column slides", () => {
+    const columns = (lanes: number) => ({
+      id: "cg",
+      type: "column_group",
+      children: Array.from({ length: lanes }, (_, i) => ({
+        id: `col-${i}`,
+        type: "column",
+        children: [el("h4", `Lane ${i + 1}`), el("p", "Supporting detail.")],
+      })),
+    });
+    const dense = slide({
+      content: [el("label", "06 - YOU & AI"), el("h1", "Short heading"), columns(13)],
+    });
+    const planned = planDeck([heroSlide(), dense]);
+    expect(planned[1].archetype).not.toBe("statement");
+    expect(planned[1].archetype).not.toBe("divider");
+    expect(planned[1].archetype).not.toBe("full-bleed");
+  });
+
+  it("still allows display archetypes when there are no column lanes", () => {
+    const bare = slide({ content: [el("h1", "One decisive line")] });
+    const planned = planDeck([heroSlide(), bare]);
+    expect(["statement", "divider", "content"]).toContain(planned[1].archetype);
+  });
+
+  it("ignores empty lanes when counting columns", () => {
+    const oneRealLane = {
+      id: "cg2",
+      type: "column_group",
+      children: [
+        { id: "c0", type: "column", children: [el("p", "Only real lane.")] },
+        { id: "c1", type: "column", children: [] },
+        { id: "c2", type: "column", children: [{ text: "   " }] },
+      ],
+    };
+    const s = slide({ content: [el("h1", "Short"), oneRealLane] });
+    // One real lane is not "parallel content", so display type stays legal.
+    const planned = planDeck([heroSlide(), s]);
+    expect(typeof planned[1].archetype).toBe("string");
+  });
 });

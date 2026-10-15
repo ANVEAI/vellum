@@ -264,19 +264,37 @@ export async function POST(request: NextRequest) {
         // the user ever sees them — empty slides, broken chart data, lazy
         // topic-label headings, and evidence-free slides. Bounded: at most
         // 3 slides, one attempt each; failures keep the original.
+        // Structural faults get one regeneration attempt before the user ever
+        // sees them. `overflow-risk` and `too-many-columns` are here because
+        // no amount of render-time fitting rescues a slide that simply holds
+        // too much: the type scale bottoms out and the tail is clipped. The
+        // cheapest fix is to ask for less content, once, while the model
+        // still has the deck in context.
         const HARD_CODES = new Set([
           "empty",
           "bad-chart-data",
           "topic-heading",
           "no-quantification",
+          "overflow-risk",
+          "too-many-columns",
         ]);
         const hardIssues = lintSlides(
           slides,
           document.outline,
           mode === "document" ? "doc" : "deck",
         ).filter((issue) => issue.slideId && HARD_CODES.has(issue.code));
+        // Majors first: the budget is three regenerations, and spending one
+        // on a minor advisory while a major fault ships is the wrong trade.
+        // Sorting before the Map also decides which issue represents a slide
+        // that has several.
         const gateTargets = [
-          ...new Map(hardIssues.map((i) => [i.slideId as string, i])).entries(),
+          ...new Map(
+            [...hardIssues]
+              .sort((a, b) =>
+                a.severity === b.severity ? 0 : a.severity === "major" ? -1 : 1,
+              )
+              .map((i) => [i.slideId as string, i] as const),
+          ).entries(),
         ].slice(0, 3);
         if (gateTargets.length > 0) {
           sse.event("status", {

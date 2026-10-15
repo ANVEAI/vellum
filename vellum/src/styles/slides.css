@@ -9,8 +9,21 @@
 /* Type scale, derived once from the raw family scale and multiplied by the
    per-slide autofit factor. Every rule keeps using --presentation-fs-*, so
    nothing else has to know autofit exists. Fallbacks match the corporate
-   (legacy) scale so a theme that never emitted --v-fs-* still renders. */
-[data-family] {
+   (legacy) scale so a theme that never emitted --v-fs-* still renders.
+
+   `.v-slide` is in the selector, and it has to be. A custom property
+   substitutes its var() references on the element that DECLARES it, not
+   where the value is finally used — so with `[data-family]` alone, the
+   `var(--v-fit, 1)` below resolved against the theme wrapper, where --v-fit
+   is never set, and every slide inherited a scale computed at exactly 1.
+   Autofit writes --v-fit per slide, so the slide has to be a declaring
+   element too or the whole mechanism is silently inert: the factor was
+   computed, written to --v-fit and to data-fit, read by the PPTX exporter to
+   size its text, and ignored by the browser. Listing both selectors keeps
+   one copy of the arithmetic; the doc reader still resolves via
+   [data-family], where a fit of 1 is correct. */
+[data-family],
+.v-slide {
   --presentation-fs-numeral: calc(var(--v-fs-numeral, 160px) * var(--v-fit, 1));
   --presentation-fs-display: calc(var(--v-fs-display, 84px) * var(--v-fit, 1));
   --presentation-fs-title: calc(var(--v-fs-title, 64px) * var(--v-fit, 1));
