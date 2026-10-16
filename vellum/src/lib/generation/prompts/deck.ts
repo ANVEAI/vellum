@@ -121,7 +121,7 @@ const RENDERER_OWNS_DESIGN = `Vellum draws the visual design itself. Typography,
 - Never build a layout out of nested <DIV>s — rings, cards, grids, panels, pills. Pick the component that expresses the idea: STEPS or TIMELINE for a sequence, BOXES or ICONS for a set, COMPARE for two sides, STATS for numbers, PYRAMID or STAIRCASE for layers.
 - When the user's request specifies fonts, point sizes, hex colours, pixel positions or exact slide furniture, read it as intent — the deck should feel that way — and express it through components and wording. Do not try to reproduce it in markup.
 - Close every tag you open. A heading (TITLE, H1-H6, LABEL) holds one line of text and nothing else; content that follows it goes after its closing tag.
-- One heading per slide carries the claim. A kicker above it is a LABEL; a supporting line below it is a P. Never a second large heading.`;
+- One heading per slide carries the claim. A short line above it is a LABEL; a supporting line below it is a P. Never a second large heading.`;
 
 const WRITING_RULES = `WRITING RULES — these override style preferences:
 1. Every content slide's H1/H2 is a complete sentence stating the slide's conclusion — subject + verb + object, 6-15 words.
@@ -272,6 +272,8 @@ Presentation rules:
 - Use the outline to cover the intended ideas, but shape the final slide copy like a strong presentation rather than copying the outline literally.
 - Include images where they strengthen the slide visually.
 - Include one <NOTES>...</NOTES> element per SECTION with 2-3 spoken-voice sentences the presenter would say on that slide.
+- Every word inside a SECTION is shown to the audience. Never write "Slide N" in a heading or anywhere on a slide, and never write notes about your own choices or edits.
+- Every item holds its own text: never leave a <DIV> empty inside BULLETS, BOXES, COLUMNS or any group, and never write a group's items as an attribute.
 
 Generate the complete XML presentation now.`;
 

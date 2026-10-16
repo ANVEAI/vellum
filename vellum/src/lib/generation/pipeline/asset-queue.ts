@@ -17,7 +17,7 @@ import {
   type ImageShape,
 } from "@/lib/images/provider";
 import { applyImageToSlides } from "@/lib/images/patch-slides";
-import { stripTextRequests } from "@/lib/images/prompt-hygiene";
+import { blankScreens, stripTextRequests } from "@/lib/images/prompt-hygiene";
 import {
   FAMILY_DEFAULT_STYLE,
   getImageStyle,
@@ -97,13 +97,14 @@ async function imageJobContext(
       // Strip "render these words" requests before the style block is
       // appended — the image model turns them into gibberish, and on a
       // guidance-distilled model the negative block cannot prevent it.
-      const { prompt: clean, removed } = stripTextRequests(subject);
+      const { prompt: stripped, removed } = stripTextRequests(subject);
       if (removed.length > 0) {
         console.warn(
           `image prompt hygiene: dropped ${removed.length} text request(s)`,
           removed.slice(0, 3),
         );
       }
+      const clean = blankScreens(stripped);
       return preset
         ? `${clean}. ${preset.styleBlock}${palette ? `. Color mood: ${palette}` : ""}`
         : clean;

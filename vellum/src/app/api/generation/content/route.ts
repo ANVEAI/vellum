@@ -23,12 +23,11 @@ import {
 } from "@/lib/images/patch-slides";
 import { resolveIconQueries } from "@/lib/icons/search";
 import { kickImageQueue } from "@/lib/generation/pipeline/asset-queue";
-import { formatTemplateGuidance, getTemplate } from "@/lib/templates/library";
+import { promptInputFor } from "@/lib/generation/prompts/input";
 import { planDeck, replanSlide } from "@/lib/design/planner";
 import { lintSlides } from "@/lib/qa/lint";
 import { lintOptionsFor } from "@/lib/qa/run";
 import { budgetFor } from "@/lib/design/budget";
-import { isScriptedRequest } from "@/lib/generation/prompts/scripted";
 import { signatureOf } from "@/lib/design/archetypes";
 import {
   condenseRequest,
@@ -37,17 +36,11 @@ import {
 import { resolveThemeOrDefault } from "@/lib/themes/resolve";
 import { resolveDesignTokens } from "@/lib/design/tokens";
 import { buildSourcesSlide, slideRefs } from "@/lib/slides/citations";
+import { planPictures } from "@/lib/images/visual-plan";
 import type { DeckSource } from "@/lib/generation/research/searxng";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-interface GenParams {
-  language?: string;
-  tone?: string;
-  audience?: string;
-  textDensity?: "minimal" | "concise" | "detailed" | "extensive";
-}
 
 export async function POST(request: NextRequest) {
   await ensureWal();
@@ -80,9 +73,6 @@ export async function POST(request: NextRequest) {
   }
 
   const settings = await getSettings();
-  const genParams: GenParams = document.genParams
-    ? (JSON.parse(document.genParams) as GenParams)
-    : {};
   const { title, cards } = parseOutlineMarkdown(document.outline);
   // One word budget for the whole run: the theme family's own token. The
   // prompt, the generation gate and the post-run QA all have to measure
@@ -94,9 +84,6 @@ export async function POST(request: NextRequest) {
   );
   const wordBudget = budgetTokens.content.maxWordsPerSlide;
   const mode = document.kind === "doc" ? "document" : "deck";
-  const template = document.templateId
-    ? getTemplate(document.templateId)
-    : undefined;
 
   return sseResponse(
     async (sse) => {
@@ -105,6 +92,8 @@ export async function POST(request: NextRequest) {
       // identity stable across re-parses. getAllSlides() without reset
       // accumulates duplicates and must never be used incrementally.
       let cumulative = "";
+      // Image jobs from before this run belong to the content it replaces.
+      const runStartedAt = new Date();
       const snapshotSlides = () => {
         const parser = new SlideParser({ mode });
         parser.parseChunk(cumulative);
@@ -115,41 +104,63 @@ export async function POST(request: NextRequest) {
         const slides = parser.getAllSlides();
         return mode === "deck" ? planDeck(slides) : slides;
       };
+
+      // Per-section image kickoff: enqueue a section's image jobs the moment
+      // its </SECTION> closes so GPU work overlaps the text stream instead of
+      // serializing after it. The Set both dedupes across ticks and guards
+      // the final post-stream enqueue.
+      //
+      // Root images wait until the deck is saved. The job reads its slot's
+      // shape — portrait rail, wide band, full-bleed — from the saved slide,
+      // and mid-stream there is no saved slide: every root image of one deck
+      // was generated at 16:9 for a portrait rail and lost 60% of its width
+      // to the crop. They also may not survive: the quality gate can rewrite
+      // a slide and the picture step can replace a prompt.
+      const enqueuedImages = new Set<string>();
+      /** Forget every key queued for one slide so it can be queued afresh. */
+      const forgetSlide = (slideId: string) => {
+        const prefix = `${slideId}|`;
+        for (const key of [...enqueuedImages]) {
+          if (key.startsWith(prefix)) enqueuedImages.delete(key);
+        }
+      };
+      const enqueueNewImages = async (
+        source?: ReturnType<typeof snapshotSlides>,
+        { roots = false }: { roots?: boolean } = {},
+      ) => {
+        const requests = collectImageRequests(source ?? snapshotSlides()).filter(
+          (req) => {
+            if (req.nodeId === "__root__" && !roots) return false;
+            // The query is part of the key: a slide the quality gate
+            // regenerated keeps its id, and a root image's node is always
+            // "__root__", so without it the regenerated content's new picture
+            // was silently skipped as a duplicate.
+            const key = `${imageSlotKey(req.slideId, req.nodeId)}|${req.query}`;
+            if (enqueuedImages.has(key)) return false;
+            enqueuedImages.add(key);
+            return true;
+          },
+        );
+        if (requests.length === 0) return;
+        await db.generatedImage.createMany({
+          data: requests.map((req) => ({
+            documentId,
+            slideId: req.slideId,
+            nodeId: req.nodeId,
+            prompt: req.query,
+            provider: settings.images.provider,
+          })),
+        });
+        kickImageQueue();
+      };
+
       try {
         await db.document.update({
           where: { id: documentId },
           data: { status: "generating", errorMessage: null },
         });
 
-        const promptInput = {
-          prompt: document.prompt ?? "",
-          title: document.title !== "Untitled" ? document.title : title,
-          outline: cards,
-          language: genParams.language ?? "English",
-          tone: genParams.tone,
-          audience: genParams.audience,
-          textDensity: genParams.textDensity,
-          researchContext: document.researchContext ?? undefined,
-          sourceCount: (() => {
-            try {
-              return document.sources
-                ? (JSON.parse(document.sources) as unknown[]).length
-                : 0;
-            } catch {
-              return 0;
-            }
-          })(),
-          currentDate: new Date().toISOString().slice(0, 10),
-          // The same rule as the outline: when the request numbers its own
-          // slides, the template's per-section list would contradict them,
-          // so only its overall direction is passed on.
-          templateGuidance: template
-            ? isScriptedRequest(document.prompt)
-              ? template.globalGuidance
-              : formatTemplateGuidance(template)
-            : undefined,
-          wordBudget,
-        };
+        const promptInput = promptInputFor(document, { title, cards }, wordBudget);
         const { system, user } =
           mode === "document"
             ? buildDocumentPrompt(promptInput)
@@ -163,44 +174,6 @@ export async function POST(request: NextRequest) {
         });
 
         let sectionsSeen = 0;
-
-        // Per-section image kickoff: enqueue a section's image jobs the
-        // moment its </SECTION> closes so GPU work overlaps the text stream
-        // instead of serializing after it. The Set both dedupes across ticks
-        // and guards the final post-stream enqueue.
-        const enqueuedImages = new Set<string>();
-        /** Forget every key queued for one slide so it can be queued afresh. */
-        const forgetSlide = (slideId: string) => {
-          const prefix = `${slideId}|`;
-          for (const key of [...enqueuedImages]) {
-            if (key.startsWith(prefix)) enqueuedImages.delete(key);
-          }
-        };
-        const enqueueNewImages = async (source?: ReturnType<typeof snapshotSlides>) => {
-          const requests = collectImageRequests(source ?? snapshotSlides()).filter(
-            (req) => {
-              // The query is part of the key: a slide the quality gate
-              // regenerated keeps its id, and a root image's node is always
-              // "__root__", so without it the regenerated content's new
-              // picture was silently skipped as a duplicate.
-              const key = `${imageSlotKey(req.slideId, req.nodeId)}|${req.query}`;
-              if (enqueuedImages.has(key)) return false;
-              enqueuedImages.add(key);
-              return true;
-            },
-          );
-          if (requests.length === 0) return;
-          await db.generatedImage.createMany({
-            data: requests.map((req) => ({
-              documentId,
-              slideId: req.slideId,
-              nodeId: req.nodeId,
-              prompt: req.query,
-              provider: settings.images.provider,
-            })),
-          });
-          kickImageQueue();
-        };
 
         let raw = await streamChat({
           baseUrl: settings.llm.ollamaUrl,
@@ -423,7 +396,20 @@ export async function POST(request: NextRequest) {
                 // replace the slide unconditionally, so a regeneration that
                 // came back just as long — or traded one fault for another —
                 // still won.
-                if (!isImprovement(original, candidate, hardIssuesOf)) continue;
+                const elsewhere = [
+                  promptInput.title ?? title,
+                  ...slides
+                    .filter((_, i) => i !== index)
+                    .map((s) => signatureOf(s).headingText),
+                ];
+                if (
+                  !isImprovement(original, candidate, hardIssuesOf, {
+                    reference: cards[index] ?? "",
+                    elsewhere,
+                  })
+                ) {
+                  continue;
+                }
                 slides[index] = candidate;
                 // The old content's images are no longer wanted. Pending jobs
                 // are dropped so the GPU does not render them; one already
@@ -450,6 +436,21 @@ export async function POST(request: NextRequest) {
             weight: settings.icons.weight,
           });
           applyIconUrls(slides, iconUrls);
+        }
+
+        // Pictures: which slides would a picture help, and what should it
+        // show? Decided once the text is final — see visual-plan.ts. A slide
+        // that gains one changes its layout, so the deck is planned again.
+        if (mode === "deck" && settings.images.provider !== "none") {
+          sse.event("status", { status: "Choosing pictures" });
+          const pictures = await planPictures(slides, {
+            capacity: wordBudget,
+            title: promptInput.title ?? title,
+            request: document.prompt ?? "",
+            llm: { baseUrl: settings.llm.ollamaUrl, model: settings.llm.model },
+            signal: request.signal,
+          });
+          if (pictures.changed.length > 0) slides = planDeck(pictures.slides);
         }
 
         // Any images the per-section kickoff missed (Set-guarded). From the
@@ -487,8 +488,12 @@ export async function POST(request: NextRequest) {
         // for a slide's pre-regeneration content must not land on the new
         // content. Every status counts toward "newest": a pending job queued
         // after the regeneration still outranks a stale one that is done.
+        // Only this run's jobs: root images are now queued after the save, so
+        // at this point a finished job from an earlier generation of the
+        // same document would be the newest for its slot and put the old
+        // picture on the new slide.
         const allJobs = await db.generatedImage.findMany({
-          where: { documentId },
+          where: { documentId, createdAt: { gte: runStartedAt } },
           select: {
             id: true,
             slideId: true,
@@ -520,6 +525,9 @@ export async function POST(request: NextRequest) {
             status: "ready",
           },
         });
+        // Now that each slide's layout is saved, root images can be queued
+        // in the shape of their slot.
+        await enqueueNewImages(slides, { roots: true }).catch(() => undefined);
         if (enqueuedImages.size > 0) kickImageQueue();
 
         sse.event("complete", {
@@ -551,6 +559,12 @@ export async function POST(request: NextRequest) {
                 status: "ready",
               },
             })
+            .catch(() => undefined);
+          // Root images are queued only once slides are saved; these were
+          // never queued, and without it they would read "Generating
+          // image…" for good.
+          await enqueueNewImages(partial, { roots: true })
+            .then(() => kickImageQueue())
             .catch(() => undefined);
           return;
         }

@@ -25,6 +25,9 @@ import { resolveDesignTokens, surfaceOf } from "@/lib/design/tokens";
 import { surfaceForSlide } from "@/lib/design/planner";
 import { LEGACY_SCALE, type TypeScale } from "@/lib/design/type-scale";
 import { fitImage, readPlacement } from "@/lib/slides/image-fit";
+// A group's items as the renderer draws them, so the boxes measured on the
+// page and the model's items still pair up one for one.
+import { contentItems } from "@/lib/slides/walk";
 import { openPrintPage, withExportPage } from "./browser";
 
 /**
@@ -339,13 +342,31 @@ function addNativeText(
       return;
     case "bullets": {
       const runs: PptxGenJS.TextProps[] = [];
-      for (const item of elements(node)) {
+      for (const item of contentItems(node)) {
         const heading = elements(item).find((c) =>
           ["h3", "h4"].includes(String(c.type)),
         );
         const body = elements(item).filter((c) => c.type === "p");
+        if (!heading) {
+          // An item with no heading is its text: one bullet line, set as the
+          // paragraph it is. It used to get a bold "heading" made of its own
+          // text and then the same paragraph again as its body, so every
+          // plain bullet printed twice in PowerPoint.
+          runs.push({
+            text: textOf(item.children),
+            options: {
+              bullet: { code: "2022", indent: 12 },
+              fontSize: Math.round(pts.body * 2) / 2,
+              color: textColor,
+              fontFace: bodyFont,
+              breakLine: true,
+              paraSpaceBefore: runs.length ? 8 : 0,
+            },
+          });
+          continue;
+        }
         runs.push({
-          text: heading ? textOf(heading.children) : textOf(item.children),
+          text: textOf(heading.children),
           options: {
             bullet: { code: "2022", indent: 12 },
             fontSize: 13,
@@ -409,7 +430,7 @@ function addStatsNative(
   itemBoxes: InBox[],
   theme: ThemeProperties,
 ) {
-  const items = elements(node);
+  const items = contentItems(node);
   items.forEach((item, i) => {
     const box = itemBoxes[i];
     if (!box) return;
@@ -562,7 +583,7 @@ function itemRuns(
         fontFace: theme.fonts.body,
       });
     } else if (type === "bullets") {
-      for (const sub of elements(child)) {
+      for (const sub of contentItems(child)) {
         const subHeading = elements(sub).find((c) =>
           /^h[1-6]$/.test(String(c.type)),
         );
@@ -715,7 +736,7 @@ async function tryNativeLayout(
   theme: ThemeProperties,
 ): Promise<boolean> {
   const type = String(node.type);
-  const items = elements(node);
+  const items = contentItems(node);
   if (items.length === 0) return false;
   const accent = hex(theme.colors.accent);
 
@@ -1111,7 +1132,7 @@ export async function exportPptx(documentId: string): Promise<Buffer> {
             const sb = (await sl.boundingBox()) as Box | null;
             if (sb) itemBoxes.push(relBox(sb, slideBox));
           }
-          if (itemBoxes.length === elements(node).length) {
+          if (itemBoxes.length === contentItems(node).length) {
             // Card outlines behind native stat text.
             for (const ib of itemBoxes) {
               out.addShape("roundRect", {

@@ -335,15 +335,37 @@
 .v-ccircles-item .v-h3 { font-size: 17px; }
 .v-ccircles-item .v-p { font-size: 13px; opacity: 0.8; }
 
-/* ---- circular grid ---- */
-.v-cgrid { position: relative; flex: 1; min-height: 360px; }
+/* ---- circular grid ----
+   Items sit on a ring round the hub. The ring's radius is what keeps an item
+   clear of the hub — half of each plus a gap — and the box is as large as
+   the ring it holds. It used to place items at 38% of a 360px box, so the
+   ring was wider than the box: the top item hung 30px out of it, over the
+   slide's heading, where no overflow check could see it. Past six items the
+   ring also has to be wide enough for its neighbours to clear each other:
+   the renderer passes 1 / (2·sin(π/n)) as --v-cgrid-spread, the radius at
+   which items one apart along the ring stand one item plus a gap apart. */
+/* Sized on the type scale (--v-fit), like the text in it: when autofit steps
+   the type down to make a slide fit, the ring steps down with it rather
+   than leaving the text alone to shrink round a ring that never does. */
+.v-cgrid {
+  --v-cgrid-hub: calc(168px * var(--v-fit, 1));
+  --v-cgrid-item: calc(150px * var(--v-fit, 1));
+  --v-cgrid-r: max(
+    calc(var(--v-cgrid-hub) / 2 + var(--v-cgrid-item) / 2 + var(--v-gap-2, 12px)),
+    calc((var(--v-cgrid-item) + var(--v-gap-2, 12px)) * var(--v-cgrid-spread, 0))
+  );
+  position: relative;
+  flex: 1;
+  min-width: calc(2 * var(--v-cgrid-r) + var(--v-cgrid-item));
+  min-height: calc(2 * var(--v-cgrid-r) + var(--v-cgrid-item));
+}
 .v-cgrid-center {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 168px;
-  height: 168px;
+  width: var(--v-cgrid-hub);
+  height: var(--v-cgrid-hub);
   border-radius: 999px;
   display: flex;
   align-items: center;
@@ -355,15 +377,15 @@
   color: var(--presentation-heading, #fff);
   font-family: var(--presentation-heading-font, inherit);
   font-weight: 700;
-  font-size: 18px;
+  font-size: calc(18px * var(--v-fit, 1));
   line-height: 1.25;
   overflow: hidden;
 }
 .v-cgrid-item {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 150px;
-  height: 150px;
+  width: var(--v-cgrid-item);
+  height: var(--v-cgrid-item);
   border-radius: 999px;
   display: flex;
   align-items: center;
@@ -374,9 +396,9 @@
   border: 1.5px solid color-mix(in srgb, var(--presentation-accent, #7c6cff) 45%, transparent);
   overflow: hidden;
 }
-.v-cgrid-item .v-h3 { font-size: 15px; }
-.v-cgrid-item .v-h4 { font-size: 14px; }
-.v-cgrid-item .v-p { font-size: 12px; opacity: 0.8; }
+.v-cgrid-item .v-h3 { font-size: calc(15px * var(--v-fit, 1)); }
+.v-cgrid-item .v-h4 { font-size: calc(14px * var(--v-fit, 1)); }
+.v-cgrid-item .v-p { font-size: calc(12px * var(--v-fit, 1)); opacity: 0.8; }
 
 /* ---- snake ---- */
 .v-snake { display: flex; flex-direction: column; gap: var(--v-gap-4); }

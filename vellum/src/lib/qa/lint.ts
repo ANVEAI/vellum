@@ -3,7 +3,7 @@
  */
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 import type { Descendant, TElement, TText } from "@/lib/slides/plate-shim";
-import { columnLanes, walkNodes } from "@/lib/slides/walk";
+import { columnLanes, contentItems, walkNodes } from "@/lib/slides/walk";
 import { parseOutlineMarkdown } from "@/lib/generation/prompts/outline";
 import { SUPPORTED_CHART_TYPES } from "@/lib/charts/build-option";
 
@@ -201,7 +201,18 @@ export function lintSlides(
     walkNodes(slide.content as Descendant[], (node) => {
       const type = String(node.type);
       if (GROUPS.has(type)) {
-        const items = (node.children ?? []).filter((c) => !isText(c));
+        // Judged on what renders: the renderer leaves out an item with
+        // nothing in it, so an empty one is reported, not counted.
+        const items = contentItems(node);
+        const emptyItems =
+          (node.children ?? []).filter((c) => !isText(c)).length - items.length;
+        if (emptyItems > 0) {
+          issues.push({
+            slideId: slide.id, severity: "minor", code: "empty-item",
+            issue: `${label}: ${emptyItems} ${type} item${emptyItems === 1 ? " has" : "s have"} no text.`,
+            suggestion: "Regenerate the slide, or give each item its text.",
+          });
+        }
         if (items.length === 1 && !["stats", "bullets"].includes(type)) {
           issues.push({
             slideId: slide.id, severity: "minor", code: "single-item-group",

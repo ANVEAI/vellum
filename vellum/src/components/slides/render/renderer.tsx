@@ -29,7 +29,7 @@ import {
   parseAntvItems,
 } from "./parts/infographic-math";
 import { assetUrl } from "@/lib/client/base-path";
-import { columnLanes } from "@/lib/slides/walk";
+import { columnLanes, contentItems, hasContent } from "@/lib/slides/walk";
 import { useDesignTokens } from "@/components/slides/theme-scope";
 
 function isText(node: Descendant): node is TText {
@@ -128,16 +128,53 @@ function ItemBody({ node }: { node: TElement }) {
   );
 }
 
+/**
+ * Every element child, empty or not. Only for structures where position is
+ * meaning — a table's rows and cells. List-like groups take their items from
+ * `contentItems`, which leaves out an item with nothing in it: such an item
+ * still drew its bullet, number badge or card.
+ */
 function groupItems(node: TElement): TElement[] {
   return (node.children ?? []).filter(
     (c): c is TElement => !isText(c),
   );
 }
 
+/**
+ * Blocks that draw chrome of their own — a card, a pill, a ring, a marker per
+ * item. With nothing inside they render as an empty box, so they render as
+ * nothing. Plain text blocks are not here: an empty paragraph is invisible,
+ * and it is what "Add slide" gives the user to type into.
+ */
+const CHROME_BLOCKS = new Set([
+  "callout",
+  "quote",
+  "blockquote",
+  "label",
+  "bullets",
+  "icons",
+  "boxes",
+  "arrows",
+  "arrow-vertical",
+  "steps",
+  "timeline",
+  "cycle",
+  "pyramid",
+  "staircase",
+  "slope",
+  "connected-circles",
+  "circular-grid",
+  "snake",
+  "compare",
+  "before-after",
+  "pros-cons",
+  "stats",
+]);
+
 /* ---------- smart layout components ---------- */
 
 function Bullets({ node }: { node: TElement }) {
-  const items = groupItems(node);
+  const items = contentItems(node);
   const bulletType = (node.bulletType as string) ?? "basic";
   return (
     <div className="v-bullets">
@@ -160,7 +197,7 @@ function Bullets({ node }: { node: TElement }) {
 }
 
 function IconList({ node }: { node: TElement }) {
-  const items = groupItems(node);
+  const items = contentItems(node);
   const orientation = (node.orientation as string) ?? "side";
   return (
     <div
@@ -202,7 +239,7 @@ const BOX_VARIANT: Record<string, string> = {
 };
 
 function Boxes({ node }: { node: TElement }) {
-  const items = groupItems(node);
+  const items = contentItems(node);
   const numbered = String(node.numbered) === "true";
   const boxType =
     typeof node.boxType === "string"
@@ -233,7 +270,7 @@ function Boxes({ node }: { node: TElement }) {
 }
 
 function Arrows({ node }: { node: TElement }) {
-  const items = groupItems(node);
+  const items = contentItems(node);
   return (
     <div className="v-arrows">
       {items.map((item, i) => (
@@ -249,7 +286,7 @@ function Arrows({ node }: { node: TElement }) {
 }
 
 function SequenceArrows({ node }: { node: TElement }) {
-  const items = groupItems(node);
+  const items = contentItems(node);
   return (
     <div className="v-seq">
       {items.map((item, i) => (
@@ -265,7 +302,7 @@ function SequenceArrows({ node }: { node: TElement }) {
 }
 
 function Steps({ node }: { node: TElement }) {
-  const items = groupItems(node);
+  const items = contentItems(node);
   // variant="box" → step bodies get the shared card treatment; "arrow" and
   // unknown values keep the open base look.
   const boxed = node.variant === "box";
@@ -289,7 +326,7 @@ function Steps({ node }: { node: TElement }) {
 
 function Timeline({ node }: { node: TElement }) {
   const tokens = useDesignTokens();
-  const items = groupItems(node);
+  const items = contentItems(node);
   // Parser-normalized attributes (booleans are real booleans, but tolerate
   // string forms for hand-built nodes).
   //
@@ -338,7 +375,7 @@ function Timeline({ node }: { node: TElement }) {
 }
 
 function Cycle({ node }: { node: TElement }) {
-  const items = groupItems(node);
+  const items = contentItems(node);
   const n = items.length || 1;
   // Circular placement on a 100x100 coordinate system.
   const radius = 38;
@@ -367,7 +404,7 @@ function Cycle({ node }: { node: TElement }) {
 }
 
 function Pyramid({ node }: { node: TElement }) {
-  const items = groupItems(node);
+  const items = contentItems(node);
   const n = items.length || 1;
   const isFunnel = String(node.isFunnel) === "true";
   return (
@@ -392,7 +429,7 @@ function Pyramid({ node }: { node: TElement }) {
 }
 
 function Staircase({ node }: { node: TElement }) {
-  const items = groupItems(node);
+  const items = contentItems(node);
   const n = items.length || 1;
   return (
     <div
@@ -421,7 +458,7 @@ function TwoSide({
   node: TElement;
   kind: "compare" | "before-after";
 }) {
-  const sides = groupItems(node);
+  const sides = contentItems(node);
   return (
     <div className={cx("v-twoside", kind === "before-after" && "v-ba")}>
       {sides.map((side, i) => (
@@ -438,7 +475,7 @@ function TwoSide({
 }
 
 function ProsCons({ node }: { node: TElement }) {
-  const sides = groupItems(node);
+  const sides = contentItems(node);
   return (
     <div className="v-twoside v-proscons">
       {sides.map((side, i) => {
@@ -475,7 +512,7 @@ function statBarPercent(stat: string): number {
 }
 
 function Stats({ node }: { node: TElement }) {
-  const items = groupItems(node);
+  const items = contentItems(node);
   const rawType =
     typeof node.statsType === "string"
       ? node.statsType
@@ -554,7 +591,7 @@ function ColumnsGroup({ node }: { node: TElement }) {
 
 /** Rising accent line with labeled points — maturity/growth narratives. */
 function Slope({ node }: { node: TElement }) {
-  const items = groupItems(node);
+  const items = contentItems(node);
   const n = items.length || 1;
   return (
     <div className="v-slope">
@@ -598,7 +635,7 @@ function Slope({ node }: { node: TElement }) {
 
 /** N accent-tinted circles on a hairline, item text under each. */
 function ConnectedCircles({ node }: { node: TElement }) {
-  const items = groupItems(node);
+  const items = contentItems(node);
   return (
     <div className="v-ccircles">
       {items.length > 1 && <span className="v-ccircles-line" aria-hidden />}
@@ -614,23 +651,34 @@ function ConnectedCircles({ node }: { node: TElement }) {
 
 /** Items as circles in a ring around an optional centerText circle. */
 function CircularGrid({ node }: { node: TElement }) {
-  const items = groupItems(node);
+  const items = contentItems(node);
   const n = items.length || 1;
   const centerText =
     typeof node.centerText === "string" ? node.centerText.trim() : "";
-  const radius = 38;
+  // Radius, in item-plus-gap units, at which neighbours on the ring clear
+  // each other (chord = 2r·sin(π/n)); the stylesheet takes the larger of
+  // this and the radius that clears the hub.
+  const spread = 1 / (2 * Math.sin(Math.PI / Math.max(n, 2)));
   return (
-    <div className="v-cgrid">
+    <div
+      className="v-cgrid"
+      style={{ ["--v-cgrid-spread" as string]: spread.toFixed(4) }}
+    >
       {centerText && <div className="v-cgrid-center">{centerText}</div>}
       {items.map((item, i) => {
         const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
-        const x = 50 + radius * Math.cos(angle);
-        const y = 50 + radius * Math.sin(angle);
+        // On the ring the stylesheet sizes (--v-cgrid-r), so an item never
+        // overlaps the hub or leaves the box.
+        const x = Math.cos(angle).toFixed(4);
+        const y = Math.sin(angle).toFixed(4);
         return (
           <div
             key={i}
             className="v-cgrid-item"
-            style={{ left: `${x}%`, top: `${y}%` }}
+            style={{
+              left: `calc(50% + ${x} * var(--v-cgrid-r))`,
+              top: `calc(50% + ${y} * var(--v-cgrid-r))`,
+            }}
           >
             <ItemBody node={item} />
           </div>
@@ -643,7 +691,7 @@ function CircularGrid({ node }: { node: TElement }) {
 /** Boustrophedon 3-per-row grid: rows alternate direction, numbered badges,
     connector elbows drawn with CSS borders. */
 function Snake({ node }: { node: TElement }) {
-  const items = groupItems(node);
+  const items = contentItems(node);
   const perRow = 3;
   const rows: TElement[][] = [];
   for (let i = 0; i < items.length; i += perRow) {
@@ -808,6 +856,7 @@ const ChartElement = dynamic(
 
 export function Node({ node }: { node: TElement }) {
   const type = String(node.type);
+  if (CHROME_BLOCKS.has(type) && !hasContent(node)) return null;
   switch (type) {
     case "presentation-title":
       return (

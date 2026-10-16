@@ -142,6 +142,7 @@ import {
   type ParagraphElement,
   type TChartElement,
 } from "@/lib/slides/plate-shim";
+import { cleanSlideContent } from "@/lib/slides/clean";
 
 export type PlateNode =
   | TElement
@@ -279,6 +280,31 @@ const HEADING_TAGS = new Set([
   "LABEL",
 ]);
 
+/** Groups whose items are <DIV> children. */
+const ITEM_GROUP_TAGS = new Set([
+  "BULLETS",
+  "ICONS",
+  "BOXES",
+  "STEPS",
+  "TIMELINE",
+  "CYCLE",
+  "PYRAMID",
+  "STAIRCASE",
+  "ARROWS",
+  "ARROW-SEQUENCE",
+  "ARROW_SEQUENCE",
+  "ARROW-VERTICAL",
+  "ARROW_VERTICAL",
+  "VERTICAL-ARROWS",
+  "VERTICAL_ARROWS",
+  "SLOPE",
+  "CONNECTED-CIRCLES",
+  "CONNECTED_CIRCLES",
+  "CIRCULAR-GRID",
+  "CIRCULAR_GRID",
+  "SNAKE",
+]);
+
 /** HTML void elements: they cannot have children, whether or not self-closed. */
 const VOID_TAGS = new Set([
   "IMG",
@@ -303,6 +329,7 @@ const INLINE_TAGS = new Set([
   "EM",
   "U",
   "S",
+  "STRIKE",
   "SPAN",
   "A",
   "BR",
@@ -314,6 +341,54 @@ const INLINE_TAGS = new Set([
 
 function isElementNode(node: XMLNode | XMLTextNode): node is XMLNode {
   return "tag" in node;
+}
+
+/** Text, or inline formatting around text: what a paragraph is made of. */
+function isInlineNode(node: XMLNode | XMLTextNode): boolean {
+  return isTextNode(node) || INLINE_TAGS.has(node.tag.toUpperCase());
+}
+
+/** Elements that never carry slide content, wherever the model puts them. */
+const NON_CONTENT_TAGS = new Set([
+  "STYLE",
+  "SCRIPT",
+  "SVG",
+  "HEAD",
+  "META",
+  "LINK",
+  "TEMPLATE",
+  "NOSCRIPT",
+  "IFRAME",
+  "CANVAS",
+  "OBJECT",
+]);
+
+/**
+ * Consecutive <LI>s written straight into a slide or a wrapper, with no
+ * <UL> around them, gathered into one. At slide level they were dropped one
+ * by one as unknown tags: "How to stay safe" kept its heading and lost all
+ * five tips under it.
+ */
+function groupLooseListItems(
+  nodes: Array<XMLNode | XMLTextNode>,
+): Array<XMLNode | XMLTextNode> {
+  const out: Array<XMLNode | XMLTextNode> = [];
+  let run: XMLNode | null = null;
+  for (const node of nodes) {
+    if (isElementNode(node) && node.tag.toUpperCase() === "LI") {
+      if (!run) {
+        run = { tag: "UL", attributes: {}, children: [] };
+        out.push(run);
+      }
+      run.children.push(node);
+      continue;
+    }
+    // Whitespace between items does not end the list.
+    if (run && isTextNode(node) && !node.text.trim()) continue;
+    run = null;
+    out.push(node);
+  }
+  return out;
 }
 
 function hashStableText(input: string): string {
@@ -920,6 +995,86 @@ export class SlideParser {
   }
 
   /**
+   * A group written with its items in an attribute gets them as children.
+   *
+   * `<CIRCULAR-GRID centerText="Gen AI" items="Deep Learning,Machine
+   * Learning,Artificial Intelligence" />` is not the documented form — items
+   * are <DIV> children — but the model writes it, and every group builder
+   * reads only children, so the ring rendered its hub and nothing around
+   * it. Only a group with no element children is expanded, so well-formed
+   * markup is untouched.
+   */
+  private expandItemsAttribute(node: XMLNode): void {
+    for (const child of node.children) {
+      if (!isElementNode(child)) continue;
+      const list = child.attributes.items;
+      if (
+        list !== undefined &&
+        ITEM_GROUP_TAGS.has(child.tag.toUpperCase()) &&
+        !child.children.some(isElementNode)
+      ) {
+        const separator = list.includes("|") ? "|" : list.includes(";") ? ";" : ",";
+        child.children = list
+          .split(separator)
+          .map((item) => unescapeXmlText(item).trim())
+          .filter(Boolean)
+          .map((item) => ({
+            tag: "DIV",
+            attributes: {},
+            children: [{ tag: "P", attributes: {}, children: [{ text: item }] }],
+          }));
+        delete child.attributes.items;
+      }
+      this.expandItemsAttribute(child);
+    }
+  }
+
+  /**
+   * A group's items are its <DIV>s, and its builder reads nothing else. Items
+   * written the HTML way, as <LI>, are items. Any other block written inside
+   * a group moves out beside it — before the group if it came before the
+   * first item, after it otherwise — instead of vanishing: a CHART written
+   * inside STATS, or a heading at the top of a BULLETS group, was dropped.
+   */
+  private normalizeGroups(node: XMLNode): void {
+    const out: Array<XMLNode | XMLTextNode> = [];
+    for (const child of node.children) {
+      if (!isElementNode(child)) {
+        out.push(child);
+        continue;
+      }
+      this.normalizeGroups(child);
+      const tag = child.tag.toUpperCase();
+      if (!ITEM_GROUP_TAGS.has(tag) && tag !== "STATS") {
+        out.push(child);
+        continue;
+      }
+      const before: XMLNode[] = [];
+      const after: XMLNode[] = [];
+      const kept: Array<XMLNode | XMLTextNode> = [];
+      let seenItem = false;
+      for (const part of child.children) {
+        if (!isElementNode(part)) {
+          kept.push(part);
+          continue;
+        }
+        const partTag = part.tag.toUpperCase();
+        if (partTag === "DIV" || partTag === "LI") {
+          kept.push(partTag === "LI" ? { ...part, tag: "DIV" } : part);
+          seenItem = true;
+        } else if (partTag === "ICON" || isInlineNode(part)) {
+          kept.push(part);
+        } else {
+          (seenItem ? after : before).push(part);
+        }
+      }
+      child.children = kept;
+      out.push(...before, child, ...after);
+    }
+    node.children = out;
+  }
+
+  /**
    * Generate a section identifier
    */
   private generateSectionIdentifier(sectionNode: XMLNode): string {
@@ -990,6 +1145,8 @@ export class SlideParser {
 
     // Before the fingerprint, so the id is taken from the clean heading.
     this.liftBlocksOutOfHeadings(sectionNode);
+    this.expandItemsAttribute(sectionNode);
+    this.normalizeGroups(sectionNode);
 
     let slideId: string;
     if (sectionNode.attributes.id) {
@@ -1034,6 +1191,9 @@ export class SlideParser {
     let rootImage: RootImage | undefined;
     let speakerNote: string | undefined;
 
+    // After the id is taken, so a slide's id does not depend on this.
+    sectionNode.children = groupLooseListItems(sectionNode.children);
+
     for (const child of sectionNode.children) {
       if (isTextNode(child)) {
         rootImage ??= this.createRootImageFromTagContent(
@@ -1075,17 +1235,7 @@ export class SlideParser {
       }
 
       if (child.tag.toUpperCase() === "DIV") {
-        for (const divChild of child.children) {
-          if (!isElementNode(divChild)) continue;
-          const processedElement = this.processTopLevelNode(
-            divChild,
-            slideId,
-            layoutType,
-          );
-          if (processedElement) {
-            plateElements.push(processedElement);
-          }
-        }
+        plateElements.push(...this.slideLevelDiv(child, slideId, layoutType));
       } else {
         const processedElement = this.processTopLevelNode(
           child,
@@ -1100,7 +1250,12 @@ export class SlideParser {
 
     return {
       id: slideId,
-      content: this.withStableElementIds(plateElements, slideId),
+      // Cleaned before ids are assigned, so an item that is dropped does not
+      // leave a gap in its siblings' paths.
+      content: this.withStableElementIds(
+        cleanSlideContent(plateElements as Descendant[]) as PlateNode[],
+        slideId,
+      ),
       ...(rootImage ? { rootImage } : {}),
       ...(layoutType ? { layoutType: layoutType } : {}),
       ...(isImageSlide ? { isImageSlide: true } : {}),
@@ -1479,6 +1634,108 @@ export class SlideParser {
   /**
    * Process a top-level node in the SECTION
    */
+  /**
+   * A DIV at slide level, as the blocks it holds.
+   *
+   * Given a brief that specifies exact fonts, colours and positions, the model
+   * lays slides out in HTML: `<DIV style="display:flex">` holding a row of
+   * `<DIV style="…">` cards. Every element at slide level goes through
+   * processTopLevelNode, which has no DIV — so each nested DIV was dropped as
+   * an "unknown top-level tag". An agenda lost all six of its parts and a
+   * slide of three headline figures lost all three; the slide kept only its
+   * heading.
+   *
+   * A DIV whose children are two or more DIVs is a row of cards, and becomes
+   * a BOXES group. Any other DIV is a wrapper: its blocks are slide-level
+   * blocks (DIVs among them, by the same rule) and text written straight into
+   * it is a paragraph, as it is in any other container.
+   */
+  private slideLevelDiv(
+    div: XMLNode,
+    slideId: string,
+    layoutType?: LayoutType,
+  ): PlateNode[] {
+    div = { ...div, children: groupLooseListItems(div.children) };
+    const elements = div.children.filter(isElementNode);
+    if (
+      elements.length >= 2 &&
+      elements.every((child) => child.tag.toUpperCase() === "DIV")
+    ) {
+      for (const card of elements) this.adoptIconChild(card);
+      return [this.createBoxes({ tag: "BOXES", attributes: {}, children: elements })];
+    }
+    const out: PlateNode[] = [];
+    for (let k = 0; k < div.children.length; ) {
+      const child = div.children[k]!;
+      if (isInlineNode(child)) {
+        const run: Array<XMLNode | XMLTextNode> = [];
+        while (k < div.children.length && isInlineNode(div.children[k]!)) {
+          run.push(div.children[k]!);
+          k += 1;
+        }
+        const paragraph = this.paragraphFromRun(run);
+        if (paragraph) out.push(paragraph);
+        continue;
+      }
+      k += 1;
+      if (!isElementNode(child)) continue;
+      if (child.tag.toUpperCase() === "DIV") {
+        out.push(...this.slideLevelDiv(child, slideId, layoutType));
+        continue;
+      }
+      const processed = this.processTopLevelNode(child, slideId, layoutType);
+      if (processed) out.push(processed);
+    }
+    return out;
+  }
+
+  /**
+   * A card drawn as `<DIV><DIV icon="lightbulb" style="…"></DIV><P>…</P></DIV>`
+   * carries its icon on an empty child; the card itself takes it.
+   */
+  private adoptIconChild(card: XMLNode): void {
+    if (this.extractIconValue(card)) return;
+    const holder = card.children.find(
+      (child): child is XMLNode =>
+        isElementNode(child) &&
+        Boolean(this.extractIconValue(child)) &&
+        !this.getTextContent(child).trim(),
+    );
+    if (!holder) return;
+    card.attributes.icon = this.extractIconValue(holder);
+    card.children = card.children.filter((child) => child !== holder);
+  }
+
+  /** List items as a bullet list — the component that draws them as one. */
+  private bulletsFromItems(items: XMLNode[], numbered: boolean): PlateNode {
+    return this.createBulletGroup({
+      tag: "BULLETS",
+      attributes: numbered ? { bulletType: "numbered" } : {},
+      children: items.map((item) => ({ ...item, tag: "DIV" })),
+    });
+  }
+
+  /**
+   * An element the vocabulary does not have, at slide level. It used to be
+   * dropped with everything inside it: the model wrapped a quoted scam call
+   * in `<BETA>` — after the word that opens the quote — and the quote was
+   * gone. Its content is kept, the way an HTML parser renders an unknown
+   * element's content; only elements that never hold slide content (style
+   * sheets, scripts, drawings) are dropped.
+   */
+  private unknownAsContent(node: XMLNode): PlateNode | null {
+    if (NON_CONTENT_TAGS.has(node.tag.toUpperCase())) return null;
+    if (node.children.every(isInlineNode)) {
+      return this.getTextContent(node).trim()
+        ? this.createParagraph({ ...node, attributes: {} })
+        : null;
+    }
+    const children = this.processNodes(node.children);
+    if (children.length === 0) return null;
+    if (children.length === 1) return children[0] ?? null;
+    return { type: "p", children: children as Descendant[] } as ParagraphElement;
+  }
+
   private processTopLevelNode(
     node: XMLNode,
     slideId: string,
@@ -1487,6 +1744,14 @@ export class SlideParser {
     const tag = node.tag.toUpperCase();
 
     switch (tag) {
+      case "UL":
+      case "OL": {
+        const items = node.children.filter(
+          (child): child is XMLNode =>
+            isElementNode(child) && child.tag.toUpperCase() === "LI",
+        );
+        return items.length > 0 ? this.bulletsFromItems(items, tag === "OL") : null;
+      }
       case "H1":
       case "H2":
       case "H3":
@@ -1602,8 +1867,7 @@ export class SlideParser {
       case "FLOW":
         return this.createFlow(node);
       default:
-        console.warn(`Unknown top-level tag: ${tag}`);
-        return null;
+        return this.unknownAsContent(node);
     }
   }
 
@@ -1690,9 +1954,33 @@ export class SlideParser {
   }
 
   /**
-   * Enhanced parser that maintains order of text and elements
+   * Build the element tree, keeping text and elements in order.
+   *
+   * An end tag closes the nearest open element with its name, and with it
+   * anything still open inside that element; an end tag that matches nothing
+   * open is ignored. That is the HTML tree-construction rule for end tags,
+   * and the model's malformed markup needs both halves of it.
+   *
+   * This used to be a recursive descent in which each element's caller found
+   * where it ended with `indexOf("</TAG>")`: the FIRST closing tag of that
+   * name after the opening one, whatever was nested in between. In
+   * `<COLUMNS><DIV><H3>Tips</H3><BULLETS><DIV>a</DIV><DIV>b</DIV></BULLETS></DIV></COLUMNS>`
+   * the lane was taken to end at item a's `</DIV>`, so the column group read
+   * on from there: item b became a lane of its own, and everything nested
+   * after the first inner `</DIV>` was parsed twice. One slide came back with
+   * every industry listed twice and four empty lanes; the quality gate then
+   * asked the model to fix the duplicates, and kept its answer — a note
+   * saying it had removed them. A misspelt end tag did the same at a larger
+   * scale: `</CALOUT>` left the callout open, it adopted the rest of the
+   * slide, and the parent then parsed that content again outside it. The
+   * search was also case-sensitive where the descent's own match was not, so
+   * `<p>…</P>` ended its parent early and every sibling after it was lost.
    */
-  private parseElement(xml: string, parentNode: XMLNode): void {
+  private parseElement(xml: string, root: XMLNode): void {
+    // Innermost open element last. The root is the caller's and is never
+    // closed here.
+    const open: XMLNode[] = [root];
+    const current = (): XMLNode => open[open.length - 1]!;
     let currentIndex = 0;
 
     while (currentIndex < xml.length) {
@@ -1702,7 +1990,7 @@ export class SlideParser {
       if (tagStart === -1) {
         const remainingText = xml.substring(currentIndex);
         if (remainingText) {
-          parentNode.children.push({ text: unescapeXmlText(remainingText) });
+          current().children.push({ text: unescapeXmlText(remainingText) });
         }
         break;
       }
@@ -1711,7 +1999,7 @@ export class SlideParser {
       if (tagStart > currentIndex) {
         const textContent = xml.substring(currentIndex, tagStart);
         if (textContent) {
-          parentNode.children.push({ text: unescapeXmlText(textContent) });
+          current().children.push({ text: unescapeXmlText(textContent) });
         }
       }
 
@@ -1721,7 +2009,7 @@ export class SlideParser {
       if (tagEnd === -1) {
         const remainingText = xml.substring(tagStart);
         if (remainingText) {
-          parentNode.children.push({ text: unescapeXmlText(remainingText) });
+          current().children.push({ text: unescapeXmlText(remainingText) });
         }
         break;
       }
@@ -1730,14 +2018,15 @@ export class SlideParser {
 
       // Closing tag
       if (tagContent.startsWith("/")) {
-        const closingTag = tagContent.substring(1);
-        if (closingTag.toUpperCase() === parentNode.tag.toUpperCase()) {
-          currentIndex = tagEnd + 1;
-          break;
-        } else {
-          currentIndex = tagEnd + 1;
-          continue;
+        const closing = tagContent.substring(1).trim().toUpperCase();
+        for (let depth = open.length - 1; depth >= 1; depth--) {
+          if (open[depth]!.tag.toUpperCase() === closing) {
+            open.length = depth;
+            break;
+          }
         }
+        currentIndex = tagEnd + 1;
+        continue;
       }
 
       // Comments
@@ -1751,7 +2040,7 @@ export class SlideParser {
       let tagName: string;
       let attrString: string;
 
-      const firstSpace = tagContent.indexOf(" ");
+      const firstSpace = tagContent.search(/\s/);
       if (firstSpace === -1) {
         tagName = tagContent;
         attrString = "";
@@ -1763,6 +2052,14 @@ export class SlideParser {
       // Skip special tags
       if (tagName.startsWith("!") || tagName.startsWith("?")) {
         currentIndex = tagEnd + 1;
+        continue;
+      }
+
+      // A "<" that does not start a tag name is text: "x < y", "<3". Read as
+      // a tag, it opened a nameless element that adopted everything after it.
+      if (!/^[A-Za-z]/.test(tagName)) {
+        current().children.push({ text: "<" });
+        currentIndex = tagStart + 1;
         continue;
       }
 
@@ -1780,7 +2077,7 @@ export class SlideParser {
       // heading off the canvas in every bottom-anchored layout.
       const upperTag = tagName.toUpperCase();
       if (upperTag === "BR" || upperTag === "WBR") {
-        if (upperTag === "BR") parentNode.children.push({ text: " " });
+        if (upperTag === "BR") current().children.push({ text: " " });
         currentIndex = tagEnd + 1;
         continue;
       }
@@ -1836,24 +2133,12 @@ export class SlideParser {
         originalTagContent: xml.substring(tagStart, tagEnd + 1),
       };
 
-      // Add to parent's children
-      parentNode.children.push(newNode);
-
+      current().children.push(newNode);
       currentIndex = tagEnd + 1;
 
-      // If not self-closing, recursively parse
-      if (!isSelfClosing) {
-        this.parseElement(xml.substring(currentIndex), newNode);
-
-        const closingTag = `</${tagName}>`;
-        const closingTagIndex = xml.indexOf(closingTag, currentIndex);
-
-        if (closingTagIndex !== -1) {
-          currentIndex = closingTagIndex + closingTag.length;
-        } else {
-          break;
-        }
-      }
+      // Its content follows until its end tag, or until an end tag closes an
+      // element it sits inside, or the input ends.
+      if (!isSelfClosing) open.push(newNode);
     }
   }
 
@@ -1976,6 +2261,16 @@ export class SlideParser {
    * Process a DIV node
    */
   private processDiv(node: XMLNode): PlateNode | null {
+    // A DIV of nothing but text is a paragraph that keeps the DIV's own
+    // attributes — its icon, usually — and its bold and italics.
+    if (node.children.every(isInlineNode)) {
+      return {
+        type: "p",
+        ...node.attributes,
+        children: this.getTextDescendants(node),
+      } as ParagraphElement;
+    }
+
     const children = this.processNodes(node.children);
 
     if (children.length === 0) {
@@ -2038,21 +2333,19 @@ export class SlideParser {
     for (const child of node.children) {
       if (isElementNode(child) && child.tag.toUpperCase() === "DIV") {
         let icon = this.extractIconValue(child);
-        const children: Descendant[] = [];
+        const rest: Array<XMLNode | XMLTextNode> = [];
 
         for (const iconChild of child.children) {
-          if (!isElementNode(iconChild)) continue;
-
-          if (iconChild.tag.toUpperCase() === "ICON") {
+          if (isElementNode(iconChild) && iconChild.tag.toUpperCase() === "ICON") {
             icon ||= this.extractIconValue(iconChild);
             continue;
           }
-
-          const processedChild = this.processNode(iconChild);
-          if (processedChild) {
-            children.push(processedChild as Descendant);
-          }
+          rest.push(iconChild);
         }
+        // Through processNodes, so a label written straight into the item —
+        // `<DIV icon="lightbulb">AI basics</DIV>` — is kept. Only elements
+        // were read, and an agenda of six icons came out with no words.
+        const children = this.processNodes(rest) as Descendant[];
 
         const iconItem: TIconListItemElement = {
           type: "icon-item",
@@ -2718,7 +3011,11 @@ export class SlideParser {
         : undefined;
     const alignment = parseAlignmentAttribute(node.attributes.alignment);
 
-    const children = this.processNodes(node.children) as Descendant[];
+    // A button's label is its text; only a button holding blocks is built
+    // from them.
+    const children = (
+      node.children.every(isInlineNode) ? [] : this.processNodes(node.children)
+    ) as Descendant[];
     const fallback = this.getTextContent(node).trim() || "";
     const finalChildren =
       children.length > 0
@@ -2793,6 +3090,20 @@ export class SlideParser {
               ? { generating: true }
               : {}),
           } as Descendant);
+        } else if (INLINE_TAGS.has(childTag)) {
+          // A span, link, mark or sub/superscript carries no formatting a
+          // slide shows, but its words are part of the sentence. They went
+          // through the block path and came back as nothing: "Visit
+          // <A>our site</A>" lost "our site".
+          const content = this.getTextContent(child);
+          if (content) {
+            descendants.push({
+              text: content,
+              ...(this.shouldHaveGeneratingMark(content)
+                ? { generating: true }
+                : {}),
+            } as TText);
+          }
         } else {
           // For other elements, recursively process them
           const processedChild = this.processNode(child);
@@ -2832,6 +3143,26 @@ export class SlideParser {
   }
 
   /**
+   * A run of inline content that sits among blocks, as one paragraph; null
+   * when the run is only the whitespace between two tags.
+   */
+  private paragraphFromRun(
+    run: Array<XMLNode | XMLTextNode>,
+  ): ParagraphElement | null {
+    const holder: XMLNode = { tag: "P", attributes: {}, children: run };
+    if (!this.getTextContent(holder).trim()) return null;
+    const paragraph = this.createParagraph(holder);
+    // The newlines that separated the run from the tags around it are
+    // layout, not content; PowerPoint would print them as blank lines.
+    const leaves = paragraph.children as Array<{ text?: string }>;
+    const first = leaves[0];
+    const last = leaves[leaves.length - 1];
+    if (typeof first?.text === "string") first.text = first.text.trimStart();
+    if (typeof last?.text === "string") last.text = last.text.trimEnd();
+    return paragraph;
+  }
+
+  /**
    * Process a list of XMLNodes into Plate elements
    */
   private processNodes(nodes: Array<XMLNode | XMLTextNode>): PlateNode[] {
@@ -2844,8 +3175,26 @@ export class SlideParser {
         continue;
       }
 
-      // Skip text nodes at this level (they're handled by getTextDescendants)
-      if (isTextNode(node)) {
+      // Text that sits directly in a container is content, not markup noise:
+      // `<BULLETS><DIV icon="pause">Pause before you pay</DIV>` is how the
+      // model writes a bullet as often as not. Skipping text here left every
+      // such item empty — five bullet markers with nothing beside them —
+      // and the same happened to lanes, boxes, steps and cards. A run of
+      // text and inline formatting becomes one paragraph; the whitespace
+      // between tags is dropped as before.
+      if (isInlineNode(node)) {
+        const run: Array<XMLNode | XMLTextNode> = [];
+        let j = i;
+        while (j < nodes.length && nodes[j] && isInlineNode(nodes[j]!)) {
+          run.push(nodes[j]!);
+          j += 1;
+        }
+        const paragraph = this.paragraphFromRun(run);
+        if (paragraph) plateNodes.push(paragraph);
+        i = j;
+        continue;
+      }
+      if (!isElementNode(node)) {
         i += 1;
         continue;
       }
@@ -2963,7 +3312,10 @@ export class SlideParser {
       case "VERTICAL_ARROWS":
         return this.createArrowVertical(node);
       case "ICON":
-        return null;
+        // An icon is decoration; a label written inside one is not:
+        // `<ICON><DIV icon="shield">Fraud alerts</DIV></ICON>` lost the
+        // label with the icon.
+        return this.getTextContent(node).trim() ? this.unknownAsContent(node) : null;
       case "BUTTON":
         return this.createButton(node);
       case "QUOTE":
@@ -3060,7 +3412,11 @@ export class SlideParser {
     const items: ParagraphElement[] = [];
 
     for (const li of liNodes) {
-      let itemChildren = this.processNodes(li.children) as Descendant[];
+      // A list item of plain text stays a run of text, as it always was;
+      // only an item that also holds blocks is built from them.
+      let itemChildren = (
+        li.children.every(isInlineNode) ? [] : this.processNodes(li.children)
+      ) as Descendant[];
       const contentText = this.getTextContent(li).trim();
 
       if ((!itemChildren || itemChildren.length === 0) && contentText) {
@@ -3189,10 +3545,10 @@ export class SlideParser {
       }
     }
 
+    // No hub label means no hub. The fallback used to be "Smart Diagram" —
+    // placeholder text printed on the slide as if the model had written it.
     const centerText =
-      node.attributes.centertext ||
-      node.attributes.centerText ||
-      "Smart Diagram";
+      node.attributes.centertext || node.attributes.centerText || "";
 
     return {
       type: CIRCULAR_GRID_GROUP,

@@ -264,3 +264,32 @@ describe("layout planner", () => {
   });
 });
 
+
+describe("image prompts on a replanned slide", () => {
+  // The quality gate and "Regenerate slide" replan one slide. That path used
+  // to skip the image rules planDeck applies, and a rewritten slide asked for
+  // "concentric rings diagram on dark purple background".
+  const withImage = (query: string) =>
+    slide({
+      content: [el("h1", "What exactly is AI, in four rings"), el("p", "Short line.")],
+      rootImage: { query } as unknown as PlateSlide["rootImage"],
+      layoutType: "left",
+    });
+
+  it("drops furniture, a look with no subject, and a repeat of an earlier slide", () => {
+    const earlier = withImage("container cranes at a harbour at dusk");
+    for (const query of [
+      "concentric rings diagram on dark purple background",
+      "abstract dark purple background with a soft violet radial glow",
+      "container cranes at a harbour at dusk",
+    ]) {
+      const replanned = replanSlide([earlier, withImage(query)], 1);
+      expect(replanned.rootImage, query).toBeUndefined();
+    }
+  });
+
+  it("keeps a concrete, new subject", () => {
+    const replanned = replanSlide([withImage("a harbour at dusk"), withImage("a farmer photographing a leaf")], 1);
+    expect(replanned.rootImage).toEqual({ query: "a farmer photographing a leaf" });
+  });
+});

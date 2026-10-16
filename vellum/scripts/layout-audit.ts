@@ -16,7 +16,8 @@
  *
  * A slide fails if its content runs past its box vertically, any element
  * reaches outside the content box or the slide, a block's text is wider than
- * the block that holds it, or its heading is not fully on the canvas.
+ * the block that holds it, its heading is not fully on the canvas, or text
+ * from one block is drawn over text from another.
  */
 import { chromium } from "playwright";
 import {
@@ -41,6 +42,7 @@ interface Measure {
   textOutsideSlide: string[];
   wordOverflow: string[];
   headingVisible: boolean | null;
+  overlaps: string[];
 }
 
 // Plain-JS string: tsx's name-keeping helper must not be injected into the page.
@@ -95,6 +97,46 @@ const MEASURE = `
     if (h) {
       var hr = h.getBoundingClientRect();
       out.headingVisible = hr.height > 0 && hr.top >= sr.top - 1 && hr.bottom <= sr.bottom + 1 && hr.top >= cr.top - 1;
+    }
+    // Text from one block covered by something another block draws — its
+    // text, or a card, ring or pill it paints. Absolutely placed items (a
+    // ring of circles round a hub) can sit on the heading above them while
+    // every box stays inside the slide, which the checks above cannot see.
+    function painted(el) {
+      var s = getComputedStyle(el);
+      var bg = s.backgroundColor.match(/[\\d.]+/g);
+      var fill = bg && (bg.length < 4 || Number(bg[3]) > 0.05);
+      var border = ['Top', 'Right', 'Bottom', 'Left'].some(function (side) {
+        return parseFloat(s['border' + side + 'Width']) > 0 && s['border' + side + 'Style'] !== 'none';
+      });
+      return Boolean(fill) || border;
+    }
+    var texts = [];
+    var marks = [];
+    // Text is measured by the block that lays it out, not the inline span
+    // holding it: a span's box is the font's full ascent and descent, taller
+    // than a display heading's 1.04 line, so two stacked headings' spans
+    // "overlap" across a visible gap.
+    function lineBox(el) {
+      var host = el;
+      while (host && host !== c && getComputedStyle(host).display === 'inline') host = host.parentElement;
+      return (host || el).getBoundingClientRect();
+    }
+    Array.prototype.slice.call(c.querySelectorAll('*')).forEach(function (el) {
+      if (!(el instanceof HTMLElement) || !vis(el)) return;
+      var item = { r: ownText(el) ? lineBox(el) : el.getBoundingClientRect(), block: el.closest('[data-slide-content] > *'), text: el.textContent.trim().slice(0, 24) };
+      if (ownText(el)) { texts.push(item); marks.push(item); }
+      else if (painted(el)) marks.push(item);
+    });
+    out.overlaps = [];
+    for (var i = 0; i < texts.length && out.overlaps.length < 2; i++) {
+      for (var j = 0; j < marks.length; j++) {
+        var a = texts[i], b = marks[j];
+        if (a.block === b.block) continue;
+        var w = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
+        var hgt = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+        if (w > 2 && hgt > 2) { out.overlaps.push('"' + a.text + '" under "' + (b.text || 'a shape') + '"'); break; }
+      }
     }
     return out;
   });
@@ -175,6 +217,7 @@ async function main() {
         if (m.textOutsideSlide.length) why.push(`text off the slide: "${m.textOutsideSlide[0]}"`);
         if (m.wordOverflow.length) why.push(`text wider than its box: "${m.wordOverflow[0]}"`);
         if (m.headingVisible === false) why.push("heading not visible");
+        if (m.overlaps?.length) why.push(`text over other text: ${m.overlaps[0]}`);
         if (why.length) {
           bad.push(`    slide ${String(i + 1).padStart(2)}  fit ${m.fit} zoom ${m.zoom}  ${why.join(" | ")}`);
           failures.push(`${arch} / slide ${i + 1}`);

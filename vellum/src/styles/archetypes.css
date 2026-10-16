@@ -100,6 +100,11 @@
   color: color-mix(in srgb, var(--presentation-accent, #7c6cff) 11%, transparent);
   pointer-events: none;
 }
+/* A divider with a picture has its visual; the ghost numeral, anchored to
+   the bottom-right corner, would be drawn across a right-hand rail. */
+.v-slide[data-archetype="divider"].v-has-img::after {
+  content: none;
+}
 .v-slide[data-archetype="divider"] .v-h1,
 .v-slide[data-archetype="divider"] .v-h2,
 .v-slide[data-archetype="divider"] .v-title {

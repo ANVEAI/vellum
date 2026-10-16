@@ -8,7 +8,7 @@
  */
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 import type { Descendant, TElement, TText } from "@/lib/slides/plate-shim";
-import { columnLanes } from "@/lib/slides/walk";
+import { columnLanes, contentItems } from "@/lib/slides/walk";
 
 export type ArchetypeId =
   | "hero"
@@ -140,7 +140,9 @@ export function signatureOf(slide: PlateSlide): ContentSignature {
   for (const el of els) {
     const type = String(el.type);
     if (GROUPS.has(type)) {
-      const items = (el.children ?? []).filter((c) => !isText(c)).length;
+      // What renders, so the layouts offered are judged on what the reader
+      // will see: an empty item draws nothing.
+      const items = contentItems(el).length;
       groupItems = Math.max(groupItems, items);
       if (type === "stats") statCount = items;
     }

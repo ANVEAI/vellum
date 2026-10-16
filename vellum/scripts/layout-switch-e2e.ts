@@ -44,7 +44,43 @@ const MEASURE = `
   });
   var h = c.querySelector('.v-title, .v-h1, .v-h2');
   var hr = h ? h.getBoundingClientRect() : null;
+  // Text from one block covered by another block's text or painted shape
+  // (see layout-audit.ts).
+  var texts = [];
+  var marks = [];
+  Array.prototype.slice.call(c.querySelectorAll('*')).forEach(function (el) {
+    if (!(el instanceof HTMLElement)) return;
+    var own = false;
+    for (var k = 0; k < el.childNodes.length; k++) {
+      if (el.childNodes[k].nodeType === 3 && el.childNodes[k].textContent.trim()) own = true;
+    }
+    var r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    var s = getComputedStyle(el);
+    var bg = s.backgroundColor.match(/[\\d.]+/g);
+    var painted = (bg && (bg.length < 4 || Number(bg[3]) > 0.05)) ||
+      ['Top', 'Right', 'Bottom', 'Left'].some(function (side) {
+        return parseFloat(s['border' + side + 'Width']) > 0 && s['border' + side + 'Style'] !== 'none';
+      });
+    // Measured by the block that lays the text out, not its inline span —
+    // see layout-audit.ts.
+    var host = el;
+    while (own && host && host !== c && getComputedStyle(host).display === 'inline') host = host.parentElement;
+    var item = { r: own && host ? host.getBoundingClientRect() : r, block: el.closest('[data-slide-content] > *') };
+    if (own) { texts.push(item); marks.push(item); }
+    else if (painted) marks.push(item);
+  });
+  var overlap = false;
+  for (var i = 0; i < texts.length && !overlap; i++) {
+    for (var j = 0; j < marks.length; j++) {
+      var a = texts[i], b = marks[j];
+      if (a.block === b.block) continue;
+      if (Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left) > 2 &&
+          Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top) > 2) { overlap = true; break; }
+    }
+  }
   return {
+    overlap: overlap,
     arch: canvas.getAttribute('data-archetype'),
     fit: canvas.getAttribute('data-fit') || '1',
     zoom: canvas.getAttribute('data-zoom') || '1',
@@ -61,6 +97,7 @@ interface Measure {
   vOver: number;
   hOver: number;
   headingVisible: boolean | null;
+  overlap?: boolean;
   empty?: boolean;
 }
 
@@ -127,6 +164,7 @@ async function main() {
           if (m.vOver > 1) why.push(`clipped ${m.vOver}px`);
           if (m.hOver > 2) why.push(`${m.hOver}px past the content box`);
           if (m.headingVisible === false) why.push("heading not visible");
+          if (m.overlap) why.push("text over other text");
           if (process.env.VERBOSE) {
             lines.push(`    pass ${pass}  ${labels[t].padEnd(12)} fit ${m.fit} zoom ${m.zoom}  ${why.length ? why.join(" | ") : "ok"}`);
           }

@@ -127,7 +127,10 @@ async function main() {
     const n0 = await slideCount(cookie, id);
     await page.click('[role="radio"]:has-text("Format")');
     await page.waitForTimeout(200);
-    await page.click('button:has-text("Duplicate")');
+    // Exact text: `has-text` is a substring match, and a slide thumbnail is a
+    // button too — one reading "…Removed duplicate entries…" was clicked
+    // instead, selecting that slide.
+    await page.click('button:text-is("Duplicate")');
     await page.waitForTimeout(900);
     const n1 = await slideCount(cookie, id);
     check("duplicate adds a slide", n1 === n0 + 1, `${n0} → ${n1}`);
@@ -136,7 +139,7 @@ async function main() {
     check("undo removes the duplicate", (await slideCount(cookie, id)) === n0);
 
     /* --- delete uses the app dialog, not window.confirm ------------------ */
-    await page.click('button:has-text("Delete")');
+    await page.click('button:text-is("Delete")');
     await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
     const dialogText = await page.textContent('[role="dialog"]');
     check("delete asks in an in-app dialog", /Delete slide/i.test(dialogText ?? ""));

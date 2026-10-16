@@ -12,7 +12,10 @@
  * persisted archetypes passed in as frozen context.
  */
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
-import { requestsSlideFurniture } from "@/lib/images/prompt-hygiene";
+import {
+  requestsBackdropOnly,
+  requestsSlideFurniture,
+} from "@/lib/images/prompt-hygiene";
 import {
   accepts,
   ARCHETYPE_WEIGHT,
@@ -115,21 +118,38 @@ function imageKey(slide: PlateSlide): string {
 function withoutRepeatedImages(slides: PlateSlide[]): PlateSlide[] {
   const seen = new Set<string>();
   return slides.map((slide) => {
-    const key = imageKey(slide);
-    if (!key) return slide;
-    const rendered = Boolean((slide.rootImage as { url?: unknown }).url);
-    // Also dropped: a prompt asking for a chart, diagram or other slide
-    // furniture, which an image model renders as an imitation covered in
-    // invented labels. The prompt forbids it; the model does not always
-    // listen, and a brief that describes labelled diagrams invites it.
-    if (!rendered && (seen.has(key) || requestsSlideFurniture(key))) {
-      const rest = { ...slide };
-      delete rest.rootImage;
-      return rest;
-    }
-    seen.add(key);
-    return slide;
+    const kept = withoutUnusableImage(slide, seen);
+    const key = imageKey(kept);
+    if (key) seen.add(key);
+    return kept;
   });
+}
+
+/**
+ * One slide's root image, unless its prompt is not worth rendering: a repeat
+ * of one in `seen`; a request for a chart, diagram or other slide furniture,
+ * which an image model renders as an imitation covered in invented labels;
+ * or a look with no subject at all ("abstract dark purple background with a
+ * soft violet glow"), which says nothing about the slide. The prompt forbids
+ * all three; the model does not always listen, and a brief that describes
+ * labelled diagrams or a colour scheme invites them.
+ *
+ * Shared by the whole-deck plan and the single-slide replan. The quality
+ * gate's rewrites and "Regenerate slide" go through the replan, and used to
+ * skip this: a rewritten slide asked for "concentric rings diagram on dark
+ * purple background" and got rings of invented lettering.
+ */
+function withoutUnusableImage(slide: PlateSlide, seen: Set<string>): PlateSlide {
+  const key = imageKey(slide);
+  if (!key) return slide;
+  const rendered = Boolean((slide.rootImage as { url?: unknown }).url);
+  if (rendered) return slide;
+  if (seen.has(key) || requestsSlideFurniture(key) || requestsBackdropOnly(key)) {
+    const rest = { ...slide };
+    delete rest.rootImage;
+    return rest;
+  }
+  return slide;
 }
 
 /** Stamp archetypes across a deck (mutates copies, returns new array). */
@@ -177,7 +197,9 @@ export function replanSlide(
   slides: PlateSlide[],
   index: number,
 ): PlateSlide {
-  const slide = slides[index];
+  // The same image rules as planDeck, against the slides before this one.
+  const seen = new Set(slides.slice(0, index).map(imageKey).filter(Boolean));
+  const slide = withoutUnusableImage(slides[index], seen);
   const prev = slides[index - 1]?.archetype as ArchetypeId | undefined;
   const prevPrev = slides[index - 2]?.archetype as ArchetypeId | undefined;
   const denseRun =

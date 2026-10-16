@@ -20,6 +20,70 @@ export function walkNodes(
 }
 
 /**
+ * Elements that are content whatever text they hold: their substance lives
+ * in attributes (a chart's rows, an infographic's spec, an image's url) or
+ * they are drawn from elsewhere (the contributor line). Tables count as a
+ * whole — an empty cell is part of a grid, not a missing item.
+ */
+const SELF_EVIDENT = new Set([
+  "table",
+  "contributor",
+  "code_block",
+  "antv-infographic",
+  "funnel-flow",
+  "kpi-row",
+  "progress-rings",
+  "pictogram",
+  "harvey-table",
+  "matrix",
+  "org-chart",
+  "journey",
+  "venn",
+  "iceberg",
+  "flow-diagram",
+]);
+
+/**
+ * Whether a node shows the reader anything: words, a picture, a chart or a
+ * figure. An icon on its own does not — it decorates an item, it is not one.
+ */
+export function hasContent(node: Descendant): boolean {
+  if (!isElement(node)) {
+    // Letters, digits or symbols (✓, →, €). Punctuation alone — the " · "
+    // the model puts between blocks, a lone "." or "-" — reads as nothing.
+    const text = (node as { text?: unknown }).text;
+    return typeof text === "string" && /[\p{L}\p{N}\p{S}]/u.test(text);
+  }
+  const type = String(node.type);
+  if (SELF_EVIDENT.has(type) || type.startsWith("chart-")) return true;
+  if (type === "img") return Boolean(node.url || node.query);
+  // A STATS item carries its figure in an attribute, a circular grid its
+  // hub label.
+  const stat = node.stat;
+  if ((typeof stat === "string" && stat.trim()) || typeof stat === "number") {
+    return true;
+  }
+  if (typeof node.centerText === "string" && node.centerText.trim()) return true;
+  return (node.children ?? []).some((child) => hasContent(child as Descendant));
+}
+
+/**
+ * The items of a group (bullets, boxes, steps, a timeline…) that have
+ * something in them.
+ *
+ * An item with no content still drew its marker, number badge or card: a
+ * slide showed five bullet dots with nothing beside them. The renderer and
+ * the PowerPoint exporter both take a group's items from here, so they agree
+ * on what is there — the exporter matches the boxes it measures on the page
+ * to the model's items one for one.
+ */
+export function contentItems(node: TElement): TElement[] {
+  return (node.children ?? []).filter(
+    (child): child is TElement => isElement(child) && hasContent(child),
+  );
+}
+
+/**
  * The lanes of a <COLUMNS> group that actually carry something.
  *
  * The model routinely emits empty <DIV>s inside a column group. They are
@@ -29,20 +93,15 @@ export function walkNodes(
  * 1280px canvas — about 90px each — at which point text wraps a word per
  * line and runs off the bottom of the slide.
  *
+ * A lane whose only child is itself empty (a bullet list of empty items, a
+ * paragraph of whitespace) is empty too: it used to count as a lane because
+ * it held an element at all.
+ *
  * The planner and the renderer both count lanes, and they must agree, so the
  * definition lives here rather than in either of them.
  */
 export function columnLanes(node: TElement): TElement[] {
-  return (node.children ?? []).filter(
-    (child): child is TElement =>
-      isElement(child) &&
-      (child.children ?? []).some((grandchild) =>
-        isElement(grandchild)
-          ? true
-          : typeof (grandchild as { text?: string }).text === "string" &&
-            (grandchild as { text: string }).text.trim().length > 0,
-      ),
-  );
+  return contentItems(node);
 }
 
 export interface ImageRequest {

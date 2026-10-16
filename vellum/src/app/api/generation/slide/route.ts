@@ -17,8 +17,11 @@ import {
 } from "@/lib/slides/walk";
 import { resolveIconQueries } from "@/lib/icons/search";
 import { kickImageQueue } from "@/lib/generation/pipeline/asset-queue";
-import { formatTemplateGuidance, getTemplate } from "@/lib/templates/library";
+import { promptInputFor } from "@/lib/generation/prompts/input";
 import { replanSlide } from "@/lib/design/planner";
+import { resolveDesignTokens } from "@/lib/design/tokens";
+import { resolveThemeOrDefault } from "@/lib/themes/resolve";
+import { planPictures } from "@/lib/images/visual-plan";
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 
 export const runtime = "nodejs";
@@ -61,25 +64,19 @@ export async function POST(request: NextRequest) {
 
   try {
     const settings = await getSettings();
-    const { cards } = parseOutlineMarkdown(document.outline ?? "");
+    const { title, cards } = parseOutlineMarkdown(document.outline ?? "");
     const mode = document.kind === "doc" ? "document" : "deck";
-    const genParams = document.genParams
-      ? (JSON.parse(document.genParams) as Record<string, unknown>)
-      : {};
-
-    const template = document.templateId
-      ? getTemplate(document.templateId)
-      : undefined;
-    const promptInput = {
-      prompt: document.prompt ?? "",
-      title: document.title,
-      outline: cards.length ? cards : ["(no outline available)"],
-      language: (genParams.language as string) ?? "English",
-      tone: genParams.tone as string | undefined,
-      researchContext: document.researchContext ?? undefined,
-      currentDate: new Date().toISOString().slice(0, 10),
-      templateGuidance: template ? formatTemplateGuidance(template) : undefined,
-    };
+    // The same budget, density, audience and template rule the whole deck
+    // was written to, so a regenerated slide matches the slides around it.
+    const tokens = resolveDesignTokens(
+      resolveThemeOrDefault(document.themeName, null),
+      document.themeName ?? undefined,
+    );
+    const promptInput = promptInputFor(
+      document,
+      { title, cards: cards.length ? cards : ["(no outline available)"] },
+      tokens.content.maxWordsPerSlide,
+    );
     const base =
       mode === "document"
         ? buildDocumentPrompt(promptInput)
@@ -141,17 +138,38 @@ ${instruction ? `\nAdditional instruction: ${instruction}` : ""}`;
     slides[index] = replacement;
     if (document.kind !== "doc") {
       // Scoped replan: only this slide gets a fresh archetype; neighbors'
-      // persisted archetypes stay frozen as context.
+      // persisted archetypes stay frozen as context. It also drops an image
+      // prompt that asks for furniture, only a look, or a repeat.
       slides[index] = replanSlide(slides, index);
+      // The same picture decision a whole deck gets, for this slide.
+      if (settings.images.provider !== "none") {
+        const pictures = await planPictures(slides, {
+          capacity: tokens.content.maxWordsPerSlide,
+          title: promptInput.title ?? document.title,
+          request: document.prompt ?? "",
+          llm: { baseUrl: settings.llm.ollamaUrl, model: settings.llm.model },
+          only: [index],
+          signal: request.signal,
+        });
+        if (pictures.changed.length > 0) {
+          slides[index] = replanSlide(pictures.slides, index);
+        }
+      }
     }
 
-    const imageRequests = collectImageRequests([replacement]);
+    const imageRequests = collectImageRequests([slides[index]]);
     // The previous content's images are no longer wanted. Pending ones are
     // dropped so the GPU does not render them; one already running loses to
     // the jobs queued below, since only the newest job for a slot may write.
     await db.generatedImage
       .deleteMany({ where: { documentId, slideId, status: "pending" } })
       .catch(() => undefined);
+    // Saved before the jobs exist: a job reads its slot's shape from the
+    // saved slide, and the queue can pick a new row up the moment it lands.
+    await db.document.update({
+      where: { id: documentId },
+      data: { slides: JSON.stringify(slides) },
+    });
     if (imageRequests.length > 0) {
       await db.generatedImage.createMany({
         data: imageRequests.map((req) => ({
@@ -162,12 +180,8 @@ ${instruction ? `\nAdditional instruction: ${instruction}` : ""}`;
           provider: settings.images.provider,
         })),
       });
+      kickImageQueue();
     }
-    await db.document.update({
-      where: { id: documentId },
-      data: { slides: JSON.stringify(slides) },
-    });
-    if (imageRequests.length > 0) kickImageQueue();
 
     setTimeout(() => {
       void import("@/lib/qa/run").then((m) =>

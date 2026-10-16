@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { requestsSlideFurniture, stripTextRequests } from "@/lib/images/prompt-hygiene";
+import {
+  blankScreens,
+  requestsBackdropOnly,
+  requestsSlideFurniture,
+  stripTextRequests,
+} from "@/lib/images/prompt-hygiene";
 
 /**
  * The inputs here are real prompts taken from the generated deck whose images
@@ -107,3 +112,72 @@ describe("image prompt hygiene", () => {
   });
 });
 
+
+describe("prompts with no subject", () => {
+  it("recognises a look with nothing to depict", () => {
+    // The three root-image prompts of a generated 20-slide deck.
+    expect(
+      requestsBackdropOnly(
+        "Abstract dark purple background with a soft violet radial glow on the right side, minimalist, cinematic",
+      ),
+    ).toBe(true);
+    expect(requestsBackdropOnly("deep indigo gradient with subtle bokeh particles, copy space on the left")).toBe(true);
+    // Verbatim, composition notes and all.
+    expect(
+      requestsBackdropOnly(
+        "Abstract dark purple background with a soft violet radial glow on the right side. The left side has clean, sharp negative space for text.",
+      ),
+    ).toBe(true);
+    expect(
+      requestsBackdropOnly(
+        "Abstract dark purple background with a large soft violet radial glow centered. Clean negative space on the left for text.",
+      ),
+    ).toBe(true);
+    expect(requestsBackdropOnly("")).toBe(true);
+  });
+
+  it("keeps anything that has a subject in it", () => {
+    expect(requestsBackdropOnly("a student speaking into a microphone in a dark lecture hall")).toBe(false);
+    expect(requestsBackdropOnly("ocean waves crashing on black rocks at dusk")).toBe(false);
+    expect(requestsBackdropOnly("a glowing violet orb against a deep indigo sky")).toBe(false);
+  });
+});
+
+describe("written marks as a subject", () => {
+  it("strips text, numbers and code from a prompt and keeps the scene", () => {
+    // Prompts from a generated deck whose images came back covered in
+    // invented words and numerals.
+    const orb = stripTextRequests(
+      "a magical glowing orb generating colorful particles of text, music notes and image frames",
+    ).prompt;
+    expect(orb).not.toMatch(/\btext\b/);
+    expect(orb).toContain("music notes");
+    const waves = stripTextRequests("three vertical bars of sound waves turning into digital code").prompt;
+    expect(waves).not.toMatch(/code/);
+    expect(waves).toContain("sound waves");
+  });
+
+  it("treats a map as furniture", () => {
+    expect(requestsSlideFurniture("a map of India glowing with purple data lines connecting major cities")).toBe(true);
+  });
+
+  it("leaves words that only contain them alone", () => {
+    const clean = "a weaver checking the texture of a handloom sari in a sunlit workshop";
+    expect(stripTextRequests(clean).prompt).toBe(clean);
+  });
+});
+
+describe("screens in a picture", () => {
+  it("says a device's screen is dark and blank, keeping the subject", () => {
+    expect(blankScreens("A nurse using a tablet beside a hospital bed")).toBe(
+      "A nurse using a tablet beside a hospital bed, every screen in the picture dark and blank",
+    );
+  });
+
+  it("leaves prompts with no device, or already blank, alone", () => {
+    const harbour = "container cranes at a harbour at dusk";
+    expect(blankScreens(harbour)).toBe(harbour);
+    const done = "a laptop with a dark, blank screen on a desk";
+    expect(blankScreens(done)).toBe(done);
+  });
+});

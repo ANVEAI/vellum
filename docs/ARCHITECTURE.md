@@ -60,6 +60,59 @@ comes, and then stopped parsing its parent: `Harsh Tiwari<br>Founding Member…`
 lost its second line, and the slide's root `<IMG>` landed inside the paragraph.
 `<br>` becomes a space in the text run.
 
+### An end tag closes the nearest open element of its name
+
+`parseElement` builds the tree with a stack of open elements, the HTML rule
+for end tags: `</X>` closes the nearest open `X` and anything still open inside
+it; an end tag that matches nothing open is ignored. It used to be a recursive
+descent whose caller found each element's end with `indexOf("</X>")` — the
+first closing tag of that name, whatever was nested in between — so anything
+after a nested same-name element was parsed twice. `<COLUMNS><DIV>…<BULLETS>
+<DIV>a</DIV><DIV>b</DIV></BULLETS></DIV></COLUMNS>` gave item b a phantom lane
+of its own; a slide listed every industry twice, and the quality gate's
+rewrite of it was a note about removing the duplicates. A misspelt end tag
+(`</CALOUT>`) let the callout swallow the rest of the slide, and a mixed-case
+pair (`<p>…</P>`) ended its parent early. `tests/parser-structure.test.ts`
+covers each shape, including every streaming prefix.
+
+### Text written straight into a container is content
+
+`<BULLETS><DIV icon="pause">Pause before you pay</DIV>` is how the model
+writes a bullet as often as not. `processNodes` skipped text nodes, so every
+such item came out empty — five bullet dots with nothing beside them — and
+the same happened to lanes, boxes, steps and cards. A run of text and inline
+formatting among blocks is now one paragraph; a DIV of nothing but text stays
+a paragraph with its attributes (its icon). Spans and links keep their words.
+A group written with its items in an attribute (`<CIRCULAR-GRID
+items="A,B,C" />`) gets them as children, and a hub with no label has none —
+it used to print "Smart Diagram".
+
+### Nothing the model writes is dropped for being unexpected
+
+Given a brief that specifies exact fonts, colours and positions, the model
+lays slides out like a web page. Every slide-level element went through a
+switch with no DIV, LI or unknown tag, so each was discarded with everything
+inside it: an agenda kept its heading and lost all six parts. Now a DIV
+holding two or more DIVs is a row of cards (BOXES, each card keeping an icon
+it carried on an empty child); any other DIV is a wrapper whose blocks are the
+slide's; loose `<LI>`s, `UL` and `OL` are bullet lists; an unknown element
+keeps its content (only style sheets, scripts and drawings are dropped).
+Inside a group, `<LI>` items are items and any other block moves out beside
+the group rather than vanishing. Re-parsing the stored raw output of the last
+60 decks, 26,576 words written: 106 were missing on one deck alone before
+this, and none now outside chart and flow data, which live in attributes.
+
+### Generated content is cleaned before anyone sees it
+
+`cleanSlideContent` (`src/lib/slides/clean.ts`) runs inside the parser, so the
+streaming preview, the saved deck, the gate's rewrites and "Regenerate slide"
+all see the same thing. It drops empty items and the containers they leave
+empty, exact repeats among a group's items, and the model's notes about its
+own edits ("Slide 9: Removed duplicate entries. Reordered list for clarity."),
+and takes the outline's "Slide N:" off headings. The note detector is
+deliberately narrow — "Removed import duties on solar panels" is a real
+bullet — and is never applied to what a user types in the editor.
+
 ### One word budget
 
 `slideWordBudget` (`src/lib/design/budget.ts`) — the theme family's
@@ -74,6 +127,13 @@ an edit of the slide as it stands with a numeric limit — resending the brief
 made the model reproduce the brief's long text. A rewrite replaces the slide
 only when it has fewer hard faults, or the same number and fewer words.
 
+Fewer faults is necessary, not sufficient. A rewrite must also still be the
+slide: keep the heading the original had, draw at least half of what it says
+from the original, its notes or its outline entry, add no title element the
+original did not have, and not take the deck title or another slide's heading.
+Without these, a slide was replaced by the model's twelve-word note about its
+edit (no heading, so no faults), and an agenda by a second title slide.
+
 ### Image slots: newest job wins, and only for a slot that exists
 
 One image per (slide, node). Several jobs can target a slot: the gate keeps a
@@ -84,10 +144,41 @@ job's prompt to the slot's query would be wrong: the editor's regenerate
 action deliberately sends a new prompt. The editor's add-image route creates
 the slot when it queues the job.
 
-The planner drops a root image whose prompt an earlier slide used, or that
-asks for slide furniture (a chart, diagram, timeline, icon…). It lives in the
-planner because the planner is the one function the client preview and the
-server share, and the check only looks backwards.
+The planner drops a root image whose prompt an earlier slide used, asks for
+slide furniture (a chart, diagram, timeline, icon, map…), or describes only a
+look with no subject ("abstract dark purple background with a soft violet
+glow"). It lives in the planner because the planner is the one function the
+client preview and the server share, and the check only looks backwards. The
+single-slide replan applies the same rule — the gate's rewrites and
+"Regenerate slide" used to skip it.
+
+### Pictures are decided once the text is final
+
+`planPictures` (`src/lib/images/visual-plan.ts`) is the one decision about
+root images; the model's own prompt is a suggestion it weighs. Room is
+deterministic: no chart, table, diagram, sequence or headline numbers on the
+slide, at most one lane, and no more words than the theme family's
+`maxWordsPerSlide` — the canvas's physical capacity, not the density-scaled
+budget the writer is held to. A slide without room gets no picture. Of the
+slides with room, one structured model call decides which a picture would
+help and what it shows: a concrete subject, people described by role and
+never by name, settings without signage. A subject that needed scrubbing
+(words, screen content) is refused, not repaired — repaired, "a split screen
+showing a poem…" became "a split screen with a dark, blank screen" and was
+generated. Pictures go in side rails, alternating — never the wide banner,
+which left dense slides' text unreadable, nor a background, which outside
+the full-bleed archetype is a 25% wash. Any device in a prompt is described
+with a dark, blank screen at generation time. If the call fails the room rule
+still applies and the model's usable prompts stand.
+
+### Root images are queued after the deck is saved
+
+An image job reads its slot's shape from the saved slide: portrait for a
+rail, a wide band, 16:9 for full bleed. Jobs queued mid-stream found no saved
+slide and fell back to 16:9, so every rail image lost 60% of its width to the
+crop. Root images are now queued after the save (item images, always square,
+still start mid-stream), and reconciliation reads only this run's jobs. The
+abort path queues the root images of the slides it keeps.
 
 ### Never invent a figure
 
@@ -235,6 +326,17 @@ classes (`.v-box`, `.v-stat`, `.v-side`, `.v-item-body`, …) are a public API
 that the PPTX exporter measures against. New visual treatments add **modifier**
 classes; they never restructure. `scripts/verify-export-contract.ts` checks it.
 
+### A group's items are its items with content
+
+`contentItems` (`src/lib/slides/walk.ts`) is the one definition: an item with
+no words, picture, chart or figure is not an item. The renderer draws only
+those, a group or callout with none draws nothing, and the PPTX exporter pairs
+the boxes it measures with the same list — so a stored deck with empty bullets
+renders and exports without their dots. The layout picker's signature and the
+lint count the same way; the lint reports what it left out (`empty-item`).
+Plain bullets export once: an item with no heading used to print its text as
+a bold heading and again as its body.
+
 ### pptxgenjs image sizing
 
 `options.w/h` is the image's **uncropped** size; `sizing.w/h` is the **visible
@@ -296,7 +398,7 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
 
 | Command | Checks |
 |---|---|
-| `npm test` | 267 unit/integration tests |
+| `npm test` | 351 unit/integration tests |
 | `npx tsx scripts/ui-check.ts <deck> <doc>` | 48 screenshots, 2 themes × 4 widths; console errors, overflow, unlabelled controls, hit targets, native dialogs, focus rings, menu reachability |
 | `npx tsx scripts/e2e-editor.ts <deck>` | 26 editor interactions on a throwaway copy |
 | `npx tsx scripts/e2e-create.ts` | real generation; asserts zero mid-stream re-layouts |
@@ -305,8 +407,8 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
 | `npx tsx scripts/nav-stability.ts <deck>` | navigator geometry at the 8/9/10 boundary |
 | `npx tsx scripts/geometry-audit.ts <doc...>` | per slide on the print route: clipped content, blocks escaping the canvas, overlapping blocks |
 | `npx tsx scripts/fit-audit.ts <doc> editor\|present` | autofit inside transformed render paths: scale, fit, zoom, true overrun |
-| `npx tsx scripts/layout-audit.ts <doc>` | every slide in every layout the picker offers for it: clipping, sideways overflow, text off the slide, heading visible (works on throwaway copies) |
-| `npx tsx scripts/layout-switch-e2e.ts <deck> [9,10,20]` | clicks every layout tile twice in the live editor and measures the canvas after each switch (`VERBOSE=1` prints every fit) |
+| `npx tsx scripts/layout-audit.ts <doc>` | every slide in every layout the picker offers for it: clipping, sideways overflow, text off the slide, heading visible, text covered by another block's text or shape (works on throwaway copies) |
+| `npx tsx scripts/layout-switch-e2e.ts <deck> [9,10,20]` | clicks every layout tile twice in the live editor and measures the canvas after each switch, overlaps included (`VERBOSE=1` prints every fit) |
 | `npx tsx scripts/regenerate.ts <doc> [theme]` | re-runs a past generation like for like (creates a new document) |
 | `npx tsx scripts/export-parity.ts <deck>` | no stretched images in the PPTX |
 | `npx tsx scripts/verify-export-contract.ts <deck>` | `[data-block-idx]` intact |
@@ -321,5 +423,9 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
 - Native (editable) PPTX charts drop premium annotations; annotated charts are
   still routed through `addChart` rather than the 192-DPI screenshot path.
 - Regenerating a slide resets its image fit/focal choice.
+- Parsing fixes apply to content as it is generated. A deck saved before
+  them keeps its stored structure: the renderer and exporter hide its empty
+  items, but duplicated content or a stored edit note stays until the slide
+  is regenerated (or the deck re-parsed from its `rawXml`).
 - `allowedSplits`, `maxItemsPerRow` and `maxItems` are declared per family and
   still unconsumed — wiring them needs planner changes, not CSS.
