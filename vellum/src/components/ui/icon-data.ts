@@ -14,7 +14,7 @@ export const ICON_PATHS = {
   chevronRight: "<polyline points=\"96 48 176 128 96 208\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"16\"/>",
   chevronUp: "<polyline points=\"48 160 128 80 208 160\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"16\"/>",
   chevronLeft: "<polyline points=\"160 208 80 128 160 48\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"16\"/>",
-  more: "<circle cx=\"128\" cy=\"128\" r=\"12\"/><circle cx=\"196\" cy=\"128\" r=\"12\"/><circle cx=\"60\" cy=\"128\" r=\"12\"/>",
+  more: "<circle cx=\"128\" cy=\"128\" r=\"16\"/><circle cx=\"60\" cy=\"128\" r=\"16\"/><circle cx=\"196\" cy=\"128\" r=\"16\"/>",
   check: "<polyline points=\"40 144 96 200 224 72\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"16\"/>",
   plus: "<line x1=\"40\" y1=\"128\" x2=\"216\" y2=\"128\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"16\"/><line x1=\"128\" y1=\"40\" x2=\"128\" y2=\"216\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"16\"/>",
   minus: "<line x1=\"40\" y1=\"128\" x2=\"216\" y2=\"128\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"16\"/>",

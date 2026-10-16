@@ -97,6 +97,17 @@ const CHROME_ICONS: Record<string, string> = {
   tplOnePager: "lightning",
 };
 
+/**
+ * Glyphs taken from another weight. Regular "dots-three" draws its dots at a
+ * radius of 12 on the 256 grid — 1.5px across at 16px — and at 1x they render
+ * as one-pixel smears: the Library card's "⋯" peaked at 2.8:1 against a dark
+ * card and 1.9:1 against a light one, under the 3:1 a control needs. Bold
+ * places the same dots at a radius of 16, 2px across, and peaks at 4.9:1.
+ */
+const WEIGHT_OVERRIDES: Partial<Record<keyof typeof CHROME_ICONS, "bold">> = {
+  more: "bold",
+};
+
 /** Pull the inner markup out of a Phosphor SVG, dropping the spacer rect. */
 function extractBody(file: string): string {
   const raw = readFileSync(file, "utf8");
@@ -112,12 +123,15 @@ function main() {
   const missing: string[] = [];
 
   for (const [key, phosphor] of Object.entries(CHROME_ICONS)) {
-    const file = path.join(ICONS_DIR, "regular", `${phosphor}.svg`);
+    const weight = WEIGHT_OVERRIDES[key] ?? "regular";
+    // The other weights carry their name in the file name: dots-three-bold.svg.
+    const name = weight === "regular" ? `${phosphor}.svg` : `${phosphor}-${weight}.svg`;
+    const file = path.join(ICONS_DIR, weight, name);
     try {
       const body = extractBody(file);
       entries.push(`  ${key}: ${JSON.stringify(body)},`);
     } catch {
-      missing.push(`${key} (${phosphor}.svg)`);
+      missing.push(`${key} (${weight}/${name})`);
     }
   }
 
