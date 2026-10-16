@@ -26,6 +26,12 @@ export interface OutlinePromptInput {
   templateGuidance?: string;
   /** When content was imported: mirror its structure or restructure freely. */
   importMode?: "verbatim" | "summarize";
+  /**
+   * How many slides the request enumerates itself ("Slide 1: …"). When it is
+   * set, the request's own list is the outline and the template's sections
+   * are ignored — see scripted.ts.
+   */
+  scriptedSlides?: number;
 }
 
 export function buildOutlinePrompt(input: OutlinePromptInput): {
@@ -33,7 +39,10 @@ export function buildOutlinePrompt(input: OutlinePromptInput): {
   user: string;
 } {
   const unit = input.kind === "deck" ? "slide" : "section";
-  const sections = input.templateSections ?? [];
+  const scripted = (input.scriptedSlides ?? 0) > 0;
+  // A request that lists its own slides has its arc already; a blueprint
+  // forced on top of it drops slides and invents others.
+  const sections = scripted ? [] : (input.templateSections ?? []);
   const fromTemplate = sections.length > 0;
   // The requested count is ALWAYS authoritative. A template's section list is
   // its default and its narrative arc — not a cap. This used to read
@@ -64,6 +73,18 @@ Blueprint (${sections.length} ${unit}s; the target is ${nCards}):
 ${sections.map((s, i) => `${i + 1}. ${s.heading} — ${s.guidance}`).join("\n")}`
     : "";
 
+  const scriptBlock = scripted
+    ? `\n\nScripted-request contract: the request lists its own ${input.scriptedSlides} ${unit}s ("Slide 1", "Slide 2", …). That list IS the outline. Produce one "## " entry per listed ${unit}, in the request's order, using each ${unit}'s own title, with bullets taken from what the request says that ${unit} contains. Do not add, skip, merge, rename or reorder ${unit}s.${
+        input.scriptedSlides !== nCards
+          ? ` The user asked for ${nCards} entries and the request lists ${input.scriptedSlides}: ${
+              nCards < (input.scriptedSlides ?? 0)
+                ? "merge the most closely related adjacent ones, keeping the first and the last"
+                : "split the richest ones into their natural parts, next to the slide they come from"
+            }.`
+          : ""
+      }${input.templateGuidance ? `\n- Overall direction: ${input.templateGuidance}` : ""}`
+    : "";
+
   const importBlock =
     input.importMode && input.researchContext
       ? input.importMode === "verbatim"
@@ -82,7 +103,7 @@ Format contract:
 - Cover the topic with a clear narrative arc: opening, development, conclusion.
 - Write everything in ${input.language}.${
     input.tone ? `\n- Match this tone: ${input.tone}.` : ""
-  }${input.audience ? `\n- Target audience: ${input.audience}.` : ""}${templateBlock}${importBlock}`;
+  }${input.audience ? `\n- Target audience: ${input.audience}.` : ""}${templateBlock}${scriptBlock}${importBlock}`;
 
   const parts = [
     `Today's date: ${input.currentDate}`,

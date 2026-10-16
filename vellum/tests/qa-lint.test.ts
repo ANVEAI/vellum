@@ -75,14 +75,18 @@ describe("qa lint", () => {
     ).toEqual([]);
   });
 
-  it("flags topic headings and evidence-free slides as major", () => {
+  it("flags topic headings as major and number-free slides only as advice", () => {
     const s = slide("b", [
       { type: "h1", children: [t("Churn Analysis")] },
       { type: "p", children: [t("Retention has been improving lately across our cohorts and segments overall.")] },
     ]);
     const issues = lintSlides([s], null, "deck");
     expect(issues.some((i) => i.code === "topic-heading" && i.severity === "major")).toBe(true);
-    expect(issues.some((i) => i.code === "no-quantification" && i.severity === "major")).toBe(true);
+    // Minor on purpose: as a major fault it was a hard gate, and the rewrite
+    // it forced invented statistics for slides that had none.
+    const nq = issues.find((i) => i.code === "no-quantification");
+    expect(nq?.severity).toBe("minor");
+    expect(nq?.suggestion).toMatch(/never invent/i);
   });
 
   it("flags buzzwords, hedging headings, and vague quantifiers", () => {
@@ -251,5 +255,47 @@ describe("qa lint", () => {
     // Seven-plus words: a repeated sentence is a different fault, not a label.
     expect(lintSlides([s], null, "deck").some((i) => i.code === "repeated-heading")).toBe(false);
   });
-});
 
+  it("flags a STATS block whose values are mostly zero", () => {
+    // From a real deck: industries put into STATS with a value of 0 each.
+    const item = (stat: string, label: string) => ({
+      type: "stats-item",
+      stat,
+      children: [{ type: "h3", children: [t(label)] }],
+    });
+    const s = slide("z", [
+      { type: "h1", children: [t("AI is reshaping every industry today")] },
+      {
+        type: "stats",
+        children: [
+          item("2", "Nobel Prizes in 2024 went to AI work"),
+          item("0", "Banking & Finance"),
+          item("0", "Healthcare"),
+          item("0", "Agriculture"),
+        ],
+      },
+    ]);
+    const hit = lintSlides([s], null, "deck").find((i) => i.code === "stats-without-figures");
+    expect(hit?.severity).toBe("major");
+    expect(hit?.issue).toContain("3 of 4");
+  });
+
+  it("accepts a STATS block of real figures, rupees included", () => {
+    const item = (stat: string, label: string) => ({
+      type: "stats-item",
+      stat,
+      children: [{ type: "h3", children: [t(label)] }],
+    });
+    const s = slide("r", [
+      { type: "h1", children: [t("India is funding its own AI stack")] },
+      {
+        type: "stats",
+        children: [item("₹10,372 Cr", "IndiaAI outlay"), item("22", "Languages"), item("0", "Fees for students")],
+      },
+    ]);
+    const issues = lintSlides([s], null, "deck");
+    expect(issues.some((i) => i.code === "stats-without-figures")).toBe(false);
+    // The old pattern only knew $, € and £.
+    expect(issues.some((i) => i.code === "stat-not-numeric")).toBe(false);
+  });
+});

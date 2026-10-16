@@ -10,6 +10,10 @@ import {
   parseOutlineMarkdown,
 } from "@/lib/generation/prompts/outline";
 import { getTemplate } from "@/lib/templates/library";
+import {
+  isScriptedRequest,
+  scriptedSlideCount,
+} from "@/lib/generation/prompts/scripted";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -94,6 +98,11 @@ export async function POST(request: NextRequest) {
         templateSections: template?.sections,
         templateGuidance: template?.globalGuidance,
         importMode: genParams.importMode,
+        // A request that numbers its own slides keeps them: the template's
+        // sections stand aside and only its overall direction applies.
+        scriptedSlides: isScriptedRequest(document.prompt)
+          ? scriptedSlideCount(document.prompt)
+          : undefined,
       });
 
       let markdown = "";

@@ -51,7 +51,7 @@ The slide as it stands (${words} words):
 ${slidePlainText(current) || "(empty)"}
 """
 
-Write this slide again as ONE <SECTION>, in at most ${budget} words in total, heading included. The request above may give this slide far more text than that; do not reproduce it word for word — a slide longer than ${budget} words is cut off at the bottom edge of the canvas. Keep the claim the heading makes and the two or three points that matter most, and move the rest into <NOTES>. Use one component. Close every tag. No style, colour or size attributes.`;
+Write this slide again as ONE <SECTION>, in at most ${budget} words in total, heading included. The request above may give this slide far more text than that; do not reproduce it word for word — a slide longer than ${budget} words is cut off at the bottom edge of the canvas. Keep the claim the heading makes and the two or three points that matter most, and move the rest into <NOTES>. Use one component. Close every tag. No style, colour or size attributes. Never invent a number: use only figures that appear in the request, the outline or the reference material — a slide with no real figure stays without one.`;
 }
 
 type HardIssues = (slide: PlateSlide) => QaIssue[];

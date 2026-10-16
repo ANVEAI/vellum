@@ -156,11 +156,18 @@ export function lintSlides(
         });
       }
     }
+    // Advisory, not a fault. This was a MAJOR issue and a hard gate, and the
+    // gate's rewrite said "add at least one specific figure" — so a slide
+    // whose point had no number (six examples of AI in daily life) came back
+    // carrying invented ones: 85%, 92%, 70% and 65%, none of them in the
+    // brief. Prompting for evidence is good; manufacturing it is the worst
+    // thing a deck can do, so this now only suggests, and only real figures.
     if (kind === "deck" && !isBreath && allText.length >= 40 && !/\d/.test(allText)) {
       issues.push({
-        slideId: slide.id, severity: "major", code: "no-quantification",
-        issue: `${label} contains no numbers — claims without evidence.`,
-        suggestion: "Add at least one specific figure with its unit and period.",
+        slideId: slide.id, severity: "minor", code: "no-quantification",
+        issue: `${label} contains no numbers.`,
+        suggestion:
+          "If the source has a figure for this point, use it; never invent one.",
       });
     }
     if (kind === "deck") {
@@ -278,9 +285,27 @@ export function lintSlides(
         }
       }
       if (type === "stats") {
-        for (const item of (node.children ?? []).filter((c) => !isText(c))) {
+        const statItems = (node.children ?? []).filter((c) => !isText(c));
+        // A STATS group whose values are mostly zero or missing is a list
+        // wearing the wrong component. A real deck put six industries into
+        // STATS — "2 Nobel Prizes", then "0 Banking & Finance", "0
+        // Healthcare"… — because the model needed a value for each and had
+        // none. It reads as a dashboard reporting zero.
+        const empty = statItems.filter((item) =>
+          /^\s*[-+]?0*(?:[.,]0+)?\s*%?\s*$/.test(String((item as TElement).stat ?? "")),
+        ).length;
+        if (statItems.length >= 2 && empty * 2 >= statItems.length) {
+          issues.push({
+            slideId: slide.id, severity: "major", code: "stats-without-figures",
+            issue: `${label}: ${empty} of ${statItems.length} STATS values are zero or missing.`,
+            suggestion:
+              "STATS is for real figures. Put these items in BULLETS, BOXES or ICONS, and keep only values the source gives.",
+          });
+        }
+        for (const item of statItems) {
           const stat = String((item as TElement).stat ?? "");
-          if (stat && !/^[~≈]?[$€£]?\s*[-+]?\d/.test(stat) && !/^\d/.test(stat)) {
+          // \p{Sc} is any currency symbol: the old [$€£] flagged "₹10,372 Cr".
+          if (stat && !/^[~≈]?\p{Sc}?\s*[-+]?\d/u.test(stat) && !/^\d/.test(stat)) {
             issues.push({
               slideId: slide.id, severity: "minor", code: "stat-not-numeric",
               issue: `${label}: STATS value "${stat}" is not a number.`,

@@ -128,7 +128,7 @@ const WRITING_RULES = `WRITING RULES — these override style preferences:
    WRITE: "Enterprise churn fell to 2.1% after the SSO launch"
    NOT: "Churn Analysis" / "Q3 Overview" / "Key Findings"
 2. When a slide has a CHART, TABLE, or STATS, the heading states what the data proves, not what the data is.
-3. Every content slide contains at least one specific number with unit and period. "Revenue grew" is not a claim; "Revenue grew 31% YoY" is.
+3. Use the specific numbers the request, outline or reference material gives you, with unit and period: "Revenue grew 31% YoY", not "Revenue grew". NEVER invent a figure, percentage, date, count or statistic that is not in that material. A true sentence without a number beats a precise one that is made up. If a slide's point has no real number, make it with a concrete example instead, and do not put it in STATS.
 4. Items in one group share a grammatical shape — all verb-first or all noun-phrase, never mixed — and stay within 2x each other's length.
 5. Bullets ≤ 14 words. Groups ≤ 5 items.
 6. Vague quantifiers (significant, substantial, dramatic, many, several, numerous, various) are banned unless a number follows in the same sentence.

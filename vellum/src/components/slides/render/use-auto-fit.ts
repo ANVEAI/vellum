@@ -103,9 +103,38 @@ function remember(key: string, value: FitResult) {
   cache.set(key, value);
 }
 
-/** Cheap content fingerprint: identical text ⇒ identical overflow. */
-export function fitCacheKey(slideId: string, contentLength: number): string {
-  return `${slideId}:${contentLength}`;
+/**
+ * Cheap fingerprint of everything a slide's fit depends on: its text, and the
+ * theme that sets the fonts and the type scale it is measured in.
+ *
+ * The theme used to be missing, so switching theme in the editor reused fits
+ * measured under the previous theme's faces and sizes — a slide that fitted
+ * in a narrow face kept that answer in a wide one and overflowed until the
+ * page was reloaded. Exports never saw it (each runs in a fresh page), which
+ * is why it went unnoticed.
+ */
+export function fitCacheKey(
+  slide: {
+    id: string;
+    content: unknown;
+    archetype?: string;
+    layoutType?: string;
+    rootImage?: unknown;
+  },
+  theme?: { name?: string; fonts?: { heading?: string; body?: string } },
+): string {
+  const face = theme
+    ? `${theme.name ?? ""}/${theme.fonts?.heading ?? ""}/${theme.fonts?.body ?? ""}`
+    : "";
+  // The layout is part of what was measured too. Picking another layout in
+  // the editor changes the archetype, and the archetype changes the heading
+  // size, the column width and the anchoring — but with the layout missing
+  // from the key, the fit measured under the previous layout was reused, so
+  // a switch could leave a slide overflowing until the page reloaded. Hence
+  // switching back and forth "sometimes" fixed a slide. The image rail
+  // (layout type, and whether there is an image) takes width from the text.
+  const frame = `${slide.archetype ?? ""}/${slide.layoutType ?? ""}/${slide.rootImage ? "img" : ""}`;
+  return `${slide.id}:${JSON.stringify(slide.content).length}:${frame}:${face}`;
 }
 
 const FITS: FitResult = { fit: 1, zoom: 1, overflowing: false, settled: false };
@@ -141,7 +170,44 @@ function overrun(el: HTMLElement): { over: number; available: number } | null {
   if (!(ancestorScale > 0)) return null;
   const visualSpan =
     last.getBoundingClientRect().bottom - first.getBoundingClientRect().top;
-  return { over: visualSpan / ancestorScale - available, available };
+  const down = visualSpan / ancestorScale - available;
+  return { over: Math.max(down, sideways(el, ancestorScale)), available };
+}
+
+/**
+ * How far anything in the content box spills sideways, in layout pixels.
+ *
+ * Height alone misses it: a word wider than the card holding it spills into
+ * the next card or off the slide without making the content any taller, so
+ * autofit measured "fits" and left the slide at full size. A value of
+ * "₹10,372 Cr" ran out of its stat card and "Conversational" ran 30px off the
+ * slide edge on every layout they were tried in, at a fit of 1.
+ *
+ * Two checks. Any element reaching past the content box's edges, and any
+ * element wider inside than its own box — the word or row that does not fit.
+ * Boxes scrolled on purpose (a code block) are left alone. SVG is skipped:
+ * charts are sized to their container and have no scroll box.
+ */
+function sideways(el: HTMLElement, ancestorScale: number): number {
+  const box = el.getBoundingClientRect();
+  let worst = 0;
+  for (const node of el.querySelectorAll("*")) {
+    if (!(node instanceof HTMLElement)) continue;
+    const r = node.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) continue;
+    const past = Math.max(r.right - box.right, box.left - r.left);
+    if (past > worst) worst = past;
+    if (node.clientWidth > 0 && node.scrollWidth > node.clientWidth + 1) {
+      const overflowX = getComputedStyle(node).overflowX;
+      if (overflowX === "auto" || overflowX === "scroll") continue;
+      // scrollWidth is in the node's own pixels; convert to visual ones so
+      // a zoomed block and an unzoomed one are compared on the same scale.
+      const visualPerLayout = node.offsetWidth ? r.width / node.offsetWidth : 1;
+      const spill = (node.scrollWidth - node.clientWidth) * visualPerLayout;
+      if (spill > worst) worst = spill;
+    }
+  }
+  return worst / ancestorScale;
 }
 
 export function useAutoFit(

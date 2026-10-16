@@ -279,6 +279,22 @@ const HEADING_TAGS = new Set([
   "LABEL",
 ]);
 
+/** HTML void elements: they cannot have children, whether or not self-closed. */
+const VOID_TAGS = new Set([
+  "IMG",
+  "HR",
+  "INPUT",
+  "META",
+  "LINK",
+  "AREA",
+  "BASE",
+  "COL",
+  "EMBED",
+  "SOURCE",
+  "TRACK",
+  "PARAM",
+]);
+
 /** Formatting that may legitimately sit inside a heading. */
 const INLINE_TAGS = new Set([
   "B",
@@ -1751,10 +1767,27 @@ export class SlideParser {
       }
 
       // Self-closing tag
-      const isSelfClosing = tagContent.endsWith("/");
+      let isSelfClosing = tagContent.endsWith("/");
       if (isSelfClosing) {
         tagName = tagName.replace(/\/$/, "");
       }
+
+      // A line break is whitespace in a run of text, not an element. Written
+      // the HTML way, `<br>` with no slash, it used to open a container that
+      // swallowed everything after it: "Harsh Tiwari<br>Founding Member…"
+      // lost its second line, and the slide's root <IMG> was parented inside
+      // the paragraph, which then measured twelve inches tall and pushed the
+      // heading off the canvas in every bottom-anchored layout.
+      const upperTag = tagName.toUpperCase();
+      if (upperTag === "BR" || upperTag === "WBR") {
+        if (upperTag === "BR") parentNode.children.push({ text: " " });
+        currentIndex = tagEnd + 1;
+        continue;
+      }
+      // Void elements never have content, slash or no slash — the way an HTML
+      // parser reads them. Without this an <IMG query="…"> missing its "/"
+      // adopted the rest of the slide as its children.
+      if (VOID_TAGS.has(upperTag)) isSelfClosing = true;
 
       // Parse attributes
       const attributes: Record<string, string> = {};

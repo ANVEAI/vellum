@@ -51,6 +51,15 @@ words, ~3,000px tall). `liftBlocksOutOfHeadings` runs before the section
 fingerprint and moves any block content back out as siblings, so the id is
 also taken from the clean heading rather than one that grows every tick.
 
+### Void tags self-close
+
+HTML void elements — `<br>`, `<img>`, `<hr>` and the rest — never have content,
+so the parser closes them whether or not the model wrote the slash. Without
+this, a non-self-closing tag recursed until it found a closing tag that never
+comes, and then stopped parsing its parent: `Harsh Tiwari<br>Founding Member…`
+lost its second line, and the slide's root `<IMG>` landed inside the paragraph.
+`<br>` becomes a space in the text run.
+
 ### One word budget
 
 `slideWordBudget` (`src/lib/design/budget.ts`) — the theme family's
@@ -80,6 +89,16 @@ asks for slide furniture (a chart, diagram, timeline, icon…). It lives in the
 planner because the planner is the one function the client preview and the
 server share, and the check only looks backwards.
 
+### Never invent a figure
+
+Rule 3 of the writing rules asks for the numbers the request, outline or
+research supplies — and forbids inventing one. It used to demand "at least one
+specific number" on every content slide, and `no-quantification` was a hard
+gate whose rewrite said "add a figure", so slides whose point had no number
+came back with made-up percentages. It is now advice only. Its honest
+counterpart, `stats-without-figures`, is a hard fault: a STATS block whose
+values are mostly zero is a list in the wrong component.
+
 ### Slide count is the user's, not the template's
 
 `genParams.nCards` is authoritative everywhere. A template's `sections` array
@@ -87,6 +106,13 @@ supplies the *default* count and the narrative arc — never a cap. Enforcement
 is symmetric at both stages: the outline tops up (max 2 retries) **and** trims;
 the content stage trims surplus sections from the tail. Historically both
 layers read `template.sections.length` and silently ignored the user.
+
+**A request that numbers its own slides keeps them.** When it lists three or
+more ("Slide 1: …"), `isScriptedRequest` is true, the template's sections
+stand aside in both the outline and the content prompt, and only the
+template's overall direction applies. A 20-slide lecture brief run through a
+9-section template otherwise got the template's arc, lost its own slide 9,
+gained two invented ones, and shipped 19.
 
 ---
 
@@ -142,6 +168,15 @@ Below both floors (~49% of the theme size) a slide is too dense to be legible
 at any size; it top-aligns so the heading survives, and the generation gate is
 what has to stop it being produced.
 
+**The rescue must outrank every layout.** `.v-content--overflow` top-aligns
+the box, and it is written at specificity (0,4,0). Cover, Closing and Full
+bleed anchor their content to the bottom with `.v-slide[data-archetype="…"]
+.v-content` at (0,3,0); while the rescue was a bare class at (0,1,0) it lost
+on exactly those layouts, so an overflowing column grew upward, took the
+heading off the top, and the slide read as blank. Long words may break only
+in this state — breaking them earlier lets them fit without shrinking, so
+autofit would never shrink them.
+
 **Measure in layout pixels.** The overrun is the span from the first block's
 top to the last block's bottom — not `scrollHeight`, which reports half the
 overrun of a centred column. That span comes from `getBoundingClientRect`,
@@ -152,12 +187,30 @@ its content at a ninth of its height, settled on fit 1, and cached that for
 the canvas. `scripts/fit-audit.ts` checks those paths; the geometry audit
 only sees the print route.
 
+**Measure sideways too.** A word wider than the card holding it spills into
+the next card or off the slide without making the content taller, so a
+height-only check reported "fits" at full size — `₹10,372 Cr` overran its stat
+card and "Conversational" ran 30px off the slide on every layout. The overrun
+is the larger of the vertical one and the sideways one: anything past the
+content box's edges, or wider inside than its own box. SVG is skipped (a
+chart's axis labels have no scroll box), as are boxes scrolled on purpose.
+
 **Wait for late content.** Charts draw their SVG after a lazy import and
 images take their height on decode. Measuring before them sized a slide
 around an empty box; autofit waits (bounded) until neither is pending.
 
+**Content images are capped at half the canvas** (`.v-slide .v-img`), the same
+cap the document reader uses. A content image is full width, so uncapped its
+height is the width times its aspect: a square generation came out 1152px
+tall on a 720px slide and pushed everything else off on every layout. The
+root image is untouched — its rail sizes it.
+
 Results are cached per slide, so thumbnails, canvas, present mode and print
-always agree. The print route publishes `data-fit`, `data-zoom` and
+always agree. **The cache key is everything the fit depends on**: the text,
+the layout (archetype, layout type, whether there is an image rail) and the
+theme (its name and faces). With only the text in the key, picking another
+layout in the editor reused the fit measured under the previous one, which
+is why switching layouts "sometimes" fixed a slide. The print route publishes `data-fit`, `data-zoom` and
 `data-fit-settled`; the exporter waits for the last, scales headings and body
 by `data-fit` as before, and wraps the slide so **every** native text run is
 scaled by `data-zoom` — including the labels, quotes and stats written at
@@ -243,7 +296,7 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
 
 | Command | Checks |
 |---|---|
-| `npm test` | 254 unit/integration tests |
+| `npm test` | 267 unit/integration tests |
 | `npx tsx scripts/ui-check.ts <deck> <doc>` | 48 screenshots, 2 themes × 4 widths; console errors, overflow, unlabelled controls, hit targets, native dialogs, focus rings, menu reachability |
 | `npx tsx scripts/e2e-editor.ts <deck>` | 26 editor interactions on a throwaway copy |
 | `npx tsx scripts/e2e-create.ts` | real generation; asserts zero mid-stream re-layouts |
@@ -252,6 +305,8 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
 | `npx tsx scripts/nav-stability.ts <deck>` | navigator geometry at the 8/9/10 boundary |
 | `npx tsx scripts/geometry-audit.ts <doc...>` | per slide on the print route: clipped content, blocks escaping the canvas, overlapping blocks |
 | `npx tsx scripts/fit-audit.ts <doc> editor\|present` | autofit inside transformed render paths: scale, fit, zoom, true overrun |
+| `npx tsx scripts/layout-audit.ts <doc>` | every slide in every layout the picker offers for it: clipping, sideways overflow, text off the slide, heading visible (works on throwaway copies) |
+| `npx tsx scripts/layout-switch-e2e.ts <deck> [9,10,20]` | clicks every layout tile twice in the live editor and measures the canvas after each switch (`VERBOSE=1` prints every fit) |
 | `npx tsx scripts/regenerate.ts <doc> [theme]` | re-runs a past generation like for like (creates a new document) |
 | `npx tsx scripts/export-parity.ts <deck>` | no stretched images in the PPTX |
 | `npx tsx scripts/verify-export-contract.ts <deck>` | `[data-block-idx]` intact |

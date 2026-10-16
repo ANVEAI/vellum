@@ -133,8 +133,27 @@ img.v-img {
 .v-content > * {
   zoom: var(--v-zoom, 1);
 }
-.v-content--overflow {
+/* Content that still does not fit at both autofit floors.
+
+   Top-anchored on EVERY layout. The archetype rules that anchor the content
+   box — Cover and Closing to the bottom, Statement and Divider to the centre —
+   are `.v-slide[data-archetype="…"] .v-content`, specificity (0,3,0), and the
+   rescue used to be this class alone at (0,1,0), so on exactly the layouts
+   where it mattered it never applied. A bottom-anchored column that
+   overflows grows upward, so the heading went off the top and the slide read
+   as blank. (0,4,0) here, so no layout can outrank it, whatever order the
+   stylesheets load in.
+
+   Long words may break as the final step. Not before: breaking a word lets
+   it fit without shrinking, so autofit would never shrink it — every
+   oversized word would be split at full size instead of fitted. */
+.v-slide[data-archetype] .v-content.v-content--overflow,
+.v-content.v-content--overflow {
   justify-content: flex-start;
+}
+.v-content.v-content--overflow,
+.v-content.v-content--overflow * {
+  overflow-wrap: anywhere;
 }
 .v-content--overflow::after {
   content: "";
@@ -361,6 +380,14 @@ img.v-img {
 
 /* ---- media / blocks ---- */
 .v-img { width: 100%; border-radius: var(--presentation-card-border-radius, 14px); object-fit: cover; }
+/* A content image is full width, so without a cap its height is the width
+   times its aspect: a square generation in a full-width block came out
+   1152px tall on a 720px canvas and pushed everything else off the slide on
+   every layout. Half the canvas, the same cap the document reader uses
+   (.v-doc .v-img), leaves room for the heading and a caption; object-fit
+   crops rather than stretches, and an image in a narrow lane never reaches
+   the cap anyway. The root image is not touched — its rail sizes it. */
+.v-slide .v-img { max-height: 360px; }
 .v-img-pending {
   display: flex;
   align-items: center;

@@ -175,7 +175,7 @@ Server must be running for anything browser-based.
 
 ```powershell
 cd vellum
-npm test                                          # 254 tests
+npm test                                          # 267 tests
 npx tsc --noEmit
 npm run lint
 npx tsx scripts\ui-check.ts <deckId> <docId>      # 48 screenshots, a11y, menus
@@ -186,6 +186,8 @@ npx tsx scripts\e2e-template-count.ts pitch-deck 6 10 12
 npx tsx scripts\nav-stability.ts <deckId>         # the 8/9/10 boundary
 npx tsx scripts\geometry-audit.ts <docId...>      # clipping / overflow / overlap (print route)
 npx tsx scripts\fit-audit.ts <docId> editor        # autofit inside the editor / present mode
+npx tsx scripts\layout-audit.ts <docId>            # every slide in every offered layout
+npx tsx scripts\layout-switch-e2e.ts <deckId>      # live layout switching in the editor
 npx tsx scripts\export-parity.ts <deckId>         # no stretched images
 npx tsx scripts\verify-export-contract.ts <deckId>
 npx tsx scripts\gc-orphans.ts                     # dry run by default

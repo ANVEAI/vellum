@@ -28,6 +28,7 @@ import { planDeck, replanSlide } from "@/lib/design/planner";
 import { lintSlides } from "@/lib/qa/lint";
 import { lintOptionsFor } from "@/lib/qa/run";
 import { budgetFor } from "@/lib/design/budget";
+import { isScriptedRequest } from "@/lib/generation/prompts/scripted";
 import { signatureOf } from "@/lib/design/archetypes";
 import {
   condenseRequest,
@@ -139,8 +140,13 @@ export async function POST(request: NextRequest) {
             }
           })(),
           currentDate: new Date().toISOString().slice(0, 10),
+          // The same rule as the outline: when the request numbers its own
+          // slides, the template's per-section list would contradict them,
+          // so only its overall direction is passed on.
           templateGuidance: template
-            ? formatTemplateGuidance(template)
+            ? isScriptedRequest(document.prompt)
+              ? template.globalGuidance
+              : formatTemplateGuidance(template)
             : undefined,
           wordBudget,
         };
@@ -306,14 +312,18 @@ export async function POST(request: NextRequest) {
         // too much: the type scale bottoms out and the tail is clipped. The
         // cheapest fix is to ask for less content, once, while the model
         // still has the deck in context.
+        // `no-quantification` is deliberately absent. It was a hard code, and
+        // a rewrite demanding a figure for a slide with no real one is a
+        // rewrite that invents one. `stats-without-figures` is its honest
+        // counterpart: a STATS block full of zeros is a real fault.
         const HARD_CODES = new Set([
           "empty",
           "bad-chart-data",
           "topic-heading",
-          "no-quantification",
           "overflow-risk",
           "too-many-columns",
           "repeated-heading",
+          "stats-without-figures",
         ]);
         const lintOpts = lintOptionsFor(
           document.themeName,

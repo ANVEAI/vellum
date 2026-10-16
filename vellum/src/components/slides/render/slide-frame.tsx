@@ -70,7 +70,7 @@ export function SlideSurface({
   const contentRef = useRef<HTMLDivElement>(null);
   const fitResult = useAutoFit(
     contentRef,
-    fitCacheKey(slide.id, JSON.stringify(slide.content).length),
+    fitCacheKey(slide, theme),
   );
   const { fit, zoom, overflowing } = fitResult;
 
