@@ -389,6 +389,14 @@ sweep the real image library.
   `slide-parser.ts` or they degrade to bars with no warning.
 - `tsx` runs scripts as CJS: top-level `await` fails. Wrap in
   `main().then(…)`.
+- **A server dependency that loads files relative to itself must not be
+  bundled.** pdf.js runs its worker in-process on the server via a runtime
+  import of `./pdf.worker.mjs` beside its own file; bundled into
+  `.next/server/chunks`, that file is missing and every PDF import failed
+  ("Setting up fake worker failed"). `serverExternalPackages` in
+  `next.config.ts` lists `pdf-parse` and `pdfjs-dist`, which Next's built-in
+  list does not. The unit tests mock the parsers, so only a production build
+  shows such a fault — `scripts/e2e-import.ts` checks it.
 
 ---
 
@@ -398,11 +406,12 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
 
 | Command | Checks |
 |---|---|
-| `npm test` | 351 unit/integration tests |
+| `npm test` | 353 unit/integration tests |
 | `npx tsx scripts/ui-check.ts <deck> <doc>` | 48 screenshots, 2 themes × 4 widths; console errors, overflow, unlabelled controls, hit targets, native dialogs, focus rings, menu reachability |
 | `npx tsx scripts/e2e-editor.ts <deck>` | 26 editor interactions on a throwaway copy |
 | `npx tsx scripts/e2e-create.ts` | real generation; asserts zero mid-stream re-layouts |
 | `npx tsx scripts/e2e-export.ts <deck>` | PDF structure + a real browser download, byte-compared |
+| `npx tsx scripts/e2e-import.ts` | uploads a generated PDF and DOCX, plus Markdown and text, through `/api/import` on the built server; checks heading, body and title |
 | `npx tsx scripts/e2e-template-count.ts pitch-deck 6 10 12` | slide count honours the request |
 | `npx tsx scripts/nav-stability.ts <deck>` | navigator geometry at the 8/9/10 boundary |
 | `npx tsx scripts/geometry-audit.ts <doc...>` | per slide on the print route: clipped content, blocks escaping the canvas, overlapping blocks |

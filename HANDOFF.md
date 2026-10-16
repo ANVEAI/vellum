@@ -175,13 +175,14 @@ Server must be running for anything browser-based.
 
 ```powershell
 cd vellum
-npm test                                          # 351 tests
+npm test                                          # 353 tests
 npx tsc --noEmit
 npm run lint
 npx tsx scripts\ui-check.ts <deckId> <docId>      # 48 screenshots, a11y, menus
 npx tsx scripts\e2e-editor.ts <deckId>            # 26 editor interactions
 npx tsx scripts\e2e-create.ts                     # real generation, no re-layouts
 npx tsx scripts\e2e-export.ts <deckId>            # PDF + real browser download
+npx tsx scripts\e2e-import.ts                     # PDF/DOCX/MD/TXT upload on the built server
 npx tsx scripts\e2e-template-count.ts pitch-deck 6 10 12
 npx tsx scripts\nav-stability.ts <deckId>         # the 8/9/10 boundary
 npx tsx scripts\geometry-audit.ts <docId...>      # clipping / overflow / overlap (print route)
