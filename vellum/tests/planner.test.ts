@@ -196,4 +196,71 @@ describe("layout planner", () => {
     const planned = planDeck([heroSlide(), s]);
     expect(typeof planned[1].archetype).toBe("string");
   });
+
+  /**
+   * Regression: given one example image prompt, the model copied it onto 16
+   * of 20 slides. The planner drops a root image whose prompt an earlier
+   * slide already used.
+   */
+  it("drops a root image whose prompt an earlier slide used", () => {
+    const withImage = (q: string) =>
+      slide({ content: [el("h1", "A heading"), el("p", "Body text.")], rootImage: { query: q } } as never);
+    const planned = planDeck([
+      heroSlide(),
+      withImage("a futuristic smart city at dawn"),
+      withImage("A futuristic   smart city at dawn"),
+      withImage("container cranes at a harbour"),
+    ]);
+    expect(planned[1].rootImage).toBeDefined();
+    expect(planned[2].rootImage).toBeUndefined();
+    expect(planned[3].rootImage).toBeDefined();
+  });
+
+  it("never drops an image that already rendered", () => {
+    const rendered = slide({
+      content: [el("h1", "A heading"), el("p", "Body.")],
+      rootImage: { query: "same prompt", url: "/api/images/file/a.png" },
+    } as never);
+    const first = slide({
+      content: [el("h1", "Another"), el("p", "Body.")],
+      rootImage: { query: "same prompt" },
+    } as never);
+    expect(planDeck([heroSlide(), first, rendered])[2].rootImage).toBeDefined();
+  });
+
+  it("keeps the repeat check prefix-stable for the streaming preview", () => {
+    const a = slide({ content: [el("h1", "One"), el("p", "x.")], rootImage: { query: "q" } } as never);
+    const b = slide({ content: [el("h1", "Two"), el("p", "y.")], rootImage: { query: "q" } } as never);
+    const prefix = planDeck([heroSlide(), a]);
+    const full = planDeck([heroSlide(), a, b]);
+    expect(full[1]).toEqual(prefix[1]);
+  });
+
+  it("drops a root image that asks for a diagram instead of a subject", () => {
+    const diagram = slide({
+      content: [el("h1", "What exactly is AI?"), el("p", "Layers.")],
+      rootImage: { query: "nested concentric circles diagram labelled by layer" },
+    } as never);
+    expect(planDeck([heroSlide(), diagram])[1].rootImage).toBeUndefined();
+  });
+
+  /**
+   * Regression: the model suggested role="statement" for a slide carrying a
+   * line chart; statement accepted it, rendered an 84px heading above the
+   * chart, and the slide overflowed by 50px.
+   */
+  it("never gives a display-type archetype to a chart slide", () => {
+    const chartSlide = slide({
+      intent: "statement",
+      content: [
+        el("h1", "Error mitigation improved fidelity by 14%"),
+        { id: "c", type: "chart-line", data: [{ label: "a", value: 1 }], children: [{ text: "" }] },
+      ],
+    } as never);
+    const planned = planDeck([heroSlide(), chartSlide]);
+    expect(["statement", "divider", "full-bleed", "hero", "closing"]).not.toContain(
+      planned[1].archetype,
+    );
+  });
 });
+

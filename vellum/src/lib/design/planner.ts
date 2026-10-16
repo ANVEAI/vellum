@@ -12,6 +12,7 @@
  * persisted archetypes passed in as frozen context.
  */
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
+import { requestsSlideFurniture } from "@/lib/images/prompt-hygiene";
 import {
   accepts,
   ARCHETYPE_WEIGHT,
@@ -89,11 +90,53 @@ export function planSlide(
   return "content";
 }
 
+function imageKey(slide: PlateSlide): string {
+  const query = (slide.rootImage as { query?: unknown } | undefined)?.query;
+  return typeof query === "string"
+    ? query.trim().toLowerCase().replace(/\s+/g, " ")
+    : "";
+}
+
+/**
+ * A root image whose prompt an earlier slide already used is dropped.
+ *
+ * Given one example image prompt, the model copied it onto 16 of 20 slides:
+ * one futuristic city repeated across a deck about voice AI, unrelated to
+ * any of the slides it sat on. The prompt now forbids repeats; this enforces
+ * it. A slide with no image is better than a sixteenth copy of the same one.
+ *
+ * It lives in the planner because the planner is the one function both the
+ * client's streaming preview and the server run, so the two can never
+ * disagree about which slides keep an image. It looks only backwards — slide
+ * i is compared with slides 0..i-1 — so it keeps the prefix stability the
+ * preview depends on. Images that already rendered (they carry a url) are
+ * never touched, so re-planning a finished deck changes nothing.
+ */
+function withoutRepeatedImages(slides: PlateSlide[]): PlateSlide[] {
+  const seen = new Set<string>();
+  return slides.map((slide) => {
+    const key = imageKey(slide);
+    if (!key) return slide;
+    const rendered = Boolean((slide.rootImage as { url?: unknown }).url);
+    // Also dropped: a prompt asking for a chart, diagram or other slide
+    // furniture, which an image model renders as an imitation covered in
+    // invented labels. The prompt forbids it; the model does not always
+    // listen, and a brief that describes labelled diagrams invites it.
+    if (!rendered && (seen.has(key) || requestsSlideFurniture(key))) {
+      const rest = { ...slide };
+      delete rest.rootImage;
+      return rest;
+    }
+    seen.add(key);
+    return slide;
+  });
+}
+
 /** Stamp archetypes across a deck (mutates copies, returns new array). */
 export function planDeck(slides: PlateSlide[]): PlateSlide[] {
   let prev: ArchetypeId | undefined;
   let denseRun = 0;
-  return slides.map((slide, index) => {
+  return withoutRepeatedImages(slides).map((slide, index) => {
     const sig = signatureOf(slide);
     const archetype = planSlide(sig, {
       index,

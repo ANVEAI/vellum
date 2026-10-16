@@ -1,44 +1,86 @@
 "use client";
 
 /**
- * Bounded shrink-to-fit for slide text, the way PowerPoint's autofit works.
+ * Shrink-to-fit for slide content, the way PowerPoint's autofit works, in
+ * two stages.
  *
- * `.v-content` is `justify-content: center` inside an `overflow: hidden`
- * slide, so content taller than the box used to be clipped at BOTH ends — a
- * long deck lost its heading and its last bullet with no visual cue, in the
- * editor and in every export.
+ * 1. The type scale (`--v-fit`) steps down a ladder. Text gets smaller while
+ *    spacing, icons and padding keep their size — the closest analogue to
+ *    PowerPoint's fontScale, and the stage that keeps a slide looking most
+ *    like itself.
+ * 2. If the ladder bottoms out and the content still overruns, every block
+ *    inside the content box is zoomed (`--v-zoom`) by a continuous factor.
+ *    Zoom scales text, spacing, line height and icons together and, unlike
+ *    `transform: scale`, it changes layout: the box measures and flows at the
+ *    smaller size, and nothing is clipped by an `overflow: hidden` ancestor
+ *    before a transform could shrink it. Chrome's engineers make exactly that
+ *    case for zoom when standardising it (Chrome 128). Padding is untouched,
+ *    because only the blocks are zoomed, never the box that owns the inset.
  *
- * The factor multiplies the type scale only (never padding or the container),
- * so it is one-way: smaller text cannot make the container taller, and there
- * is no feedback loop. Below the floor the content switches to top-aligned so
- * the heading survives even when the tail is cut.
+ * Both stages are one-way: the container is a fixed 1280x720 canvas, so
+ * shrinking content cannot change the space available, and neither loop can
+ * oscillate. Results are cached per slide so a hundred thumbnails do not each
+ * measure, and so a thumbnail, the canvas, present mode and the print route
+ * always agree.
  *
- * The result is cached per slide so a hundred dashboard thumbnails do not each
- * run a measuring pass, and so a thumbnail and the full canvas always agree.
+ * Below the zoom floor a slide is too dense to be legible at any size; it is
+ * top-aligned so the heading survives, and the generation gate is what must
+ * stop such a slide being produced in the first place.
  */
 import { useEffect, useState } from "react";
 
 /**
- * Steps are coarse on purpose — a continuous factor reads as inconsistent.
- *
- * The ladder used to stop at 0.8, which was the whole reason a modest
- * overrun still clipped: 20% was all the shrink available, so anything past
- * that was cut off rather than fitted. PowerPoint's own autofit goes much
- * further — python-pptx documents a worked case landing at fontScale 55% —
- * so stopping at 0.8 was a self-imposed limit, not a legibility one. 0.65 on
- * a 1280x720 canvas still leaves body text at ~11px, and the slide is always
- * scaled up to the viewport from there.
- *
- * This only ever engages on a slide that would otherwise lose content, so a
- * deeper floor cannot make a well-sized slide look different.
+ * Stage 1. Coarse on purpose — a continuous type scale reads as inconsistent
+ * from slide to slide. 0.65 on a 1280x720 canvas leaves body text near 11px
+ * before the slide is scaled up to the viewport.
  */
 const STEPS = [1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65];
 export const MIN_FIT = STEPS[STEPS.length - 1];
 
+/**
+ * Stage 2 floor. With the type scale already at 0.65, a zoom of 0.75 puts
+ * text at ~49% of the theme size — about where PowerPoint's own documented
+ * autofit case lands (fontScale 55%). Further than that is not "fitted", it
+ * is unreadable, and Chromium's minimum rendered font size stops honouring
+ * the zoom soon after anyway: a 4.6x overrun was measured stalling there.
+ */
+export const MIN_ZOOM = 0.75;
+
+/** Zoom iterations: the factor is re-estimated from each measurement. */
+const ZOOM_PASSES = 6;
+
+/**
+ * Frames to wait for late content before measuring anyway, about two seconds
+ * at 60Hz. The wait ends as soon as the content is ready; this only bounds a
+ * chart that never draws.
+ */
+const LATE_CONTENT_FRAMES = 120;
+
+/**
+ * Content that takes its real size only after the first paint. Charts load
+ * through a lazy import and draw their SVG after hydration, and an image's
+ * height is unknown until it decodes. Measuring before either is in place
+ * sizes the slide around an empty box: a line chart drew itself 50px past
+ * the bottom of a slide that autofit had already settled — and cached — at
+ * full size.
+ */
+function lateContentPending(el: HTMLElement): boolean {
+  if (el.querySelector(".v-chart-pending")) return true;
+  for (const chart of el.querySelectorAll(".v-chart")) {
+    if (!chart.querySelector("svg")) return true;
+  }
+  for (const img of el.querySelectorAll("img")) {
+    if (!img.complete) return true;
+  }
+  return false;
+}
+
 export interface FitResult {
   /** Type-scale multiplier to apply via `--v-fit`. */
   fit: number;
-  /** True when the content still does not fit at the smallest step. */
+  /** Block zoom to apply via `--v-zoom`; 1 when the ladder sufficed. */
+  zoom: number;
+  /** True when the content still does not fit at both floors. */
   overflowing: boolean;
   /**
    * True once the search has finished. The print route publishes this so the
@@ -46,6 +88,11 @@ export interface FitResult {
    * cover the worst case.
    */
   settled: boolean;
+}
+
+/** The text scale a slide actually renders at; what the PPTX exporter needs. */
+export function effectiveScale(result: FitResult): number {
+  return Math.round(result.fit * result.zoom * 1000) / 1000;
 }
 
 const cache = new Map<string, FitResult>();
@@ -61,29 +108,42 @@ export function fitCacheKey(slideId: string, contentLength: number): string {
   return `${slideId}:${contentLength}`;
 }
 
-const FITS: FitResult = { fit: 1, overflowing: false, settled: false };
+const FITS: FitResult = { fit: 1, zoom: 1, overflowing: false, settled: false };
 
 /**
- * Step down the ladder until the content actually fits, verifying each step.
+ * How far the content overruns its box, in the box's own layout pixels.
  *
- * The previous version estimated the answer in one shot: it took
- * `available / needed` and picked the first step below that ratio. That
- * assumes total height scales linearly with the type scale, and it does not —
- * padding, gaps, images and line-box rounding do not shrink with the font —
- * so the estimate routinely landed one or two steps short and the slide
- * clipped anyway while reporting a fit well above the floor.
+ * Measured as the span from the first block's top to the last block's
+ * bottom. `scrollHeight` cannot be used: the box centres its blocks, and an
+ * overflowing centred column spills off both ends with only the bottom half
+ * reachable, so `scrollHeight` reports half the overrun.
  *
- * The search writes `--v-fit` straight onto the slide element and reads the
- * layout back synchronously, rather than going through React state and
- * waiting for frames. Under the concurrent scheduler a state write from a
- * rAF callback is not guaranteed to be committed by the next frame, so the
- * frame-based version re-measured stale layout, saw no improvement and gave
- * up at the first step — every overflowing slide settled at scale 1.
- *
- * It stays one-way, which is the property that matters: the container is a
- * fixed 1280x720 canvas, so shrinking text can never change the space
- * available and the loop cannot oscillate. It is bounded by the ladder.
+ * The span comes from `getBoundingClientRect`, which reports VISUAL pixels —
+ * it includes the zoom on the blocks, which is wanted, but also any
+ * `transform: scale` on an ancestor, which is not. The editor and present
+ * mode draw every slide inside such a transform (0.11 in the navigator, 1.5
+ * full-screen), so the visual span is divided by the box's own visual/layout
+ * ratio. Without that, a navigator thumbnail at 0.11 saw its content as a
+ * ninth of its real height, decided it fitted at full size, and cached that
+ * answer for the canvas: a slide 2,691px over its box rendered at scale 1.
  */
+function overrun(el: HTMLElement): { over: number; available: number } | null {
+  const first = el.firstElementChild;
+  const last = el.lastElementChild;
+  if (!first || !last || !el.offsetHeight) return null;
+  const style = getComputedStyle(el);
+  const available =
+    el.clientHeight -
+    parseFloat(style.paddingTop) -
+    parseFloat(style.paddingBottom);
+  if (available <= 0) return null;
+  const ancestorScale = el.getBoundingClientRect().height / el.offsetHeight;
+  if (!(ancestorScale > 0)) return null;
+  const visualSpan =
+    last.getBoundingClientRect().bottom - first.getBoundingClientRect().top;
+  return { over: visualSpan / ancestorScale - available, available };
+}
+
 export function useAutoFit(
   contentRef: React.RefObject<HTMLElement | null>,
   key: string,
@@ -101,76 +161,90 @@ export function useAutoFit(
     setResult(FITS);
 
     let cancelled = false;
+    let waited = 0;
 
     /**
-     * Height the content actually wants, independent of how it is aligned.
-     *
-     * `scrollHeight` cannot be used here. `.v-content` centres its children,
-     * and an overflowing centred flex column spills equally off both ends —
-     * but only the bottom half is reachable, so `scrollHeight` reports half
-     * the real overrun. The search would then stop one or two steps early
-     * and the slide would clip anyway. The span from the first child's top
-     * to the last child's bottom is the same number whatever the alignment.
+     * Both stages write their variable straight onto the slide and read the
+     * layout back synchronously, rather than going through React state and
+     * waiting for frames. Under the concurrent scheduler a state write from a
+     * rAF callback is not guaranteed to be committed by the next frame; the
+     * frame-based version re-measured stale layout, saw no improvement and
+     * gave up at the first step.
      */
-    const measure = (el: HTMLElement) => {
-      const first = el.firstElementChild;
-      const last = el.lastElementChild;
-      if (!first || !last) return null;
-      const style = getComputedStyle(el);
-      const padding =
-        parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-      const available = el.clientHeight - padding;
-      if (available <= 0) return null;
-      const needed =
-        last.getBoundingClientRect().bottom - first.getBoundingClientRect().top;
-      return needed - available;
-    };
-
     const attempt = () => {
       const el = contentRef.current;
       if (cancelled || !el) return;
-      // `--v-fit` lives on the slide; the content box is its descendant.
+      if (lateContentPending(el) && waited < LATE_CONTENT_FRAMES) {
+        waited += 1;
+        requestAnimationFrame(attempt);
+        return;
+      }
+      // The variables live on the slide; the content box is its descendant.
       const host = (el.closest(".v-slide") as HTMLElement | null) ?? el;
-      const inline = host.style.getPropertyValue("--v-fit");
+      const inlineFit = host.style.getPropertyValue("--v-fit");
+      const inlineZoom = host.style.getPropertyValue("--v-zoom");
+      const restore = () => {
+        if (inlineFit) host.style.setProperty("--v-fit", inlineFit);
+        else host.style.removeProperty("--v-fit");
+        if (inlineZoom) host.style.setProperty("--v-zoom", inlineZoom);
+        else host.style.removeProperty("--v-zoom");
+      };
+      host.style.setProperty("--v-zoom", "1");
 
-      let chosen = 0;
-      let overflowing = true;
+      // ---- Stage 1: the type ladder ----
+      let available = 0;
+      let step = 0;
+      let over = Number.POSITIVE_INFINITY;
       let previous = Number.POSITIVE_INFINITY;
-
       for (let i = 0; i < STEPS.length; i++) {
         host.style.setProperty("--v-fit", String(STEPS[i]));
-        const overflow = measure(el);
-        if (overflow === null) {
-          // Nothing measurable yet; leave the scale alone and try next frame.
-          if (inline) host.style.setProperty("--v-fit", inline);
-          else host.style.removeProperty("--v-fit");
+        const m = overrun(el);
+        if (m === null) {
+          // Nothing measurable yet; leave the slide alone and try next frame.
+          restore();
           requestAnimationFrame(attempt);
           return;
         }
-        chosen = i;
-        if (overflow <= 1) {
-          overflowing = false;
+        const measured = m.over;
+        available = m.available;
+        // Shrinking the type bought nothing: what overruns is not text. Keep
+        // the larger step and let the zoom stage deal with it.
+        if (i > 0 && measured > previous - 1) {
+          host.style.setProperty("--v-fit", String(STEPS[step]));
           break;
         }
-        // Shrinking the type bought nothing, so what overflows is not text —
-        // a fixed-aspect image, a min-height block. Going smaller would only
-        // shrink the words for no gain, so keep the larger step and let the
-        // caller top-align instead.
-        if (i > 0 && overflow > previous - 1) {
-          chosen = i - 1;
-          break;
-        }
-        previous = overflow;
+        step = i;
+        over = measured;
+        previous = measured;
+        if (measured <= 1) break;
       }
 
-      // Hand the property back to React, which re-applies it on the render
-      // this settle triggers.
-      if (inline) host.style.setProperty("--v-fit", inline);
-      else host.style.removeProperty("--v-fit");
+      // ---- Stage 2: zoom the blocks, if the ladder was not enough ----
+      let zoom = 1;
+      if (over > 1) {
+        for (let pass = 0; pass < ZOOM_PASSES && over > 1; pass++) {
+          // Re-estimate from the measured span rather than assuming the
+          // overrun shrinks linearly: the gaps between blocks belong to the
+          // box and do not zoom, so the first estimate always lands short.
+          const needed = over + available;
+          const next = Math.max(MIN_ZOOM, zoom * (available / needed) * 0.995);
+          if (next >= zoom) break;
+          zoom = next;
+          host.style.setProperty("--v-zoom", String(zoom));
+          const m = overrun(el);
+          if (m === null) break;
+          over = m.over;
+          if (zoom <= MIN_ZOOM) break;
+        }
+        // Down, never up: the zoom just verified is the largest known to fit.
+        zoom = Math.floor(zoom * 1000) / 1000;
+      }
 
+      restore();
       const done: FitResult = {
-        fit: STEPS[chosen],
-        overflowing,
+        fit: STEPS[step],
+        zoom,
+        overflowing: over > 1,
         settled: true,
       };
       remember(key, done);

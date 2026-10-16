@@ -68,10 +68,12 @@ export function SlideSurface({
   const tokens = useDesignTokens();
   const rhythmSurface = surfaceForSlide(tokens.structure, slide, index);
   const contentRef = useRef<HTMLDivElement>(null);
-  const { fit, overflowing } = useAutoFit(
+  const fitResult = useAutoFit(
     contentRef,
     fitCacheKey(slide.id, JSON.stringify(slide.content).length),
   );
+  const { fit, zoom, overflowing } = fitResult;
+
 
   return (
     <div
@@ -80,11 +82,17 @@ export function SlideSurface({
       // Read back by the PPTX exporter so its point sizes match what the
       // browser actually rendered.
       data-fit={fit === 1 ? undefined : String(fit)}
+      // Stage-2 autofit zoom, published separately from the type scale: zoom
+      // shrinks every block, including text the type scale never touches, so
+      // the PPTX exporter applies it to all native text and keeps data-fit's
+      // existing meaning for the rest.
+      data-zoom={zoom === 1 ? undefined : String(zoom)}
       data-num={
         index !== undefined ? String(index + 1).padStart(2, "0") : undefined
       }
       style={{
         ["--v-fit" as string]: String(fit),
+        ["--v-zoom" as string]: String(zoom),
         width: SLIDE_W,
         height: SLIDE_H,
         // Per-slide override wins; then the theme's surface rhythm; else

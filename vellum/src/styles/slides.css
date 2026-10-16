@@ -124,6 +124,15 @@ img.v-img {
 /* Autofit hit its floor and the content still does not fit. Anchor to the top
    so the heading survives — centring clipped BOTH ends, losing the title as
    well as the last bullet. */
+/* Stage 2 of autofit (use-auto-fit.ts): when the type ladder alone cannot
+   fit the content, every block is zoomed by the same factor. Zoom, not
+   transform — zoom changes layout, so the blocks genuinely occupy less room,
+   while a transform only paints smaller after the overflow clip has already
+   cut the content. Applied to the blocks and not to .v-content itself, so
+   the box keeps its padding and the text stays on the slide's margins. */
+.v-content > * {
+  zoom: var(--v-zoom, 1);
+}
 .v-content--overflow {
   justify-content: flex-start;
 }

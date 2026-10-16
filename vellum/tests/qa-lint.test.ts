@@ -218,4 +218,38 @@ describe("qa lint", () => {
     const issues = lintSlides([s], null, "deck");
     expect(issues.some((i) => i.code === "repeated-heading")).toBe(false);
   });
+
+  it("flags a ring caption repeated as a paragraph beside its definition", () => {
+    // What a "four nested circles" brief produced: each ring label emitted as
+    // a paragraph, then again as the bold opener of its definition.
+    const s = slide("a", [
+      { type: "h1", children: [t("What exactly is AI?")] },
+      {
+        type: "column_group",
+        children: [
+          { type: "column", children: [{ type: "p", children: [t("Artificial Intelligence")] }] },
+          {
+            type: "column",
+            children: [
+              { type: "p", children: [t("Artificial Intelligence:")] },
+              { type: "p", children: [t("Machines doing tasks that normally need people.")] },
+            ],
+          },
+        ],
+      },
+    ]);
+    const hit = lintSlides([s], null, "deck").find((i) => i.code === "repeated-heading");
+    expect(hit?.severity).toBe("major");
+  });
+
+  it("does not flag two long paragraphs that share wording", () => {
+    const s = slide("a", [
+      { type: "h1", children: [t("Two ways to read the same result")] },
+      { type: "p", children: [t("Revenue grew because new customers arrived in the spring quarter.")] },
+      { type: "p", children: [t("Revenue grew because new customers arrived in the spring quarter.")] },
+    ]);
+    // Seven-plus words: a repeated sentence is a different fault, not a label.
+    expect(lintSlides([s], null, "deck").some((i) => i.code === "repeated-heading")).toBe(false);
+  });
 });
+

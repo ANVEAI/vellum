@@ -146,6 +146,12 @@ ${instruction ? `\nAdditional instruction: ${instruction}` : ""}`;
     }
 
     const imageRequests = collectImageRequests([replacement]);
+    // The previous content's images are no longer wanted. Pending ones are
+    // dropped so the GPU does not render them; one already running loses to
+    // the jobs queued below, since only the newest job for a slot may write.
+    await db.generatedImage
+      .deleteMany({ where: { documentId, slideId, status: "pending" } })
+      .catch(() => undefined);
     if (imageRequests.length > 0) {
       await db.generatedImage.createMany({
         data: imageRequests.map((req) => ({

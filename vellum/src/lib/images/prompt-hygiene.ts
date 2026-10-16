@@ -36,6 +36,22 @@ const HEX_COLOR = /#[0-9a-fA-F]{3,8}\b/g;
 const TEXT_CLAUSE =
   /\b(?:labell?ed|titled|captioned|annotated|inscribed|reading|that reads?|which reads?|that says?|saying|with the (?:text|word|words|label|caption|title)|displaying the (?:text|word|words))\b/gi;
 
+/**
+ * A device showing content. The device is a fine subject; whatever is on its
+ * screen is rendered as invented lettering. A real slide displayed "a
+ * smartphone screen displaying various AI applications like maps, voice
+ * assistant and secure banking interface" — every label on it gibberish. The
+ * device survives with a blank screen, which is the one way to describe a
+ * screen these models render cleanly: describe the surface as empty rather
+ * than negate what is on it.
+ */
+const SCREEN_CONTENT =
+  /\b(smartphone|phone|laptop|tablet|monitor|computer|display|screen|tv|television)((?:\s+screen)?)\s+(?:displaying|showing|featuring|running|with)\b[^.;]*/gi;
+
+/** Interfaces, which are made of words. */
+const UI_NOUN =
+  /\b(?:user interfaces?|interfaces?|dashboards?|app screens?|websites?|web pages?|infographics?|spreadsheets?)\b/gi;
+
 /** Standalone requests for lettering. */
 const TEXT_NOUN =
   /\b(?:text overlay|on-image text|lettering|typography|watermark|signage|subtitle|caption)s?\b/gi;
@@ -50,6 +66,21 @@ function tidy(text: string): string {
     .replace(/^[\s,;.]+/, "")
     .replace(/[\s,;]+$/, "")
     .trim();
+}
+
+/**
+ * Requests for slide furniture rather than a subject. The renderer draws
+ * charts, diagrams, timelines and icons natively; an image model asked for
+ * one draws a convincing imitation covered in invented labels. These cannot
+ * be cleaned up the way a stray caption can — removing the word leaves no
+ * subject — so a prompt that asks for one is not worth sending at all.
+ */
+const FURNITURE =
+  /\b(?:diagrams?|flow ?charts?|org(?:anization(?:al)?)? charts?|charts?|graphs?|infographics?|data visuali[sz]ations?|visuali[sz]ations?|timelines?|dashboards?|wireframes?|mockups?|mock-ups?|icons?|icon sets?|presentation slides?|slide layouts?|spreadsheets?)\b/i;
+
+/** Whether an image prompt asks for slide furniture instead of a subject. */
+export function requestsSlideFurniture(prompt: string): boolean {
+  return FURNITURE.test(prompt);
 }
 
 export interface PromptHygieneResult {
@@ -80,6 +111,11 @@ export function stripTextRequests(prompt: string): PromptHygieneResult {
   out = out.replace(QUOTED, note);
   out = out.replace(TEXT_CLAUSE, note);
   out = out.replace(HEX_COLOR, note);
+  out = out.replace(SCREEN_CONTENT, (match, device: string, screen: string) => {
+    note(match);
+    return ` ${device}${screen} with a dark, blank screen `;
+  });
+  out = out.replace(UI_NOUN, note);
   out = out.replace(TEXT_NOUN, note);
 
   const cleaned = tidy(out);

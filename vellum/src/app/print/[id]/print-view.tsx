@@ -120,22 +120,30 @@ function PrintSlide({ slide, index }: { slide: PlateSlide; index: number }) {
   // Identical autofit path to the editor, so PDF and PPTX shrink exactly the
   // same slides by exactly the same amount.
   const contentRef = React.useRef<HTMLDivElement>(null);
-  const { fit, overflowing, settled } = useAutoFit(
+  const fitResult = useAutoFit(
     contentRef,
     fitCacheKey(slide.id, JSON.stringify(slide.content).length),
   );
+  const { fit, zoom, overflowing, settled } = fitResult;
+
   return (
     <div
       className={`v-slide v-layout-${layout} ${hasImage ? "v-has-img" : ""} print-slide`}
       data-slide-idx={index}
       data-archetype={slide.archetype || undefined}
       data-fit={fit === 1 ? undefined : String(fit)}
+      // Stage-2 autofit zoom, published separately from the type scale: zoom
+      // shrinks every block, including text the type scale never touches, so
+      // the PPTX exporter applies it to all native text and keeps data-fit's
+      // existing meaning for the rest.
+      data-zoom={zoom === 1 ? undefined : String(zoom)}
       // Published so the exporter can wait for the autofit search to finish
       // rather than sleeping for the worst case.
       data-fit-settled={settled ? "" : undefined}
       data-num={String(index + 1).padStart(2, "0")}
       style={{
         ["--v-fit" as string]: String(fit),
+        ["--v-zoom" as string]: String(zoom),
         width: SLIDE_W,
         height: SLIDE_H,
         background:

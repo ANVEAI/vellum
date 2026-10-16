@@ -262,6 +262,40 @@ function isTextNode(node: XMLNode | XMLTextNode): node is XMLTextNode {
   return "text" in node && !("tag" in node);
 }
 
+/**
+ * Elements that hold a single line of display text. Their builders flatten
+ * every text descendant into one run, so they must never contain blocks.
+ */
+const HEADING_TAGS = new Set([
+  "TITLE",
+  "PRESENTATION-TITLE",
+  "PRESENTATION_TITLE",
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "H5",
+  "H6",
+  "LABEL",
+]);
+
+/** Formatting that may legitimately sit inside a heading. */
+const INLINE_TAGS = new Set([
+  "B",
+  "STRONG",
+  "I",
+  "EM",
+  "U",
+  "S",
+  "SPAN",
+  "A",
+  "BR",
+  "MARK",
+  "SUB",
+  "SUP",
+  "SMALL",
+]);
+
 function isElementNode(node: XMLNode | XMLTextNode): node is XMLNode {
   return "tag" in node;
 }
@@ -814,6 +848,62 @@ export class SlideParser {
   }
 
   /**
+   * Headings are inline-only: lift any block content out of them.
+   *
+   * The model regularly leaves a <TITLE> or <H1> unclosed, or nests the rest
+   * of the slide inside it. The XML recovery then makes every following
+   * element a child of the heading, and the heading builders flatten all text
+   * descendants into one run — so the slide's columns, callout and body all
+   * collapsed into a single title rendered at display size. One generated
+   * slide carried a 90-word title, roughly 3,000px tall, and repeated the
+   * same words in the column group beside it.
+   *
+   * The heading keeps its leading inline text; the first block child and
+   * everything after it become siblings again. It runs before the section
+   * fingerprint is taken, so an unclosed heading whose text grew on every
+   * streaming tick no longer changes the slide's id mid-stream either.
+   * Well-formed input is untouched.
+   */
+  private liftBlocksOutOfHeadings(node: XMLNode): void {
+    const out: Array<XMLNode | XMLTextNode> = [];
+    const queue = [...node.children];
+    while (queue.length > 0) {
+      const child = queue.shift()!;
+      if (isElementNode(child) && HEADING_TAGS.has(child.tag.toUpperCase())) {
+        const cut = child.children.findIndex(
+          (c) => isElementNode(c) && !INLINE_TAGS.has(c.tag.toUpperCase()),
+        );
+        if (cut !== -1) {
+          const heading: XMLNode = {
+            ...child,
+            children: child.children.slice(0, cut),
+          };
+          if (this.getTextContent(heading).trim()) out.push(heading);
+          // Re-examine what was lifted at this level: it can be another
+          // heading that swallowed blocks of its own. Loose text that rode
+          // along is kept as a paragraph rather than dropped, since bare text
+          // at section level is only scanned for image and infographic hints.
+          queue.unshift(
+            ...child.children.slice(cut).flatMap((c): Array<XMLNode | XMLTextNode> =>
+              isTextNode(c)
+                ? c.text.trim()
+                  ? [{ tag: "P", attributes: {}, children: [c] }]
+                  : []
+                : [c],
+            ),
+          );
+          continue;
+        }
+      }
+      out.push(child);
+    }
+    node.children = out;
+    for (const child of node.children) {
+      if (isElementNode(child)) this.liftBlocksOutOfHeadings(child);
+    }
+  }
+
+  /**
    * Generate a section identifier
    */
   private generateSectionIdentifier(sectionNode: XMLNode): string {
@@ -881,6 +971,9 @@ export class SlideParser {
         alignment: "center",
       };
     }
+
+    // Before the fingerprint, so the id is taken from the clean heading.
+    this.liftBlocksOutOfHeadings(sectionNode);
 
     let slideId: string;
     if (sectionNode.attributes.id) {

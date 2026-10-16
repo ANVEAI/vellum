@@ -928,6 +928,50 @@ async function tryNativeLayout(
   }
 }
 
+/**
+ * A slide whose every native text run is scaled by `zoom`.
+ *
+ * Autofit's second stage zooms the blocks of a slide that the type scale
+ * alone could not fit, and zoom shrinks ALL of a block's text — including
+ * the labels, quotes, stats and layout items that this exporter writes at
+ * fixed point sizes, which the type scale never reached. The block boxes
+ * measured from the DOM already reflect the zoom, so unscaled text would be
+ * written into boxes too small for it. Wrapping addText applies the factor
+ * to every call site at once, present and future, without threading a
+ * parameter through each emitter. Shapes and images are left alone: their
+ * geometry comes from the measured boxes.
+ */
+type TextRuns = Parameters<PptxSlide["addText"]>[0];
+
+function zoomText(slide: PptxSlide, zoom: number): PptxSlide {
+  if (!(zoom > 0) || zoom >= 1) return slide;
+  const scale = <T,>(options: T): T => {
+    const size = (options as { fontSize?: unknown } | undefined)?.fontSize;
+    return typeof size === "number"
+      ? ({ ...options, fontSize: Math.max(1, Math.round(size * zoom * 2) / 2) } as T)
+      : options;
+  };
+  return new Proxy(slide, {
+    get(target, prop, receiver) {
+      if (prop === "addText") {
+        return (text: TextRuns, options?: TextProps) => {
+          const runs = Array.isArray(text)
+            ? text.map((run) =>
+                typeof run === "object" && run !== null && "options" in run
+                  ? { ...run, options: scale(run.options) }
+                  : run,
+              )
+            : text;
+          target.addText(runs as TextRuns, scale(options));
+          return receiver;
+        };
+      }
+      const value = Reflect.get(target, prop, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+}
+
 export async function exportPptx(documentId: string): Promise<Buffer> {
   const document = await db.document.findUnique({
     where: { id: documentId },
@@ -982,7 +1026,8 @@ export async function exportPptx(documentId: string): Promise<Buffer> {
       const slideBox = (await slideLocator.boundingBox()) as Box | null;
       if (!slideBox) continue;
 
-      const out = pptx.addSlide();
+      const zoomAttr = await slideLocator.getAttribute("data-zoom");
+      const out = zoomText(pptx.addSlide(), zoomAttr ? Number(zoomAttr) : 1);
       // The renderer may have shrunk this slide's type to fit. Point sizes are
       // computed from the scale, not read off the DOM, so without this the
       // exported text would be larger than the boxes measured around it.

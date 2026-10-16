@@ -354,15 +354,26 @@ export function lintSlides(
     // once as a column heading, once as a ring label, once opening its
     // paragraph. Nothing flagged it, because every existing duplicate check
     // compares ACROSS slides.
+    //
+    // Short paragraphs and labels count too: a model reproducing "four
+    // nested circles" from a brief emitted each ring's caption as its own
+    // paragraph, right beside a bold paragraph opening the definition — the
+    // same label twice, neither of them a heading.
     const headingCounts = new Map<string, number>();
     walkNodes(slide.content as Descendant[], (node) => {
-      if (!/^h[1-6]$/.test(String(node.type))) return;
+      const type = String(node.type);
+      const isHeading = /^h[1-6]$/.test(type);
+      if (!isHeading && type !== "p" && type !== "label") return;
       const text = textOf(node.children as Descendant[])
         .trim()
-        .toLowerCase();
+        .toLowerCase()
+        .replace(/[\s:.,;!?]+$/, "");
+      const words = text.split(/\s+/).filter(Boolean).length;
       // Single words repeat legitimately (table headers, yes/no); a repeated
-      // multi-word label is the model saying the same thing twice.
-      if (text.split(/\s+/).length < 2) return;
+      // multi-word label is the model saying the same thing twice. Longer
+      // paragraphs are left out: two sentences that share an opening are not
+      // a duplicated label.
+      if (words < 2 || (!isHeading && words > 6)) return;
       headingCounts.set(text, (headingCounts.get(text) ?? 0) + 1);
     });
     const repeated = [...headingCounts.entries()].filter(([, n]) => n > 1);

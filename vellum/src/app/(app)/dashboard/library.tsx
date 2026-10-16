@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { fullDateTime, relativeDay } from "@/lib/dates";
 import { useMemo, useState } from "react";
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 import { ScaledSlide } from "@/components/slides/render/slide-frame";
@@ -28,6 +29,9 @@ export interface LibraryCard {
   title: string;
   status: string;
   themeName: string;
+  /** When the document was generated. Shown on the card. */
+  createdAt: string;
+  /** Last write of any kind; drives the "Last edited" sort. */
   updatedAt: string;
   firstSlide: PlateSlide | null;
   slideCount: number;
@@ -53,17 +57,6 @@ const SORTS = [
   { value: "title", label: "Title" },
 ] as const;
 
-function relativeDate(iso: string): string {
-  const then = new Date(iso).getTime();
-  const days = Math.floor((Date.now() - then) / 86_400_000);
-  if (days <= 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days} days ago`;
-  return new Date(iso).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
-}
 
 export function Library({ cards }: { cards: LibraryCard[] }) {
   const router = useRouter();
@@ -285,7 +278,20 @@ export function Library({ cards }: { cards: LibraryCard[] }) {
                     <Icon name={card.kind === "doc" ? "doc" : "deck"} size={12} />
                     {card.slideCount} {card.kind === "doc" ? "sections" : "slides"}
                     <span aria-hidden>·</span>
-                    {relativeDate(card.updatedAt)}
+                    {/* The generation date, not the last write: background
+                        work (image patching, the quality report) updates a
+                        document after it is made, and a job resumed after a
+                        restart could push a deck generated yesterday into
+                        "Today". The exact times are in the tooltip. */}
+                    <time
+                      dateTime={card.createdAt}
+                      title={`Generated ${fullDateTime(card.createdAt)} · last edited ${fullDateTime(card.updatedAt)}`}
+                      // The label depends on the viewer's clock and timezone,
+                      // which the server render cannot know.
+                      suppressHydrationWarning
+                    >
+                      {relativeDay(card.createdAt)}
+                    </time>
                     {card.status !== "ready" && (
                       <span
                         className={cx(

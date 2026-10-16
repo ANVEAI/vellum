@@ -11,7 +11,10 @@ import {
   LAYOUT_REFERENCE,
 } from "@/lib/generation/parser/xml-catalog";
 
-export type TextDensity = "minimal" | "concise" | "detailed" | "extensive";
+import { slideWordBudget, type TextDensity } from "@/lib/design/budget";
+
+export type { TextDensity };
+export { slideWordBudget };
 
 export interface DeckPromptInput {
   prompt: string;
@@ -40,25 +43,6 @@ export interface DeckPromptInput {
   wordBudget?: number;
 }
 
-/**
- * Density scales the family's budget rather than replacing it. The wording
- * alone ("use short labels") carried no number, so a request for minimal
- * density on a 28-word family still produced 70-word slides.
- */
-const DENSITY_FACTOR: Record<TextDensity, number> = {
-  minimal: 0.6,
-  concise: 1,
-  detailed: 1.25,
-  extensive: 1.5,
-};
-
-/** The family budget adjusted for density, floored so it stays writable. */
-export function slideWordBudget(
-  base: number | undefined,
-  density: TextDensity,
-): number {
-  return Math.max(18, Math.round((base ?? 60) * DENSITY_FACTOR[density]));
-}
 
 const GENERATED_IMAGE_STYLE = `Image instruction:
 - Use \`<IMG query="...">\` with a detailed descriptive prompt to generate an image.
@@ -70,11 +54,20 @@ the slide's text. It is never a picture of the slide itself. The renderer draws
 every card, label, number, timeline, chart and icon natively — an image that
 tries to draw them competes with the real ones and loses.
 
-Describe only a subject and its setting:
+Each image depicts THIS slide. Read the slide's heading and ask what a viewer
+should see beside that claim: an object, a scene, a person at work, or a visual
+metaphor they would connect to it.
+
+Describe only that subject and its setting:
 - The thing itself: people, places, objects, materials, landscapes, machinery
-- Style (photorealistic, illustration, cinematic), lighting, colour, atmosphere
-- Clear negative space (sky, wall, calm gradient) on one side for slide text
-- Relevant to the slide topic
+- Style (photorealistic, illustration, cinematic), lighting and mood
+- Clear negative space on one side for slide text
+
+Do not describe colours, a palette, gradients, glows or the deck's background.
+The deck's style preset and theme are applied to every image automatically, so
+a prompt that restates them carries no subject at all — "a dark background with
+a soft violet glow" says nothing about the slide it sits on. If no concrete
+subject fits a slide, leave the image out rather than fill it with a backdrop.
 
 Never ask the image for any of these, however the user's brief is worded:
 - Written language of any kind — words, labels, captions, titles, numbers,
@@ -82,15 +75,25 @@ Never ask the image for any of these, however the user's brief is worded:
   render these as convincing gibberish, which is worse than leaving them out.
 - Slide furniture: cards, panels, pills, bullet lists, tables, charts, graphs,
   timelines, diagrams, flow arrows, org charts, UI, dashboards, mockups, icons
+- A screen showing anything — an app, a map, a website, a document. Phones and
+  laptops are fine subjects; what is on their screens becomes gibberish text
 - Hex colour codes or pixel measurements
 - Placeholders, brackets, vague references, or AI tools and model names
 
 If the slide's brief describes a diagram or a labelled layout, build it from the
 components above and give the image a plain subject instead — or omit the image.
 
-\`\`\`xml
-<IMG query="cinematic wide-angle view of a futuristic smart city powered by renewable energy, gleaming solar arrays and vertical gardens, morning haze, warm sunlight cutting through glass towers, clean aerial composition with leading lines, crisp details, high contrast, optimistic mood" />
-\`\`\``;
+How a heading becomes its image (illustrations of the reasoning, from decks on
+other subjects — not queries to reuse):
+- "Churn fell 34% after the onboarding redesign" → a customer relaxed at a
+  kitchen table with a laptop, soft morning light, shallow depth of field
+- "Our cold chain now spans 40 ports" → refrigerated containers stacked at a
+  harbour at dusk, long exposure, cranes in silhouette
+- "Three teams now ship on one calendar" → three colleagues around a standing
+  desk mid-conversation, natural window light
+
+Every slide's image is different and specific to that slide. Never repeat a
+query across slides, and never reuse one of the illustrations above.`;
 
 const STOCK_IMAGE_STYLE = `Image instruction:
 - Use \`<IMG query="..." />\` with a short English keyword query to find a stock image.
@@ -101,6 +104,24 @@ const STOCK_IMAGE_STYLE = `Image instruction:
 <IMG query="team collaboration" />
 <IMG query="solar panels roof" />
 \`\`\``;
+
+/**
+ * The model reads a design brief — exact point sizes, hex colours, "four
+ * nested circles", pixel offsets — and tries to reproduce it in markup:
+ * `<DIV style="width: 200px; border-radius: 50%; background: #3B1F7A;
+ * margin-top: -100px">` nested four deep inside COLUMNS. The styles are
+ * discarded by the renderer but the nesting is not, so the decorative ring
+ * labels became paragraphs printed beside the definitions they decorated, and
+ * slides grew far taller than their canvas. Nothing in the prompt said the
+ * markup cannot carry visual design, so this says it.
+ */
+const RENDERER_OWNS_DESIGN = `Vellum draws the visual design itself. Typography, colour, spacing, cards and slide backgrounds all come from the deck's theme. Your job is the words and the choice of component.
+
+- Never put style, class, width, height, color, font or any other presentational attribute on an element. They are discarded; the markup around them is not, and it breaks the slide.
+- Never build a layout out of nested <DIV>s — rings, cards, grids, panels, pills. Pick the component that expresses the idea: STEPS or TIMELINE for a sequence, BOXES or ICONS for a set, COMPARE for two sides, STATS for numbers, PYRAMID or STAIRCASE for layers.
+- When the user's request specifies fonts, point sizes, hex colours, pixel positions or exact slide furniture, read it as intent — the deck should feel that way — and express it through components and wording. Do not try to reproduce it in markup.
+- Close every tag you open. A heading (TITLE, H1-H6, LABEL) holds one line of text and nothing else; content that follows it goes after its closing tag.
+- One heading per slide carries the claim. A kicker above it is a LABEL; a supporting line below it is a P. Never a second large heading.`;
 
 const WRITING_RULES = `WRITING RULES — these override style preferences:
 1. Every content slide's H1/H2 is a complete sentence stating the slide's conclusion — subject + verb + object, 6-15 words.
@@ -211,6 +232,10 @@ Available XML syntax: wrap the deck in one <PRESENTATION> root. Put each slide i
 ${LAYOUT_REFERENCE}
 
 ${COMPONENT_INSTRUCTIONS}
+
+# THE RENDERER OWNS THE DESIGN
+
+${RENDERER_OWNS_DESIGN}
 
 # WRITING RULES
 

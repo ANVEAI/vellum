@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { stripTextRequests } from "@/lib/images/prompt-hygiene";
+import { requestsSlideFurniture, stripTextRequests } from "@/lib/images/prompt-hygiene";
 
 /**
  * The inputs here are real prompts taken from the generated deck whose images
@@ -63,4 +63,47 @@ describe("image prompt hygiene", () => {
     expect(prompt).not.toMatch(/^[\s,]/);
     expect(prompt).toContain("soft morning light");
   });
+
+  it("keeps a device but blanks its screen", () => {
+    // The real prompt behind a slide that shipped with gibberish UI on a phone.
+    const { prompt, removed } = stripTextRequests(
+      "modern smartphone screen displaying various AI applications like maps, voice assistant and secure banking interface",
+    );
+    expect(prompt).toMatch(/smartphone/);
+    expect(prompt).toMatch(/blank screen/);
+    expect(prompt).not.toMatch(/displaying/);
+    expect(prompt).not.toMatch(/interface/i);
+    expect(removed.length).toBeGreaterThan(0);
+  });
+
+  it("drops interface nouns", () => {
+    const { prompt } = stripTextRequests("a designer reviewing a dashboard at dusk");
+    expect(prompt).not.toMatch(/dashboard/i);
+    expect(prompt).toContain("designer");
+  });
+
+  it("leaves a device with no screen content alone", () => {
+    const clean = "a laptop on a wooden desk beside a cup of coffee, morning light";
+    expect(stripTextRequests(clean).prompt).toBe(clean);
+  });
+
+  it("recognises requests for slide furniture", () => {
+    // Real prompts from a generated deck.
+    expect(
+      requestsSlideFurniture(
+        "nested concentric circles diagram showing AI evolution from outer artificial intelligence to inner generative AI",
+      ),
+    ).toBe(true);
+    expect(
+      requestsSlideFurniture("abstract glowing data visualization of neural networks connected to medical icons"),
+    ).toBe(true);
+    expect(requestsSlideFurniture("a bar chart of quarterly revenue")).toBe(true);
+  });
+
+  it("does not mistake an ordinary subject for furniture", () => {
+    expect(requestsSlideFurniture("children laughing on a playground slide")).toBe(false);
+    expect(requestsSlideFurniture("container cranes at a harbour at dusk")).toBe(false);
+    expect(requestsSlideFurniture("a glowing violet orb against a deep indigo sky")).toBe(false);
+  });
 });
+

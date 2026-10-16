@@ -199,9 +199,18 @@ const DISPLAY_TYPE_ARCHETYPES = new Set<ArchetypeId>([
 export function accepts(id: ArchetypeId, sig: ContentSignature): boolean {
   // Display type needs room. More than one lane of columns means the slide is
   // carrying parallel content, which never fits at 84px however few words it
-  // adds up to. Checked before the per-archetype rules so it cannot be missed
-  // when a new display treatment is added to the set above.
-  if (sig.columnCount > 1 && DISPLAY_TYPE_ARCHETYPES.has(id)) return false;
+  // adds up to — and nor does a chart or a table, which need the height the
+  // display heading takes. Hero, closing and divider each excluded charts in
+  // their own rules; statement and full-bleed did not, so a model's suggested
+  // role="statement" put an 84px heading above a line chart and the slide
+  // overflowed. Checked here, before the per-archetype rules, so no display
+  // treatment added later can miss it.
+  if (
+    DISPLAY_TYPE_ARCHETYPES.has(id) &&
+    (sig.columnCount > 1 || sig.hasChart || sig.hasTable)
+  ) {
+    return false;
+  }
 
   switch (id) {
     case "hero":

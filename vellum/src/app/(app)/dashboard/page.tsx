@@ -18,6 +18,7 @@ export default async function DashboardPage() {
       status: true,
       themeName: true,
       slides: true,
+      createdAt: true,
       updatedAt: true,
     },
   });
@@ -38,6 +39,7 @@ export default async function DashboardPage() {
       title: doc.title,
       status: doc.status,
       themeName: doc.themeName,
+      createdAt: doc.createdAt.toISOString(),
       updatedAt: doc.updatedAt.toISOString(),
       firstSlide,
       slideCount,

@@ -41,6 +41,45 @@ identical planner, so the preview matches what gets persisted.
 `scripts/e2e-create.ts` asserts this against a real generation: zero archetype
 flips on settled slides.
 
+### Headings are inline-only
+
+The model regularly leaves a `<TITLE>` or `<H1>` unclosed, or nests the rest
+of the slide inside it. XML recovery then makes every following element a
+child of the heading, and the heading builders flatten all text descendants
+into one run — a whole slide became one display-size title (one measured 90
+words, ~3,000px tall). `liftBlocksOutOfHeadings` runs before the section
+fingerprint and moves any block content back out as siblings, so the id is
+also taken from the clean heading rather than one that grows every tick.
+
+### One word budget
+
+`slideWordBudget` (`src/lib/design/budget.ts`) — the theme family's
+`maxWordsPerSlide` scaled by the requested density — is the only budget. The
+prompt states it, the generation gate and the QA panel judge by it (with 15%
+tolerance). They used to carry four different numbers.
+
+### The quality gate keeps a rewrite only if it is better
+
+Up to five slides with hard faults are rewritten, worst first. The request is
+an edit of the slide as it stands with a numeric limit — resending the brief
+made the model reproduce the brief's long text. A rewrite replaces the slide
+only when it has fewer hard faults, or the same number and fewer words.
+
+### Image slots: newest job wins, and only for a slot that exists
+
+One image per (slide, node). Several jobs can target a slot: the gate keeps a
+regenerated slide's id, and a root image's node is always `__root__`. Only the
+newest job for a slot may write it (`newestJobPerSlot`), and a root job only
+fills a `rootImage` the slide still has — it never creates one. Comparing the
+job's prompt to the slot's query would be wrong: the editor's regenerate
+action deliberately sends a new prompt. The editor's add-image route creates
+the slot when it queues the job.
+
+The planner drops a root image whose prompt an earlier slide used, or that
+asks for slide furniture (a chart, diagram, timeline, icon…). It lives in the
+planner because the planner is the one function the client preview and the
+server share, and the check only looks backwards.
+
 ### Slide count is the user's, not the template's
 
 `genParams.nCards` is authoritative everywhere. A template's `sections` array
@@ -85,16 +124,44 @@ while reporting a fit, and exported text was smaller than rendered text.
 
 Anything else that wants to vary per slide has the same requirement.
 
-### Text autofit is one-way
+### Autofit: type scale, then zoom
 
-`useAutoFit` multiplies **only the type scale** (`--presentation-fs-*` derive
-from raw `--v-fs-*` times `--v-fit`). Smaller text cannot change its
-container, so there is no feedback loop. Results are cached per slide, which
-both avoids a hundred dashboard thumbnails each running a measuring pass and
-guarantees a thumbnail can never disagree with the full canvas. The print
-route runs the identical path, and `pptx.ts` reads the resulting `data-fit`
-attribute to scale its point sizes — without that, exported text would exceed
-boxes measured around shrunken text.
+`useAutoFit` works in two stages, both one-way — the container is a fixed
+1280×720 canvas, so shrinking content cannot change the space available.
+
+1. **Type scale.** `--v-fit` steps down a ladder to 0.65. Text shrinks;
+   spacing, icons and padding keep their size.
+2. **Zoom.** If that is not enough, every block in `.v-content` gets
+   `zoom: var(--v-zoom)`, a continuous factor down to 0.75. Zoom, not
+   `transform: scale` — zoom changes layout, so the blocks genuinely take
+   less room, whereas an `overflow: hidden` box clips *before* a transform
+   could shrink anything. Only the blocks are zoomed, never the box, so
+   padding and margins survive.
+
+Below both floors (~49% of the theme size) a slide is too dense to be legible
+at any size; it top-aligns so the heading survives, and the generation gate is
+what has to stop it being produced.
+
+**Measure in layout pixels.** The overrun is the span from the first block's
+top to the last block's bottom — not `scrollHeight`, which reports half the
+overrun of a centred column. That span comes from `getBoundingClientRect`,
+which includes ancestor transforms, so it is divided by the content box's own
+visual/layout ratio. The editor (0.11 in the navigator) and present mode
+(1.5) render inside a transform; without that division a thumbnail measured
+its content at a ninth of its height, settled on fit 1, and cached that for
+the canvas. `scripts/fit-audit.ts` checks those paths; the geometry audit
+only sees the print route.
+
+**Wait for late content.** Charts draw their SVG after a lazy import and
+images take their height on decode. Measuring before them sized a slide
+around an empty box; autofit waits (bounded) until neither is pending.
+
+Results are cached per slide, so thumbnails, canvas, present mode and print
+always agree. The print route publishes `data-fit`, `data-zoom` and
+`data-fit-settled`; the exporter waits for the last, scales headings and body
+by `data-fit` as before, and wraps the slide so **every** native text run is
+scaled by `data-zoom` — including the labels, quotes and stats written at
+fixed point sizes, which zoom shrinks in the browser too.
 
 ### Spacing
 
@@ -176,14 +243,16 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
 
 | Command | Checks |
 |---|---|
-| `npm test` | 187 unit/integration tests |
+| `npm test` | 254 unit/integration tests |
 | `npx tsx scripts/ui-check.ts <deck> <doc>` | 48 screenshots, 2 themes × 4 widths; console errors, overflow, unlabelled controls, hit targets, native dialogs, focus rings, menu reachability |
 | `npx tsx scripts/e2e-editor.ts <deck>` | 26 editor interactions on a throwaway copy |
 | `npx tsx scripts/e2e-create.ts` | real generation; asserts zero mid-stream re-layouts |
 | `npx tsx scripts/e2e-export.ts <deck>` | PDF structure + a real browser download, byte-compared |
 | `npx tsx scripts/e2e-template-count.ts pitch-deck 6 10 12` | slide count honours the request |
 | `npx tsx scripts/nav-stability.ts <deck>` | navigator geometry at the 8/9/10 boundary |
-| `npx tsx scripts/geometry-audit.ts <doc...>` | per slide: clipped content, blocks escaping the canvas, overlapping blocks |
+| `npx tsx scripts/geometry-audit.ts <doc...>` | per slide on the print route: clipped content, blocks escaping the canvas, overlapping blocks |
+| `npx tsx scripts/fit-audit.ts <doc> editor\|present` | autofit inside transformed render paths: scale, fit, zoom, true overrun |
+| `npx tsx scripts/regenerate.ts <doc> [theme]` | re-runs a past generation like for like (creates a new document) |
 | `npx tsx scripts/export-parity.ts <deck>` | no stretched images in the PPTX |
 | `npx tsx scripts/verify-export-contract.ts <deck>` | `[data-block-idx]` intact |
 | `npx tsx scripts/gc-orphans.ts` | orphaned assets (dry run by default) |

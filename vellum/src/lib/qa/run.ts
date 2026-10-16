@@ -9,6 +9,7 @@ import { getSettings } from "@/lib/settings";
 import { generateStructuredWithRetries } from "@/lib/generation/llm/schema-retry";
 import { lintSlides, type LintOptions, type QaIssue } from "./lint";
 import { resolveDesignTokens } from "@/lib/design/tokens";
+import { budgetFor } from "@/lib/design/budget";
 import { resolveThemeOrDefault } from "@/lib/themes/resolve";
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 import type { Descendant, TElement, TText } from "@/lib/slides/plate-shim";
@@ -17,6 +18,7 @@ import type { Descendant, TElement, TText } from "@/lib/slides/plate-shim";
 export function lintOptionsFor(
   themeName: string | null,
   sourcesJson?: string | null,
+  genParamsJson?: string | null,
 ): LintOptions {
   const theme = resolveThemeOrDefault(themeName, null);
   const tokens = resolveDesignTokens(theme, themeName ?? undefined);
@@ -29,10 +31,10 @@ export function lintOptionsFor(
     }
   }
   return {
-    // The 1.5x headroom existed because nothing could recover from overflow —
-    // it was clip or nothing. Autofit now absorbs a modest overrun, so the
-    // advisory can fire nearer the real budget.
-    maxWordsPerSlide: Math.round(tokens.content.maxWordsPerSlide * 1.15),
+    // The same budget the prompt states (family token scaled by the chosen
+    // density), with 15% tolerance before the advisory fires: autofit absorbs
+    // a modest overrun, so warning at the exact figure would be noise.
+    maxWordsPerSlide: Math.round(budgetFor(tokens, genParamsJson) * 1.15),
     sourceCount,
   };
 }
@@ -80,7 +82,7 @@ export async function runQualityCheck(documentId: string): Promise<void> {
     slides,
     document.outline,
     kind,
-    lintOptionsFor(document.themeName, document.sources),
+    lintOptionsFor(document.themeName, document.sources, document.genParams),
   );
   const partial: QualityReport = {
     score: null,
@@ -158,14 +160,20 @@ async function freshLint(
   try {
     const doc = await db.document.findUnique({
       where: { id: documentId },
-      select: { slides: true, outline: true, themeName: true, sources: true },
+      select: {
+        slides: true,
+        outline: true,
+        themeName: true,
+        sources: true,
+        genParams: true,
+      },
     });
     if (!doc) return fallback;
     return lintSlides(
       JSON.parse(doc.slides) as PlateSlide[],
       doc.outline,
       kind,
-      lintOptionsFor(doc.themeName, doc.sources),
+      lintOptionsFor(doc.themeName, doc.sources, doc.genParams),
     );
   } catch {
     return fallback;
@@ -186,7 +194,7 @@ export async function refreshLintReport(documentId: string): Promise<void> {
       JSON.parse(document.slides) as PlateSlide[],
       document.outline,
       document.kind === "doc" ? "doc" : "deck",
-      lintOptionsFor(document.themeName, document.sources),
+      lintOptionsFor(document.themeName, document.sources, document.genParams),
     );
     report.checkedAt = new Date().toISOString();
     await db.document.update({

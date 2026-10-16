@@ -16,13 +16,23 @@ import {
   collectIconQueries,
   collectImageRequests,
 } from "@/lib/slides/walk";
-import { applyImageToSlides } from "@/lib/images/patch-slides";
+import {
+  applyImageToSlides,
+  imageSlotKey,
+  newestJobPerSlot,
+} from "@/lib/images/patch-slides";
 import { resolveIconQueries } from "@/lib/icons/search";
 import { kickImageQueue } from "@/lib/generation/pipeline/asset-queue";
 import { formatTemplateGuidance, getTemplate } from "@/lib/templates/library";
 import { planDeck, replanSlide } from "@/lib/design/planner";
 import { lintSlides } from "@/lib/qa/lint";
 import { lintOptionsFor } from "@/lib/qa/run";
+import { budgetFor } from "@/lib/design/budget";
+import { signatureOf } from "@/lib/design/archetypes";
+import {
+  condenseRequest,
+  isImprovement,
+} from "@/lib/generation/pipeline/condense";
 import { resolveThemeOrDefault } from "@/lib/themes/resolve";
 import { resolveDesignTokens } from "@/lib/design/tokens";
 import { buildSourcesSlide, slideRefs } from "@/lib/slides/citations";
@@ -153,10 +163,21 @@ export async function POST(request: NextRequest) {
         // instead of serializing after it. The Set both dedupes across ticks
         // and guards the final post-stream enqueue.
         const enqueuedImages = new Set<string>();
+        /** Forget every key queued for one slide so it can be queued afresh. */
+        const forgetSlide = (slideId: string) => {
+          const prefix = `${slideId}|`;
+          for (const key of [...enqueuedImages]) {
+            if (key.startsWith(prefix)) enqueuedImages.delete(key);
+          }
+        };
         const enqueueNewImages = async (source?: ReturnType<typeof snapshotSlides>) => {
           const requests = collectImageRequests(source ?? snapshotSlides()).filter(
             (req) => {
-              const key = `${req.slideId}|${req.nodeId}`;
+              // The query is part of the key: a slide the quality gate
+              // regenerated keeps its id, and a root image's node is always
+              // "__root__", so without it the regenerated content's new
+              // picture was silently skipped as a duplicate.
+              const key = `${imageSlotKey(req.slideId, req.nodeId)}|${req.query}`;
               if (enqueuedImages.has(key)) return false;
               enqueuedImages.add(key);
               return true;
@@ -256,8 +277,10 @@ export async function POST(request: NextRequest) {
         if (slides.length > cards.length) {
           const dropped = slides.length - cards.length;
           slides = slides.slice(0, cards.length);
+          // Keys are "slide|node|query"; deleting the bare slide id matched
+          // nothing, so this cleanup used to be a no-op.
           for (const slide of snapshotSlides().slice(cards.length)) {
-            enqueuedImages.delete(slide.id);
+            forgetSlide(slide.id);
           }
           await db.generatedImage
             .deleteMany({
@@ -292,22 +315,42 @@ export async function POST(request: NextRequest) {
           "too-many-columns",
           "repeated-heading",
         ]);
+        const lintOpts = lintOptionsFor(
+          document.themeName,
+          document.sources,
+          document.genParams,
+        );
+        const lintKind = mode === "document" ? "doc" : "deck";
+        // The same budget the prompt stated and the QA panel judges by.
+        const slideBudget = budgetFor(budgetTokens, document.genParams);
+        const wordsOf = (id: string | null) => {
+          const slide = slides.find((s) => s.id === id);
+          return slide ? signatureOf(slide).wordCount : 0;
+        };
+        const hardIssuesOf = (slide: (typeof slides)[number]) =>
+          lintSlides([slide], document.outline, lintKind, lintOpts).filter(
+            (i) => i.slideId && HARD_CODES.has(i.code),
+          );
         const hardIssues = lintSlides(
           slides,
           document.outline,
-          mode === "document" ? "doc" : "deck",
-          lintOptionsFor(document.themeName, document.sources),
+          lintKind,
+          lintOpts,
         ).filter((issue) => issue.slideId && HARD_CODES.has(issue.code));
-        // Majors first: the budget is three regenerations, and spending one
-        // on a minor advisory while a major fault ships is the wrong trade.
+        // Majors first: spending a regeneration on a minor advisory while a
+        // major fault ships is the wrong trade. Then the longest slide first,
+        // since with a fixed budget the worst overrun is the one worth fixing.
         // Sorting before the Map also decides which issue represents a slide
         // that has several.
         const gateTargets = [
           ...new Map(
             [...hardIssues]
-              .sort((a, b) =>
-                a.severity === b.severity ? 0 : a.severity === "major" ? -1 : 1,
-              )
+              .sort((a, b) => {
+                if (a.severity !== b.severity) {
+                  return a.severity === "major" ? -1 : 1;
+                }
+                return wordsOf(b.slideId) - wordsOf(a.slideId);
+              })
               .map((i) => [i.slideId as string, i] as const),
           ).entries(),
           // Each target costs one more LLM round trip, so this is a budget,
@@ -336,7 +379,17 @@ export async function POST(request: NextRequest) {
                   },
                   {
                     role: "user",
-                    content: `${user}\n\n# Regenerate ${mode === "document" ? "section" : "slide"} ${index + 1} of ${slides.length}.\nIt failed a quality check: ${issue.issue}\n${issue.suggestion}`,
+                    content:
+                      mode === "document"
+                        ? `${user}\n\n# Regenerate section ${index + 1} of ${slides.length}.\nIt failed a quality check: ${issue.issue}\n${issue.suggestion}`
+                        : condenseRequest(
+                            user,
+                            index,
+                            slides.length,
+                            issue,
+                            slides[index],
+                            slideBudget,
+                          ),
                   },
                 ],
                 signal: request.signal,
@@ -347,10 +400,28 @@ export async function POST(request: NextRequest) {
               gateParser.clearAllGeneratingMarks();
               const fresh = gateParser.getAllSlides();
               if (fresh.length > 0) {
+                const original = slides[index];
                 const fixed = fresh[0];
                 fixed.id = slideId;
-                slides[index] = fixed;
-                if (mode === "deck") slides[index] = replanSlide(slides, index);
+                let candidate = fixed;
+                if (mode === "deck") {
+                  const trial = [...slides];
+                  trial[index] = fixed;
+                  candidate = replanSlide(trial, index);
+                }
+                // A rewrite is not automatically an improvement. This used to
+                // replace the slide unconditionally, so a regeneration that
+                // came back just as long — or traded one fault for another —
+                // still won.
+                if (!isImprovement(original, candidate, hardIssuesOf)) continue;
+                slides[index] = candidate;
+                // The old content's images are no longer wanted. Pending jobs
+                // are dropped so the GPU does not render them; one already
+                // running finishes but loses to the newer job for its slot.
+                await db.generatedImage
+                  .deleteMany({ where: { documentId, slideId, status: "pending" } })
+                  .catch(() => undefined);
+                forgetSlide(slideId);
               }
             } catch {
               // Keep the original slide; the Quality panel will surface it.
@@ -371,8 +442,12 @@ export async function POST(request: NextRequest) {
           applyIconUrls(slides, iconUrls);
         }
 
-        // Any images the per-section kickoff missed (Set-guarded).
-        await enqueueNewImages().catch(() => undefined);
+        // Any images the per-section kickoff missed (Set-guarded). From the
+        // slides as they stand, not a fresh parse of the stream: a re-parse
+        // brings back the ORIGINAL content of every slide the gate rewrote
+        // (and of slides the trim removed), so this re-queued their old image
+        // prompts — and, being the newest jobs for those slots, they won.
+        await enqueueNewImages(slides).catch(() => undefined);
 
         // Sources appendix: only when the deck actually cited something.
         if (mode === "deck" && document.sources) {
@@ -398,12 +473,26 @@ export async function POST(request: NextRequest) {
 
         // Jobs that finished DURING the stream patched a stale document —
         // reconcile their urls into the final slide snapshot before persist.
-        const doneJobs = await db.generatedImage.findMany({
-          where: { documentId, status: "done", path: { not: null } },
-          select: { slideId: true, nodeId: true, prompt: true, path: true },
+        // Only the newest job for a slot may write it — a job that finished
+        // for a slide's pre-regeneration content must not land on the new
+        // content. Every status counts toward "newest": a pending job queued
+        // after the regeneration still outranks a stale one that is done.
+        const allJobs = await db.generatedImage.findMany({
+          where: { documentId },
+          select: {
+            id: true,
+            slideId: true,
+            nodeId: true,
+            prompt: true,
+            path: true,
+            status: true,
+            createdAt: true,
+          },
         });
-        for (const job of doneJobs) {
-          if (!job.slideId || !job.path) continue;
+        const newest = newestJobPerSlot(allJobs);
+        for (const job of allJobs) {
+          if (job.status !== "done" || !job.slideId || !job.path) continue;
+          if (newest.get(imageSlotKey(job.slideId, job.nodeId)) !== job) continue;
           applyImageToSlides(
             slides,
             job.slideId,

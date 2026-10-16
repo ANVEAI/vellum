@@ -165,12 +165,34 @@ async function processJob(jobId: string): Promise<void> {
       data: { status: "done", path: filename },
     });
 
+    // A newer job for the same slot means this one is stale — the slide was
+    // regenerated, or the user asked for a different picture. Its file stays
+    // on disk unreferenced, where the asset GC collects it; it must not
+    // overwrite the slot. See newestJobPerSlot for why recency is the rule.
+    const superseded =
+      job.documentId && job.slideId
+        ? await db.generatedImage.findFirst({
+            where: {
+              documentId: job.documentId,
+              slideId: job.slideId,
+              nodeId: job.nodeId,
+              OR: [
+                { createdAt: { gt: job.createdAt } },
+                { createdAt: job.createdAt, id: { gt: job.id } },
+              ],
+            },
+            select: { id: true },
+          })
+        : null;
+
     // Patch the document's slides JSON so every future read has the URL.
     if (job.documentId && job.slideId) {
-      const doc = await db.document.findUnique({
-        where: { id: job.documentId },
-        select: { slides: true },
-      });
+      const doc = superseded
+        ? null
+        : await db.document.findUnique({
+            where: { id: job.documentId },
+            select: { slides: true },
+          });
       if (doc) {
         const slides = JSON.parse(doc.slides) as PlateSlide[];
         const applied = applyImageToSlides(
