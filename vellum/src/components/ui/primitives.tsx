@@ -301,8 +301,15 @@ export function Popover({
         close();
       }
     };
-    // A fixed menu cannot follow a scrolling anchor, so close instead of drift.
-    const onScroll = () => setOpen(false);
+    // A fixed menu cannot follow a scrolling anchor, so close instead of
+    // drift — but only when something outside the menu scrolled. The listener
+    // captures every scroll on the page, the menu's own list included, so
+    // the first wheel tick, scrollbar click or thumb drag in a long menu (the
+    // theme picker's) used to close it before it could move.
+    const onScroll = (e: Event) => {
+      if (e.target instanceof Node && menuRef.current?.contains(e.target)) return;
+      setOpen(false);
+    };
     document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("keydown", onKey);
     window.addEventListener("scroll", onScroll, true);
@@ -330,7 +337,10 @@ export function Popover({
             ref={menuRef}
             role="menu"
             aria-label={label}
-            className="popover anim-pop scroll-thin fixed overflow-y-auto"
+            // overscroll-contain: wheeling past either end of the list stops
+            // there instead of scrolling the page behind — which would move
+            // the anchor and close the menu.
+            className="popover anim-pop scroll-thin fixed overflow-y-auto overscroll-contain"
             style={{
               width,
               left: placement?.left ?? -9999,
