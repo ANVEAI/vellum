@@ -25,12 +25,14 @@ import { resolveIconQueries } from "@/lib/icons/search";
 import { kickImageQueue } from "@/lib/generation/pipeline/asset-queue";
 import { promptInputFor } from "@/lib/generation/prompts/input";
 import { planDeck, replanSlide } from "@/lib/design/planner";
+import { endOnSignOff, trimToCount } from "@/lib/generation/pipeline/deck-order";
 import { lintSlides } from "@/lib/qa/lint";
 import { lintOptionsFor } from "@/lib/qa/run";
-import { budgetFor } from "@/lib/design/budget";
+import { budgetFor, CONTENT_FLOOR } from "@/lib/design/budget";
 import { signatureOf } from "@/lib/design/archetypes";
 import {
   condenseRequest,
+  enrichRequest,
   isImprovement,
 } from "@/lib/generation/pipeline/condense";
 import { resolveThemeOrDefault } from "@/lib/themes/resolve";
@@ -251,15 +253,23 @@ export async function POST(request: NextRequest) {
         // Ceiling: the outline is the contract the user approved, so an
         // over-eager model does not get to add slides they did not ask for.
         // Only a floor was enforced before, which is how asking for 6 slides
-        // could still yield 7. Sections are emitted in outline order, so the
-        // surplus is always at the tail.
+        // could still yield 7. The surplus is not always at the tail — the
+        // model adds covers and section dividers of its own — so a deck keeps
+        // its ending and loses its added dividers first (trimToCount).
+        let reorder = false;
         if (slides.length > cards.length) {
           const dropped = slides.length - cards.length;
-          slides = slides.slice(0, cards.length);
+          const written = slides;
+          slides =
+            mode === "deck"
+              ? trimToCount(written, cards.length)
+              : written.slice(0, cards.length);
+          reorder = mode === "deck";
           // Keys are "slide|node|query"; deleting the bare slide id matched
           // nothing, so this cleanup used to be a no-op.
-          for (const slide of snapshotSlides().slice(cards.length)) {
-            forgetSlide(slide.id);
+          const kept = new Set(slides.map((s) => s.id));
+          for (const slide of written) {
+            if (!kept.has(slide.id)) forgetSlide(slide.id);
           }
           await db.generatedImage
             .deleteMany({
@@ -273,6 +283,13 @@ export async function POST(request: NextRequest) {
           sse.event("status", {
             status: `Trimmed ${dropped} extra ${mode === "document" ? "section" : "slide"}${dropped === 1 ? "" : "s"}`,
           });
+        }
+        // The model can also write its "Thank you" early and keep going.
+        // Planned again when anything moved or went, because the planner
+        // reads each slide's predecessors.
+        if (mode === "deck") {
+          const ordered = endOnSignOff(slides);
+          if (ordered !== slides || reorder) slides = planDeck(ordered);
         }
 
         // Hybrid QA gate: hard per-slide failures regenerate in-loop before
@@ -289,6 +306,10 @@ export async function POST(request: NextRequest) {
         // a rewrite demanding a figure for a slide with no real one is a
         // rewrite that invents one. `stats-without-figures` is its honest
         // counterpart: a STATS block full of zeros is a real fault.
+        // `sparse-slide` is the other end of `overflow-risk`: a heading and
+        // a line where the layout wants a claim and its evidence. Its rewrite
+        // asks for more (enrichRequest), from the slide's own notes and
+        // outline entry, rather than for less.
         const HARD_CODES = new Set([
           "empty",
           "bad-chart-data",
@@ -297,6 +318,7 @@ export async function POST(request: NextRequest) {
           "too-many-columns",
           "repeated-heading",
           "stats-without-figures",
+          "sparse-slide",
         ]);
         const lintOpts = lintOptionsFor(
           document.themeName,
@@ -365,14 +387,24 @@ export async function POST(request: NextRequest) {
                     content:
                       mode === "document"
                         ? `${user}\n\n# Regenerate section ${index + 1} of ${slides.length}.\nIt failed a quality check: ${issue.issue}\n${issue.suggestion}`
-                        : condenseRequest(
-                            user,
-                            index,
-                            slides.length,
-                            issue,
-                            slides[index],
-                            slideBudget,
-                          ),
+                        : issue.code === "sparse-slide"
+                          ? enrichRequest(
+                              user,
+                              index,
+                              slides.length,
+                              issue,
+                              slides[index],
+                              CONTENT_FLOOR,
+                              slideBudget,
+                            )
+                          : condenseRequest(
+                              user,
+                              index,
+                              slides.length,
+                              issue,
+                              slides[index],
+                              slideBudget,
+                            ),
                   },
                 ],
                 signal: request.signal,

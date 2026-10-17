@@ -17,7 +17,7 @@ it in facts, and PowerPoint / PDF / Word exports are rendered headlessly from
 the same canonical model the editor shows.
 
 It is finished and in daily use — not a prototype. 55 documents in the library
-(417 slides), 187 tests, `tsc` and `lint` clean.
+(417 slides), 393 tests, `tsc` and `lint` clean.
 
 | Layer | Choice |
 |---|---|
@@ -58,7 +58,7 @@ aai-ppt/
     src/components/slides/render/   renderer + slide-frame (ScaledSlide)
     src/styles/         slides.css, archetypes.css, packs.css, variants.css
     scripts/            verification + E2E (see section 7)
-    tests/              187 tests
+    tests/              393 tests
     data/               NOT in git: db, images, icon vectors
 ```
 
@@ -139,6 +139,14 @@ Recent fixes, all with reproductions and regression coverage:
 | 5 | Parser dropped a trailing tag fragment | A force-close on an incomplete `<TAG` at the buffer edge emitted it as text (`Unknown top-level tag: NOTES</SECTION`). Now trimmed before close. |
 | — | Spacing / typography felt amateur | Introduced `--v-gap-1..5` × `--v-density` and a one-way text autofit that exports identically. |
 
+The slide design system (October 2026): a slide's title is one role
+(`leadHeadingIndex`, `.v-lead`) at one size per family, whatever tag the model
+wrote; display type only for deliberate moments; reading sizes on the family
+scale (item text was a fixed 15px); a content floor with a `sparse-slide` gate
+rewrite that draws on the slide's own notes; trims that keep a deck's ending;
+and a picture step that re-asks for drawable subjects. Details and the
+measurements behind each are in `docs/ARCHITECTURE.md`.
+
 Also: reference-counted asset GC (files and themes are shared between
 duplicates, so ownership is unanswerable — liveness is a text scan over all DB
 content), `VELLUM_DATA_DIR` so tests can't sweep the real library, and a
@@ -175,7 +183,7 @@ Server must be running for anything browser-based.
 
 ```powershell
 cd vellum
-npm test                                          # 353 tests
+npm test                                          # 393 tests
 npx tsc --noEmit
 npm run lint
 npx tsx scripts\ui-check.ts <deckId> <docId>      # 48 screenshots, a11y, menus
@@ -183,6 +191,7 @@ npx tsx scripts\e2e-editor.ts <deckId>            # 26 editor interactions
 npx tsx scripts\e2e-create.ts                     # real generation, no re-layouts
 npx tsx scripts\e2e-export.ts <deckId>            # PDF + real browser download
 npx tsx scripts\e2e-import.ts                     # PDF/DOCX/MD/TXT upload on the built server
+npx tsx scripts\type-audit.ts <docId...>          # one title size per layout kind, body/item sizes, canvas fill
 npx tsx scripts\e2e-template-count.ts pitch-deck 6 10 12
 npx tsx scripts\nav-stability.ts <deckId>         # the 8/9/10 boundary
 npx tsx scripts\geometry-audit.ts <docId...>      # clipping / overflow / overlap (print route)

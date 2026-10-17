@@ -12,10 +12,12 @@
   padding-bottom: 68px;
   gap: var(--v-gap-3);
 }
-.v-slide[data-archetype="hero"] .v-title,
-.v-slide[data-archetype="closing"] .v-title,
-.v-slide[data-archetype="hero"] .v-h1,
-.v-slide[data-archetype="closing"] .v-h1 {
+/* The title only (.v-lead, see slides.css): a second heading on a cover is
+   a subtitle and keeps its own size. These used to match .v-title and .v-h1,
+   so a cover that set its title as H2 got none of this and a cover with a
+   TITLE and an H1 set both at display size. */
+.v-slide[data-archetype="hero"] .v-lead,
+.v-slide[data-archetype="closing"] .v-lead {
   font-size: var(--presentation-fs-display, 84px);
   line-height: 1.02;
   letter-spacing: var(--presentation-track-display, -0.022em);
@@ -105,9 +107,7 @@
 .v-slide[data-archetype="divider"].v-has-img::after {
   content: none;
 }
-.v-slide[data-archetype="divider"] .v-h1,
-.v-slide[data-archetype="divider"] .v-h2,
-.v-slide[data-archetype="divider"] .v-title {
+.v-slide[data-archetype="divider"] .v-lead {
   font-size: var(--presentation-fs-display, 84px);
   line-height: 1.04;
   letter-spacing: var(--presentation-track-display, -0.022em);
@@ -123,9 +123,7 @@
   justify-content: center;
   gap: var(--v-gap-4);
 }
-.v-slide[data-archetype="statement"] .v-h1,
-.v-slide[data-archetype="statement"] .v-h2,
-.v-slide[data-archetype="statement"] .v-title {
+.v-slide[data-archetype="statement"] .v-lead {
   font-size: var(--presentation-fs-display, 84px);
   line-height: 1.05;
   letter-spacing: var(--presentation-track-display, -0.022em);
@@ -144,6 +142,18 @@
   font-size: var(--presentation-fs-numeral, 160px);
   line-height: 0.95;
   letter-spacing: -0.03em;
+}
+/* The circle variant's ring is 124px across, sized for a 27px figure. Set at
+   numeral size inside it, "50%" broke one character per line. On a statement
+   the figure is the moment, so it stands without the ring. */
+.v-slide[data-archetype="statement"] .v-stats--circle .v-stat-value {
+  display: block;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
 }
 
 /* ---------- full-canvas quote ---------- */
@@ -199,8 +209,7 @@
   max-width: 76%;
   gap: var(--v-gap-2);
 }
-.v-slide[data-archetype="full-bleed"] .v-h1,
-.v-slide[data-archetype="full-bleed"] .v-title {
+.v-slide[data-archetype="full-bleed"] .v-lead {
   font-size: var(--presentation-fs-display, 84px);
   line-height: 1.04;
 }

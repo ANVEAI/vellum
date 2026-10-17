@@ -56,6 +56,44 @@ Write this slide again as ONE <SECTION>, in at most ${budget} words in total, he
 Output the slide itself and nothing about it. Never describe what you changed — no "Removed…", "Reordered…", "Here is the revised slide" — and never write "Slide ${index + 1}" anywhere in it: the audience sees every word you write.`;
 }
 
+/**
+ * The user turn for rewriting a thin slide (`sparse-slide`).
+ *
+ * The request above asks for less and moves the rest into the notes — the
+ * opposite of what a thin slide needs, since a minimal deck's thin slides
+ * already keep their substance there: "Autocomplete / Copilot / Agent" on
+ * the slide, "from text completion, to a partner that writes code, to an
+ * agent that executes tasks" in the notes. This asks for that substance back
+ * on the slide, set in a component that carries it, and for nothing the
+ * notes, the outline or the request do not already say.
+ */
+export function enrichRequest(
+  user: string,
+  index: number,
+  total: number,
+  issue: Pick<QaIssue, "issue">,
+  current: PlateSlide,
+  floor: number,
+  budget: number,
+): string {
+  const words = signatureOf(current).wordCount;
+  const notes = current.speakerNote?.trim();
+  return `${user}
+
+# Rewrite slide ${index + 1} of ${total}
+
+It failed a quality check: ${issue.issue}
+
+The slide as it stands (${words} words):
+"""
+${slidePlainText(current) || "(empty)"}
+"""
+${notes ? `\nIts speaker notes:\n"""\n${notes}\n"""\n` : ""}
+Write this slide again as ONE <SECTION>, in ${floor} to ${budget} words in total, heading included. Keep its subject, and make the heading the slide's claim as a full sentence. Take the substance from the speaker notes above and from this slide's entry in the outline: each point is a short phrase with a few words that explain it or give an example, never a bare label. Choose the component that fits the content: STEPS or ARROWS for a sequence or an evolution, BOXES or ICONS for two to four parallel ideas, COMPARE for two sides, BULLETS for points that each need a sentence. Write new <NOTES> for what stays spoken. Close every tag. No style, colour or size attributes. Never invent a number, a name, a date or a fact: use only what the notes, the outline, the request or the reference material say.
+
+Output the slide itself and nothing about it. Never describe what you changed — no "Added…", "Expanded…", "Here is the revised slide" — and never write "Slide ${index + 1}" anywhere in it: the audience sees every word you write.`;
+}
+
 type HardIssues = (slide: PlateSlide) => QaIssue[];
 
 /** Words that carry no topic of their own. */

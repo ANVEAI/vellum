@@ -80,21 +80,32 @@ const VISUAL_COMPONENTS = new Set([
 ]);
 
 /**
+ * Words a content slide holds beside a picture rail at full type size,
+ * whatever its family's writing budget. The budget is a style choice — the
+ * keynote family's is 28 — and was standing in for the physical limit:
+ * slides of 30-40 words on that family fitted beside a rail with autofit
+ * untouched (measured on the print route, 2026-10-17), as did slides of up
+ * to 63 words on three other families. Under the 28-word cap a minimal
+ * keynote whose slides now carry their points got one picture in twenty.
+ */
+const RAIL_WORDS = 40;
+
+/**
  * Whether a picture can sit beside this slide's text without crowding it or
  * competing with a visual the slide already has. A picture the slide already
  * asked for is not counted: the question is whether there is room for one.
  *
- * `capacity` is the theme family's `maxWordsPerSlide`: what the canvas holds
- * at full type size — a physical measure, unlike the density-scaled budget
- * the writer is held to (a "minimal" deck writes to 60% of it). A side rail
- * takes `--v-split`, 40% of the width; a slide within capacity reflows into
- * the rest with autofit stepping its type down about one notch, while one
- * past capacity was already tight across the full width.
+ * `capacity` is the theme family's `maxWordsPerSlide`, never taken below
+ * RAIL_WORDS. A side rail takes `--v-split`, 40% of the width; a slide within
+ * capacity reflows into the rest, while one past it was already tight across
+ * the full width.
  */
 export function hasRoomForPicture(slide: PlateSlide, capacity: number): boolean {
   const sig = signatureOf(slide);
   if (sig.wordCount === 0) return false;
-  if (sig.hasChart || sig.hasTable || sig.statCount >= 2) return false;
+  // One headline number counts: a statement sets it at numeral size, and a
+  // keynote's "30%" beside a rail and a display title autofit to its floor.
+  if (sig.hasChart || sig.hasTable || sig.statCount >= 1) return false;
   // Lanes are laid out across the full width; a rail would halve each one.
   if (sig.columnCount > 1) return false;
   let visual = false;
@@ -103,7 +114,7 @@ export function hasRoomForPicture(slide: PlateSlide, capacity: number): boolean 
     if (VISUAL_COMPONENTS.has(type) || type.startsWith("chart-")) visual = true;
   });
   if (visual) return false;
-  return sig.wordCount <= capacity;
+  return sig.wordCount <= Math.max(capacity, RAIL_WORDS);
 }
 
 export interface VisualCandidate {
@@ -183,6 +194,24 @@ export const VisualDecisionSchema = z.object({
   ),
 });
 export type VisualDecisions = z.infer<typeof VisualDecisionSchema>;
+
+/**
+ * The decision schema for one set of candidates: an answer must say yes or
+ * no for every slide it was asked about.
+ *
+ * `{"slides": []}` passed the plain schema, and would have counted as a
+ * decision against every picture — the writer's own prompts included, since
+ * the fallback to them only runs when the call fails. An answer that leaves
+ * a slide out is now invalid: it is re-asked with the error, and if it never
+ * covers them all, the call fails and the fallback applies.
+ */
+export function decisionSchemaFor(candidates: VisualCandidate[]) {
+  const asked = candidates.map((c) => c.index + 1);
+  return VisualDecisionSchema.refine(
+    (decisions) => asked.every((slide) => decisions.slides.some((d) => d.slide === slide)),
+    { message: `Give one entry for each slide listed: ${asked.join(", ")}.` },
+  );
+}
 
 /**
  * Enough of the request to say who the audience is and where the talk
@@ -336,28 +365,57 @@ export async function planPictures(
   if (candidates.length === 0) {
     return applyVisualPlan(slides, candidates, fallback, options.only);
   }
-  const { system, user } = visualPlanPrompt(candidates, {
-    title: options.title,
-    request: options.request,
-  });
-  let decisions = fallback;
-  try {
-    decisions = await generateStructuredWithRetries({
+  const deck = { title: options.title, request: options.request };
+  const ask = (asked: VisualCandidate[], feedback?: string) => {
+    const { system, user } = visualPlanPrompt(asked, deck);
+    return generateStructuredWithRetries({
       baseUrl: options.llm.baseUrl,
       model: options.llm.model,
       messages: [
         { role: "system", content: system },
-        { role: "user", content: user },
+        { role: "user", content: feedback ? `${user}\n\n${feedback}` : user },
       ],
-      schema: VisualDecisionSchema,
+      schema: decisionSchemaFor(asked),
       // One retry of each kind: this runs while the user waits on a finished
       // deck, and the fallback is a reasonable deck.
       parseRetries: 2,
       validationLoops: 2,
       signal: options.signal,
     });
+  };
+  let decisions = fallback;
+  try {
+    decisions = await ask(candidates);
   } catch {
-    decisions = fallback;
+    return applyVisualPlan(slides, candidates, fallback, options.only);
+  }
+
+  // A subject that shows writing or a screen's content is refused, not
+  // repaired (usablePrompt). On a technology deck the editor reaches for one
+  // nearly every time — "a developer reviewing code", "a tablet showing a
+  // live video call" — and its brief saying not to does not stop it: over
+  // three runs on one keynote it said yes to seven or eight slides and two to
+  // four survived, and the generated deck had none. Those slides are asked
+  // once more, with the reason; with that, the same runs kept five to eight.
+  const refused = decisions.slides.filter(
+    (d) => d.image && !usablePrompt(d.subject ?? ""),
+  );
+  const again = candidates.filter((c) => refused.some((d) => d.slide === c.index + 1));
+  if (again.length > 0) {
+    const feedback = `These subjects cannot be drawn: ${refused
+      .map((d) => `slide ${d.slide}, "${d.subject ?? ""}"`)
+      .join("; ")}. Each shows writing or what is on a screen — code, an interface, labels, a video call — which the image model turns into gibberish. Give each of these slides a new subject with nothing written and no screen content: people, objects, places, hands at work, a screen seen from behind. Or answer image false.`;
+    try {
+      const second = await ask(again, feedback);
+      decisions = {
+        slides: [
+          ...decisions.slides.filter((d) => !again.some((c) => c.index + 1 === d.slide)),
+          ...second.slides,
+        ],
+      };
+    } catch {
+      // The first answer stands; its refused subjects get no picture.
+    }
   }
   return applyVisualPlan(slides, candidates, decisions, options.only);
 }

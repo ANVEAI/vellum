@@ -48,14 +48,10 @@
    The fallback is a solid "gradient" of the heading color, so themes
    without --presentation-heading-fill render identically to plain text. */
 @supports (-webkit-background-clip: text) {
-  .v-slide[data-archetype="hero"] .v-title,
-  .v-slide[data-archetype="hero"] .v-h1,
-  .v-slide[data-archetype="statement"] .v-h1,
-  .v-slide[data-archetype="statement"] .v-h2,
-  .v-slide[data-archetype="divider"] .v-h1,
-  .v-slide[data-archetype="divider"] .v-title,
-  .v-slide[data-archetype="closing"] .v-title,
-  .v-slide[data-archetype="closing"] .v-h1 {
+  .v-slide[data-archetype="hero"] .v-lead,
+  .v-slide[data-archetype="statement"] .v-lead,
+  .v-slide[data-archetype="divider"] .v-lead,
+  .v-slide[data-archetype="closing"] .v-lead {
     background-image: var(
       --presentation-heading-fill,
       linear-gradient(

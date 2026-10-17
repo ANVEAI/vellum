@@ -104,6 +104,49 @@ export function columnLanes(node: TElement): TElement[] {
   return contentItems(node);
 }
 
+/** Heading types by rank: the presentation title outranks H1, H1 outranks H2… */
+const HEADING_RANK: Record<string, number> = {
+  "presentation-title": 0,
+  h1: 1,
+  h2: 2,
+  h3: 3,
+  h4: 4,
+  h5: 5,
+  h6: 6,
+};
+
+/**
+ * Which top-level block is the slide's title: the heading of the highest
+ * rank, the first of them when several share it, or -1 when the slide has no
+ * heading of its own (one inside a card or a step is that item's heading).
+ *
+ * A slide's title is one role, and it used to be rendered as whatever tag
+ * the model happened to type. Across 55 decks the model opened content
+ * slides with TITLE 715 times, H1 578, H2 58 and H3 6, and each tag has its
+ * own size — 64, 44, 32 and 22px on the corporate scale — so one deck could
+ * carry four title sizes, and slides with identical content looked
+ * unrelated. The renderer, the PowerPoint and Word exporters, the planner's
+ * signature and the lint all ask this one function which block is the
+ * title, so every view gives it the same size and every check reads the
+ * same heading.
+ *
+ * Highest rank rather than first: a short H3 kicker above an H1 claim is a
+ * kicker, and the claim is the title. A heading with no text shows nothing,
+ * so it is never the title.
+ */
+export function leadHeadingIndex(nodes: Descendant[]): number {
+  let lead = -1;
+  let leadRank = Infinity;
+  nodes.forEach((node, index) => {
+    if (!isElement(node)) return;
+    const rank = HEADING_RANK[String(node.type)];
+    if (rank === undefined || rank >= leadRank || !hasContent(node)) return;
+    lead = index;
+    leadRank = rank;
+  });
+  return lead;
+}
+
 export interface ImageRequest {
   slideId: string;
   nodeId?: string;

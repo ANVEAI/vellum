@@ -27,7 +27,7 @@ import { LEGACY_SCALE, type TypeScale } from "@/lib/design/type-scale";
 import { fitImage, readPlacement } from "@/lib/slides/image-fit";
 // A group's items as the renderer draws them, so the boxes measured on the
 // page and the model's items still pair up one for one.
-import { contentItems } from "@/lib/slides/walk";
+import { contentItems, leadHeadingIndex } from "@/lib/slides/walk";
 import { openPrintPage, withExportPage } from "./browser";
 
 /**
@@ -43,7 +43,19 @@ export interface PtScale {
   h4: number;
   body: number;
   display: number;
+  /** Item text — bullets, cards, steps, callouts, table cells (`small`). */
+  small: number;
+  /** A heading inside a card, step or box. */
+  itemHeading: number;
+  /** Attributions and captions. */
+  caption: number;
 }
+
+/**
+ * The fixed size item text had in the stylesheet when its point sizes were
+ * tuned: 15px, not a step of the legacy scale. It is the `small` role now.
+ */
+const LEGACY_ITEM_PX = 15;
 
 function ptScaleFor(scale: TypeScale): PtScale {
   return {
@@ -54,8 +66,21 @@ function ptScaleFor(scale: TypeScale): PtScale {
     h4: (13 * scale.h4) / LEGACY_SCALE.h4,
     body: (12.5 * scale.body) / LEGACY_SCALE.body,
     display: (42 * scale.display) / LEGACY_SCALE.title,
+    small: (10.5 * scale.small) / LEGACY_ITEM_PX,
+    itemHeading: (12 * scale.h3) / LEGACY_SCALE.h3,
+    caption: (11 * scale.caption) / LEGACY_SCALE.caption,
   };
 }
+
+/** Every size of a point scale times `factor` (autofit's type scale). */
+function scaledPts(pts: PtScale, factor: number): PtScale {
+  return Object.fromEntries(
+    Object.entries(pts).map(([role, size]) => [role, size * factor]),
+  ) as unknown as PtScale;
+}
+
+/** Half-point rounding, the finest PowerPoint shows. */
+const halfPt = (size: number) => Math.round(size * 2) / 2;
 
 const DISPLAY_ARCHETYPES = new Set([
   "hero",
@@ -228,6 +253,8 @@ function addNativeText(
   theme: ThemeProperties,
   pts: PtScale = ptScaleFor(LEGACY_SCALE),
   archetype?: string,
+  /** This block is the slide's title (`leadHeadingIndex`). */
+  lead = false,
 ) {
   const headingFont = theme.fonts.heading;
   const bodyFont = theme.fonts.body;
@@ -237,6 +264,11 @@ function addNativeText(
   const align =
     (node.alignment as TextProps["align"] | undefined) ?? undefined;
   const display = archetype ? DISPLAY_ARCHETYPES.has(archetype) : false;
+  // The slide-title role, as the stylesheet sets it: whatever tag the title
+  // was written in, the family's H1 step on content layouts and display size
+  // on display layouts. Any other heading keeps its own tag's size — the
+  // stylesheet no longer enlarges a second heading on a display slide.
+  const titleSize = display ? pts.display : pts.h1;
 
   const at = (extra: TextProps): TextProps => ({
     x: box.x,
@@ -251,25 +283,25 @@ function addNativeText(
     case "presentation-title":
       slide.addText(
         textOf(node.children),
-        at({ fontSize: Math.round(display ? pts.display : pts.title), bold: true, color: headingColor, fontFace: headingFont, align: align ?? "left", valign: "middle" }),
+        at({ fontSize: Math.round(lead ? titleSize : pts.title), bold: true, color: headingColor, fontFace: headingFont, align: align ?? "left", valign: "middle" }),
       );
       return;
     case "h1":
       slide.addText(
         textOf(node.children),
-        at({ fontSize: Math.round(display ? pts.display : pts.h1), bold: true, color: headingColor, fontFace: headingFont, align }),
+        at({ fontSize: Math.round(lead ? titleSize : pts.h1), bold: true, color: headingColor, fontFace: headingFont, align }),
       );
       return;
     case "h2":
       slide.addText(
         textOf(node.children),
-        at({ fontSize: Math.round(display ? pts.display * 0.82 : pts.h2), bold: true, color: headingColor, fontFace: headingFont, align }),
+        at({ fontSize: Math.round(lead ? titleSize : pts.h2), bold: true, color: headingColor, fontFace: headingFont, align }),
       );
       return;
     case "h3":
       slide.addText(
         textOf(node.children),
-        at({ fontSize: Math.round(pts.h3), bold: true, color: headingColor, fontFace: headingFont, align }),
+        at({ fontSize: Math.round(lead ? titleSize : pts.h3), bold: true, color: headingColor, fontFace: headingFont, align }),
       );
       return;
     case "h4":
@@ -277,7 +309,7 @@ function addNativeText(
     case "h6":
       slide.addText(
         textOf(node.children),
-        at({ fontSize: Math.round(pts.h4), bold: true, color: headingColor, fontFace: headingFont, align }),
+        at({ fontSize: Math.round(lead ? titleSize : pts.h4), bold: true, color: headingColor, fontFace: headingFont, align }),
       );
       return;
     case "p":
@@ -304,13 +336,14 @@ function addNativeText(
       const runs: PptxGenJS.TextProps[] = [
         {
           text: textOf(node.children),
-          options: { fontSize: 16, italic: true, color: headingColor, fontFace: bodyFont, breakLine: true },
+          // 16pt was tuned against the 22px (legacy h3) quote text.
+          options: { fontSize: halfPt((pts.h3 * 16) / 15), italic: true, color: headingColor, fontFace: bodyFont, breakLine: true },
         },
       ];
       if (author) {
         runs.push({
           text: `— ${author}`,
-          options: { fontSize: 11, color: textColor, fontFace: bodyFont },
+          options: { fontSize: halfPt(pts.caption), color: textColor, fontFace: bodyFont },
         });
       }
       slide.addText(runs, at({ x: box.x + 0.15, w: box.w - 0.15 }));
@@ -333,7 +366,8 @@ function addNativeText(
           y: box.y + 0.04,
           w: box.w - 0.24,
           h: box.h - 0.08,
-          fontSize: 11.5,
+          // Tuned at 11.5pt beside 10.5pt item text.
+          fontSize: halfPt((pts.small * 11.5) / 10.5),
           color: textColor,
           fontFace: bodyFont,
           valign: "middle",
@@ -342,6 +376,9 @@ function addNativeText(
       return;
     case "bullets": {
       const runs: PptxGenJS.TextProps[] = [];
+      // Bullet text is the `small` role, as on the slide; 11.5pt was tuned
+      // beside 10.5pt card text, and the 13pt headings against legacy H4.
+      const bulletText = halfPt((pts.small * 11.5) / 10.5);
       for (const item of contentItems(node)) {
         const heading = elements(item).find((c) =>
           ["h3", "h4"].includes(String(c.type)),
@@ -356,7 +393,7 @@ function addNativeText(
             text: textOf(item.children),
             options: {
               bullet: { code: "2022", indent: 12 },
-              fontSize: Math.round(pts.body * 2) / 2,
+              fontSize: bulletText,
               color: textColor,
               fontFace: bodyFont,
               breakLine: true,
@@ -369,7 +406,7 @@ function addNativeText(
           text: textOf(heading.children),
           options: {
             bullet: { code: "2022", indent: 12 },
-            fontSize: 13,
+            fontSize: halfPt(pts.h4),
             bold: true,
             color: headingColor,
             fontFace: headingFont,
@@ -381,7 +418,7 @@ function addNativeText(
           runs.push({
             text: textOf(p.children),
             options: {
-              fontSize: 11.5,
+              fontSize: bulletText,
               color: textColor,
               fontFace: bodyFont,
               breakLine: true,
@@ -398,7 +435,8 @@ function addNativeText(
         elements(tr).map((cell) => ({
           text: textOf(cell.children),
           options: {
-            fontSize: 11,
+            // Table cells are the `small` role; 11pt was tuned beside 10.5pt.
+            fontSize: halfPt((pts.small * 11) / 10.5),
             color: cell.type === "th" ? headingColor : textColor,
             bold: cell.type === "th",
             fontFace: bodyFont,
@@ -734,11 +772,19 @@ async function tryNativeLayout(
   node: TElement,
   slideBox: Box,
   theme: ThemeProperties,
+  pts: PtScale,
 ): Promise<boolean> {
   const type = String(node.type);
   const items = contentItems(node);
   if (items.length === 0) return false;
   const accent = hex(theme.colors.accent);
+  // Item text at the slide's own scale. These were fixed 12pt and 10.5pt, so
+  // they ignored the family and autofit while the slide's item text did not.
+  const runsOf = (item: TElement) =>
+    itemRuns(item, theme, {
+      headingSize: halfPt(pts.itemHeading),
+      bodySize: halfPt(pts.small),
+    });
 
   const itemBoxesFor = async (selector: string): Promise<InBox[] | null> => {
     const locators = await blockLocator.locator(selector).all();
@@ -770,7 +816,7 @@ async function tryNativeLayout(
         const body =
           (await innerBox(scope, ".v-item-body", slideBox)) ??
           insetBox(boxes[i]);
-        out.addText(itemRuns(items[i], theme), { ...body, valign: "top" });
+        out.addText(runsOf(items[i]), { ...body, valign: "top" });
       }
       return true;
     }
@@ -786,7 +832,7 @@ async function tryNativeLayout(
         }
         const body =
           (await innerBox(scope, ".v-item-body", slideBox)) ?? boxes[i];
-        out.addText(itemRuns(items[i], theme), { ...body, valign: "top" });
+        out.addText(runsOf(items[i]), { ...body, valign: "top" });
       }
       return true;
     }
@@ -815,7 +861,7 @@ async function tryNativeLayout(
         const body =
           (await innerBox(scope, ".v-item-body", slideBox)) ??
           insetBox(boxes[i], 0, 0.5);
-        out.addText(itemRuns(items[i], theme), { ...body, valign: "top" });
+        out.addText(runsOf(items[i]), { ...body, valign: "top" });
       }
       return true;
     }
@@ -847,7 +893,7 @@ async function tryNativeLayout(
         const body =
           (await innerBox(scope, ".v-item-body", slideBox)) ??
           insetBox(cardBox ?? boxes[i]);
-        out.addText(itemRuns(items[i], theme), { ...body, valign: "top" });
+        out.addText(runsOf(items[i]), { ...body, valign: "top" });
       }
       return true;
     }
@@ -862,7 +908,7 @@ async function tryNativeLayout(
         const body =
           (await innerBox(scope, ".v-item-body", slideBox)) ??
           insetBox(cardBox ?? boxes[i]);
-        out.addText(itemRuns(items[i], theme), { ...body, valign: "top" });
+        out.addText(runsOf(items[i]), { ...body, valign: "top" });
         const sepBox = await innerBox(scope, ".v-arrow-sep", slideBox);
         if (sepBox) {
           out.addText("→", {
@@ -891,7 +937,7 @@ async function tryNativeLayout(
         const body =
           (await innerBox(scope, ".v-item-body", slideBox)) ??
           insetBox(cardBox ?? boxes[i]);
-        out.addText(itemRuns(items[i], theme), { ...body, valign: "top" });
+        out.addText(runsOf(items[i]), { ...body, valign: "top" });
       }
       return true;
     }
@@ -915,10 +961,14 @@ async function tryNativeLayout(
         const body =
           (await innerBox(scope, ".v-item-body", slideBox)) ??
           insetBox(boxes[i]);
-        out.addText(itemRuns(items[i], theme, { headingSize: 13, bodySize: 11 }), {
-          ...body,
-          valign: "top",
-        });
+        // Comparison sides were tuned a little larger than other items.
+        out.addText(
+          itemRuns(items[i], theme, {
+            headingSize: halfPt((pts.itemHeading * 13) / 12),
+            bodySize: halfPt((pts.small * 11) / 10.5),
+          }),
+          { ...body, valign: "top" },
+        );
       }
       if (type !== "pros-cons") {
         const vsBox = await innerBox(blockLocator, ".v-vs", slideBox);
@@ -1055,17 +1105,7 @@ export async function exportPptx(documentId: string): Promise<Buffer> {
       const fitAttr = await slideLocator.getAttribute("data-fit");
       const fit = fitAttr ? Number(fitAttr) : 1;
       const slidePts: PtScale =
-        Number.isFinite(fit) && fit > 0 && fit < 1
-          ? {
-              title: pts.title * fit,
-              h1: pts.h1 * fit,
-              h2: pts.h2 * fit,
-              h3: pts.h3 * fit,
-              h4: pts.h4 * fit,
-              body: pts.body * fit,
-              display: pts.display * fit,
-            }
-          : pts;
+        Number.isFinite(fit) && fit > 0 && fit < 1 ? scaledPts(pts, fit) : pts;
       const rhythmSurface = surfaceForSlide(tokens.structure, model, i);
       if (model.bgColor) {
         out.background = { color: hex(model.bgColor) };
@@ -1117,6 +1157,8 @@ export async function exportPptx(documentId: string): Promise<Buffer> {
       const contentEls = model.content.filter(
         (n): n is TElement => typeof (n as TElement).type === "string",
       );
+      // The renderer marks the same block as the title, from the same model.
+      const leadNode = model.content[leadHeadingIndex(model.content)];
       for (let j = 0; j < contentEls.length; j++) {
         const node = contentEls[j];
         const blockLocator = slideLocator.locator(`[data-block-idx="${j}"]`);
@@ -1151,7 +1193,7 @@ export async function exportPptx(documentId: string): Promise<Buffer> {
         }
 
         if (NATIVE_TYPES.has(String(node.type))) {
-          addNativeText(out, node, rel, theme, slidePts, model.archetype);
+          addNativeText(out, node, rel, theme, slidePts, model.archetype, node === leadNode);
           continue;
         }
         if (node.type === "contributor") continue;
@@ -1165,6 +1207,7 @@ export async function exportPptx(documentId: string): Promise<Buffer> {
             node,
             slideBox,
             theme,
+            slidePts,
           ).catch(() => false);
           if (handled) continue;
         }

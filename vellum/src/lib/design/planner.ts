@@ -19,6 +19,7 @@ import {
 import {
   accepts,
   ARCHETYPE_WEIGHT,
+  isSignOff,
   ROLE_TO_ARCHETYPE,
   signatureOf,
   type ArchetypeId,
@@ -67,19 +68,33 @@ export function planSlide(
     const agenda = pick("agenda");
     if (agenda) return agenda;
   }
+  // A sign-off is the closing slide wherever it sits — the planner looks only
+  // backwards, so it cannot know which slide is last, and the model leaves
+  // role="closing" off these as often as it writes it. It may follow another
+  // closing slide: a call to action and then "Thank you" is how talks end.
+  if (isSignOff(sig.headingText) && accepts("closing", sig)) return "closing";
+  // Display type is a decision, not a consequence of being short. Statement
+  // used to be inferred for any slide under 30 words without a group, and
+  // since special layouts may not repeat back to back, a run of same-shaped
+  // slides alternated: 110px title, 36px title, 110px, 36px. A statement now
+  // comes from the role the writer gave it, or from the one shape that is
+  // unambiguous — a single headline number.
   const inferred =
     (sig.hasRootImage ? pick("testimonial") : null) ??
     pick("quote-full") ??
     (sig.isBackgroundLayout ? pick("full-bleed") : null) ??
     pick("kpi") ??
     pick("chart-focus") ??
-    pick("statement") ??
+    (sig.statCount === 1 ? pick("statement") : null) ??
     null;
   if (inferred) return inferred;
 
-  // 4. Density relief: after 2+ dense slides, prefer a calmer treatment.
+  // 4. Density relief: after 2+ dense slides, prefer a calmer treatment — an
+  // image-led one. It used to fall back to statement and divider, turning an
+  // ordinary slide into display type or a section opener only because of
+  // what came before it.
   if (ctx.denseRun >= 2) {
-    const relief = pick("full-bleed") ?? pick("statement") ?? pick("divider");
+    const relief = pick("full-bleed");
     if (relief) return relief;
   }
 

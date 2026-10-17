@@ -11,7 +11,11 @@ import {
   LAYOUT_REFERENCE,
 } from "@/lib/generation/parser/xml-catalog";
 
-import { slideWordBudget, type TextDensity } from "@/lib/design/budget";
+import {
+  CONTENT_FLOOR,
+  slideWordBudget,
+  type TextDensity,
+} from "@/lib/design/budget";
 
 export type { TextDensity };
 export { slideWordBudget };
@@ -121,10 +125,10 @@ const RENDERER_OWNS_DESIGN = `Vellum draws the visual design itself. Typography,
 - Never build a layout out of nested <DIV>s — rings, cards, grids, panels, pills. Pick the component that expresses the idea: STEPS or TIMELINE for a sequence, BOXES or ICONS for a set, COMPARE for two sides, STATS for numbers, PYRAMID or STAIRCASE for layers.
 - When the user's request specifies fonts, point sizes, hex colours, pixel positions or exact slide furniture, read it as intent — the deck should feel that way — and express it through components and wording. Do not try to reproduce it in markup.
 - Close every tag you open. A heading (TITLE, H1-H6, LABEL) holds one line of text and nothing else; content that follows it goes after its closing tag.
-- One heading per slide carries the claim. A short line above it is a LABEL; a supporting line below it is a P. Never a second large heading.`;
+- One heading per slide carries the claim: the slide's title, written as an H1 (the cover's as TITLE). The renderer gives every slide title the same size, so never write a title as H2 or H3 to make it smaller. A short line above it is a LABEL; a supporting line below it is a P. Never a second large heading.`;
 
 const WRITING_RULES = `WRITING RULES — these override style preferences:
-1. Every content slide's H1/H2 is a complete sentence stating the slide's conclusion — subject + verb + object, 6-15 words.
+1. Every content slide's title (its H1) is a complete sentence stating the slide's conclusion — subject + verb + object, 6-15 words.
    WRITE: "Enterprise churn fell to 2.1% after the SSO launch"
    NOT: "Churn Analysis" / "Q3 Overview" / "Key Findings"
 2. When a slide has a CHART, TABLE, or STATS, the heading states what the data proves, not what the data is.
@@ -147,7 +151,8 @@ function deckRhythm(budget: number): string {
 - Give the single most important number its own moment: role="statement" with one STATS item or one bold claim, under ${breath} words.
 - Use role="quote" for a slide that is only a QUOTE. Use role="kpi" when a slide is 3-5 headline STATS.
 - End with role="closing": the call to action or takeaway, mirroring the hero's brevity.
-- WORD BUDGET, measured over every word on the slide including the heading: hero/divider/statement/closing at most ${breath}; standard content slides at most ${budget}. This is a hard limit set by the theme's type size, not a style preference — a slide that exceeds it is physically cut off at the bottom edge. If a section needs more, say less: cut qualifiers, drop the third example, move detail into <NOTES>. Never split one outline section across two slides.
+- Display moments — hero, divider, statement, quote, closing — are decisions: each carries its role attribute, and a short slide without one is laid out as an ordinary content slide. Keep them to about one slide in four; every other slide is a content slide with a component.
+- WORD BUDGET, measured over every word on the slide including the heading: hero/divider/statement/closing at most ${breath}; standard content slides between ${CONTENT_FLOOR} and ${budget}. The ceiling is a hard limit set by the theme's type size, not a style preference — a slide that exceeds it is physically cut off at the bottom edge. If a section needs more, say less: cut qualifiers, drop the third example, move detail into <NOTES>. Never split one outline section across two slides. The floor is just as real: a content slide under ${CONTENT_FLOOR} words is a heading and a line on an empty canvas. Give each point a few words of explanation or an example from the outline, or make the slide a deliberate display moment with its role.
 - Write ACTION TITLES: each content slide's heading is a full-sentence claim stating the takeaway (e.g. "Churn fell 34% after onboarding redesign"), not a topic label (not "Churn").
 - Alternate image sides across consecutive image slides (layout="left" then "right"). After two dense data slides, give the audience a breath: an image-led or statement slide.`;
 }
@@ -159,6 +164,14 @@ const FORMAT_GUIDANCE = `Use the available formats intentionally according to ea
 - Pick relationship components for connected concepts.
 - Pick data components for evidence.
 - Use columns as a special mixed-content container when a slide needs balanced lanes, item images, charts, or nested supported content.
+
+Match the component to the shape of the content:
+- A sequence, process, journey or evolution: STEPS, ARROWS or TIMELINE, each stage saying what happens or changes at that stage.
+- Two to four parallel ideas, options or examples: BOXES or ICONS, each item a short heading and one line that explains it.
+- Two sides — before and after, a trade-off, a comparison: COMPARE, BEFORE-AFTER or PROS-CONS.
+- Headline numbers: STATS. Values compared or tracked over time: CHART.
+- Points that each need a full sentence: BULLETS.
+Every item carries a point, never a bare label: "Copilot — writes whole functions from a one-line comment", not "Copilot".
 
 **Make sure there is high degree of visual and structural variety across the deck. Avoid using the same component more than once or twice in a row, to reduce visual monotony and maintain audience engagement.**`;
 
@@ -182,7 +195,10 @@ Use charts only for real numeric comparisons, trends, shares, distributions, or 
 function densityGuidance(density: TextDensity): string {
   switch (density) {
     case "minimal":
-      return "Text density is minimal: use short labels.";
+      // It said "use short labels", and the model did exactly that: bullets
+      // of one word each, the explanation left in the notes, slides a heading
+      // and a line. Minimal shortens each point; it does not empty a slide.
+      return "Text density is minimal: fewer and shorter points, each a short phrase with a few words of support — never a bare label. A minimal slide is brief, not empty.";
     case "detailed":
       return "Text density is detailed: add a specific support detail.";
     case "extensive":

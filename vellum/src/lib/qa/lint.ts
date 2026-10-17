@@ -3,9 +3,16 @@
  */
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 import type { Descendant, TElement, TText } from "@/lib/slides/plate-shim";
-import { columnLanes, contentItems, walkNodes } from "@/lib/slides/walk";
+import {
+  columnLanes,
+  contentItems,
+  leadHeadingIndex,
+  walkNodes,
+} from "@/lib/slides/walk";
 import { parseOutlineMarkdown } from "@/lib/generation/prompts/outline";
 import { SUPPORTED_CHART_TYPES } from "@/lib/charts/build-option";
+import { isSignOff, signatureOf } from "@/lib/design/archetypes";
+import { CONTENT_FLOOR } from "@/lib/design/budget";
 
 export interface QaIssue {
   slideId: string | null;
@@ -24,14 +31,10 @@ function textOf(nodes: Descendant[] | undefined): string {
     .map((n) => (isText(n) ? n.text : textOf((n as TElement).children)))
     .join("");
 }
+/** The slide's title, as the renderer marks it (see leadHeadingIndex). */
 function headingOf(slide: PlateSlide): string {
-  for (const node of slide.content) {
-    const el = node as TElement;
-    if (["presentation-title", "h1", "h2"].includes(String(el.type))) {
-      return textOf(el.children as Descendant[]).trim();
-    }
-  }
-  return "";
+  const lead = slide.content[leadHeadingIndex(slide.content)] as TElement | undefined;
+  return lead ? textOf(lead.children as Descendant[]).trim() : "";
 }
 const GROUPS = new Set([
   "bullets", "icons", "boxes", "steps", "timeline", "cycle", "pyramid",
@@ -61,6 +64,37 @@ const BREATH_ARCHETYPES = new Set([
   "testimonial", "team-grid", "agenda",
 ]);
 
+/**
+ * Blocks that carry a slide with few words: figures, data, diagrams,
+ * sequences, cards and pictures draw shapes across the canvas. Headings,
+ * paragraphs, bullet lists, callouts and quotes are text, and text alone is
+ * what leaves a short slide looking empty.
+ */
+const CARRIES_SLIDE = new Set([
+  "icons", "boxes", "steps", "timeline", "cycle", "pyramid", "staircase",
+  "compare", "before-after", "pros-cons", "stats", "arrow-vertical", "arrows",
+  "snake", "circular-grid", "connected-circles", "slope", "table",
+  "code_block", "antv-infographic", "funnel-flow", "kpi-row",
+  "progress-rings", "pictogram", "harvey-table", "matrix", "org-chart",
+  "journey", "venn", "iceberg", "flow-diagram",
+]);
+
+/**
+ * Whether something besides text carries the slide. A root picture counts
+ * once it has rendered; while the deck is being generated it is only the
+ * writer's request, which the picture step may turn down.
+ */
+function carriesSlide(slide: PlateSlide): boolean {
+  if ((slide.rootImage as { url?: string } | undefined)?.url) return true;
+  let carried = false;
+  walkNodes(slide.content as Descendant[], (node) => {
+    const type = String(node.type);
+    if (CARRIES_SLIDE.has(type) || type.startsWith("chart-")) carried = true;
+    if (type === "img" && (node.url || node.query)) carried = true;
+  });
+  return carried;
+}
+
 function tokenSet(text: string): Set<string> {
   return new Set(text.toLowerCase().match(/\b\w{4,}\b/g) ?? []);
 }
@@ -77,6 +111,8 @@ export interface LintOptions {
   /** Word budget per deck slide (token-driven); default matches the prompt's
    *  hard ceiling. */
   maxWordsPerSlide?: number;
+  /** Fewest words a content slide may carry; CONTENT_FLOOR by default. */
+  minWordsPerSlide?: number;
   /** Size of the citation registry (0 = research off ⇒ citation lints skip). */
   sourceCount?: number;
 }
@@ -90,6 +126,7 @@ export function lintSlides(
   const issues: QaIssue[] = [];
   const seenHeadings = new Map<string, string>();
   const maxWords = options?.maxWordsPerSlide ?? 90;
+  const minWords = options?.minWordsPerSlide ?? CONTENT_FLOOR;
   const sourceCount = options?.sourceCount ?? 0;
 
   slides.forEach((slide, index) => {
@@ -444,6 +481,29 @@ export function lintSlides(
         slideId: slide.id, severity: "minor", code: "notes-echo",
         issue: `${label}: speaker notes duplicate the slide text.`,
         suggestion: "Notes should carry the spoken argument and caveats, not repeat the slide.",
+      });
+    }
+
+    // Too little: a heading and a line, or a few bare labels, on a layout
+    // built for a claim and its evidence. Only overflow was ever checked, so
+    // a minimal keynote shipped 14 slides of 5-15 words — one-word bullets
+    // ("Autocomplete", "Copilot", "Agent") with the explanation left in the
+    // speaker notes. Last of this slide's checks on purpose: the quality gate
+    // rewrites a slide for the last hard issue it reports, and the rewrite
+    // for this one also asks for a full-sentence heading.
+    const words = signatureOf(slide).wordCount;
+    if (
+      kind === "deck" &&
+      !BREATH_ARCHETYPES.has(archetype) &&
+      !isSignOff(heading) &&
+      words < minWords &&
+      !carriesSlide(slide)
+    ) {
+      issues.push({
+        slideId: slide.id, severity: "major", code: "sparse-slide",
+        issue: `${label} carries ${words} words — a heading and a line on a slide built for more (at least ${minWords}).`,
+        suggestion:
+          "Give each point a few words of explanation or an example from the speaker notes or the outline, or use a component that carries the idea — STEPS for a sequence, BOXES or ICONS for parallel ideas. Never invent facts or figures.",
       });
     }
   });

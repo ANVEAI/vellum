@@ -280,6 +280,30 @@ const HEADING_TAGS = new Set([
   "LABEL",
 ]);
 
+/**
+ * Whether two tag names are one typing slip apart: a letter substituted
+ * (DEV, DIV) or a letter doubled (TTITLE, TITLE). A trailing S is not a
+ * slip — STEP and STEPS, ICON and ICONS are different elements, and a stray
+ * `</STEP>` must not close the STEPS group around it. Names under three
+ * letters are left alone: H2 and H3 are one letter apart and both real.
+ */
+function oneSlipApart(a: string, b: string): boolean {
+  if (a.length < 3 || b.length < 3 || a === b) return false;
+  if (a.length === b.length) {
+    let differences = 0;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) differences += 1;
+    return differences === 1;
+  }
+  const [long, short] = a.length > b.length ? [a, b] : [b, a];
+  if (long.length !== short.length + 1) return false;
+  for (let i = 0; i < long.length; i++) {
+    if (long.slice(0, i) + long.slice(i + 1) === short) {
+      return long[i] === long[i - 1] || long[i] === long[i + 1];
+    }
+  }
+  return false;
+}
+
 /** Groups whose items are <DIV> children. */
 const ITEM_GROUP_TAGS = new Set([
   "BULLETS",
@@ -1184,8 +1208,13 @@ export class SlideParser {
       isImageSlideAttr === "true" || isImageSlideAttr === "1";
 
     // Advisory design role (role="hero|divider|statement|…"); the layout
-    // planner validates it against content and has final say.
-    const intent = sectionNode.attributes.role?.trim().toLowerCase();
+    // planner validates it against content and has final say. The model
+    // sometimes writes the role into the layout attribute instead —
+    // layout="statement" — which is no layout at all; read it as the role it
+    // names (the planner ignores a word that is not one).
+    const misplacedRole =
+      layoutAttr && layoutType === "left" && layoutAttr !== "left" ? layoutAttr : undefined;
+    const intent = (sectionNode.attributes.role ?? misplacedRole)?.trim().toLowerCase();
 
     const plateElements: PlateNode[] = [];
     let rootImage: RootImage | undefined;
@@ -2019,8 +2048,28 @@ export class SlideParser {
       // Closing tag
       if (tagContent.startsWith("/")) {
         const closing = tagContent.substring(1).trim().toUpperCase();
+        let closed = false;
         for (let depth = open.length - 1; depth >= 1; depth--) {
           if (open[depth]!.tag.toUpperCase() === closing) {
+            open.length = depth;
+            closed = true;
+            break;
+          }
+        }
+        // A misspelled tag. `<TTITLE>…</TITLE>` left TTITLE open, and it
+        // adopted the rest of the slide — the steps, the picture and the
+        // speaker notes, which then showed on the slide as text; `</DEV>`
+        // after a `<DIV>` item left the item open, so the next item nested
+        // inside it. An end tag that names no open element closes the
+        // nearest one it is a slip of, and when it names a heading that the
+        // start tag misspelled, the element becomes that heading.
+        if (!closed) {
+          for (let depth = open.length - 1; depth >= 1; depth--) {
+            const name = open[depth]!.tag.toUpperCase();
+            if (!oneSlipApart(name, closing)) continue;
+            if (HEADING_TAGS.has(closing) && !HEADING_TAGS.has(name)) {
+              open[depth]!.tag = closing;
+            }
             open.length = depth;
             break;
           }

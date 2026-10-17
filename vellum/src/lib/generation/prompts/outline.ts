@@ -119,6 +119,48 @@ export function countOutlineCards(markdown: string): number {
   return (markdown.match(/^##\s+/gm) ?? []).length;
 }
 
+/**
+ * An outline card whose heading is the sign-off: "Thank You & Resources",
+ * "The Closing Thank You and Resources", "Q&A", "Questions?". Planning
+ * headings describe the slide rather than title it, so "thank you" may sit
+ * anywhere in one; "questions" only counts at the start, since "Five
+ * questions every CTO should ask" is content.
+ */
+const SIGN_OFF_CARD = /\bthank\s+you\b|\bq\s*&\s*a\b|^(any\s+)?questions\b/i;
+
+/**
+ * The cards with every sign-off card moved to the end, the rest in order.
+ *
+ * Topping up a short outline asks the model to continue it, and it does —
+ * after the closing card: one keynote's 21-card outline put "The Closing
+ * Thank You and Resources" 16th, with four sections appended behind it. The
+ * deck model then wrote the thank-you last as the 21st slide, the 20-card
+ * contract trimmed it, and the deck lost its sign-off.
+ */
+export function endOutlineOnSignOff(cards: string[]): string[] {
+  const signOffs = cards.filter((card, index) => index > 0 && isSignOffCard(card));
+  if (signOffs.length === 0) return cards;
+  const rest = cards.filter((card) => !signOffs.includes(card));
+  const reordered = [...rest, ...signOffs];
+  return reordered.every((card, index) => card === cards[index]) ? cards : reordered;
+}
+
+function isSignOffCard(card: string): boolean {
+  return SIGN_OFF_CARD.test((card.split("\n")[0] ?? "").replace(/^##\s+/, "").trim());
+}
+
+/**
+ * The first `count` cards, except that trailing sign-off cards are kept and
+ * the surplus is taken from just before them: the outline is trimmed to the
+ * requested count, and cutting its tail used to cut its ending.
+ */
+export function trimOutlineCards(cards: string[], count: number): string[] {
+  if (cards.length <= count) return cards;
+  let tail = 0;
+  while (tail < count - 1 && isSignOffCard(cards[cards.length - 1 - tail])) tail += 1;
+  return [...cards.slice(0, count - tail), ...cards.slice(cards.length - tail)];
+}
+
 /** Split outline markdown into title + per-card markdown blocks. */
 export function parseOutlineMarkdown(markdown: string): {
   title: string;

@@ -8,7 +8,7 @@
  */
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 import type { Descendant, TElement, TText } from "@/lib/slides/plate-shim";
-import { columnLanes, contentItems } from "@/lib/slides/walk";
+import { columnLanes, contentItems, leadHeadingIndex } from "@/lib/slides/walk";
 
 export type ArchetypeId =
   | "hero"
@@ -73,6 +73,20 @@ export const ROLE_TO_ARCHETYPE: Record<string, ArchetypeId> = {
   "thank-you": "closing",
 };
 
+/**
+ * A title that is the sign-off itself: "Thank you", "Thank You & Resources",
+ * "Questions?", "Q&A". Anchored at the start and followed by punctuation, a
+ * conjunction or nothing, so "Thanks to our partners, revenue doubled" is a
+ * claim, not a sign-off.
+ */
+const SIGN_OFF =
+  /^\s*(thank\s+you|thanks|any\s+questions|questions|q\s*&\s*a)\s*([!?.:]|[&+,]|and\b|$)/i;
+
+/** Whether a slide title is a sign-off (the planner makes those the closing). */
+export function isSignOff(headingText: string): boolean {
+  return SIGN_OFF.test(headingText);
+}
+
 /** Structural summary of one slide, derivable in O(nodes), no DOM. */
 export interface ContentSignature {
   wordCount: number;
@@ -93,6 +107,11 @@ export interface ContentSignature {
    * new treatment it was not already eligible for.
    */
   columnCount: number;
+  /**
+   * Items in the largest BOXES or ICONS group: the components three-up lays
+   * out as a row. Like `columnCount`, it only narrows what a slide may wear.
+   */
+  rowItemCount: number;
 }
 
 function isText(n: Descendant): n is TText {
@@ -137,6 +156,7 @@ export function signatureOf(slide: PlateSlide): ContentSignature {
   let groupItems = 0;
   let statCount = 0;
   let columnCount = 0;
+  let rowItems = 0;
   for (const el of els) {
     const type = String(el.type);
     if (GROUPS.has(type)) {
@@ -145,6 +165,7 @@ export function signatureOf(slide: PlateSlide): ContentSignature {
       const items = contentItems(el).length;
       groupItems = Math.max(groupItems, items);
       if (type === "stats") statCount = items;
+      if (type === "boxes" || type === "icons") rowItems = Math.max(rowItems, items);
     }
     if (type === "column_group") {
       columnCount = Math.max(columnCount, columnLanes(el).length);
@@ -153,9 +174,13 @@ export function signatureOf(slide: PlateSlide): ContentSignature {
   const contentTypes = types.filter(
     (t) => !["label", "contributor", "img"].includes(t),
   );
-  const heading = els.find((e) =>
-    ["presentation-title", "h1", "h2"].includes(String(e.type)),
-  );
+  // The slide's title as the renderer marks it. Only TITLE, H1 and H2 used
+  // to count, so a slide titled in H3 had no heading here — its agenda went
+  // undetected, and the quality gate could not tell a rewrite that dropped
+  // the heading from one that kept it.
+  const heading = slide.content[leadHeadingIndex(slide.content)] as
+    | TElement
+    | undefined;
   return {
     wordCount: words,
     types,
@@ -177,6 +202,7 @@ export function signatureOf(slide: PlateSlide): ContentSignature {
     hasTable: types.includes("table"),
     headingText: heading ? textOf(heading.children).trim() : "",
     columnCount,
+    rowItemCount: rowItems,
   };
 }
 
@@ -242,7 +268,10 @@ export function accepts(id: ArchetypeId, sig: ContentSignature): boolean {
     case "split":
       return sig.hasRootImage && !sig.isBackgroundLayout;
     case "three-up":
-      return sig.groupItemCount >= 3 && sig.groupItemCount <= 4 && !sig.hasChart;
+      // Its rules lay out BOXES and ICONS in one row and touch nothing else.
+      // Counting any group's items, it was given to three-bullet slides and
+      // offered in the layout menu, where it changed nothing at all.
+      return sig.rowItemCount >= 3 && sig.rowItemCount <= 4 && !sig.hasChart;
     case "kpi":
       return sig.statCount >= 3;
     case "chart-focus":

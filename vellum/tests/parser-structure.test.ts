@@ -108,6 +108,38 @@ describe("malformed end tags", () => {
     expect(texts(slide.content)).toEqual(["Heading", "Body text"]);
   });
 
+  /**
+   * Regression: `<TTITLE>…</TITLE>` left the misspelt element open, and it
+   * adopted the rest of the slide — steps, picture and speaker notes, which
+   * then showed on the slide as text.
+   */
+  it("closes a misspelt heading at the end tag it meant, as that heading", () => {
+    const slide = parse(
+      `<SECTION layout="right"><TTITLE>The Research Frontier</TITLE><P>AI drives discovery.</P><STEPS><DIV><H3>Discover</H3><P>Fold proteins.</P></DIV><DIV><H3>Review</H3><P>Read papers.</P></DIV></STEPS><IMG query="a scientist at a microscope" /><NOTES>Spoken only.</NOTES></SECTION>`,
+    );
+    expect(slide.content.map((n) => (n as TElement).type)).toEqual(["presentation-title", "p", "steps"]);
+    expect(texts(slide.content)).not.toContain("Spoken only.");
+    expect(slide.speakerNote).toBe("Spoken only.");
+    expect((slide.rootImage as { query?: string }).query).toBe("a scientist at a microscope");
+  });
+
+  it("closes an item whose end tag has one letter wrong", () => {
+    const slide = parse(
+      `<SECTION><H1>Skills</H1><BULLETS><DIV><H3>Scarce</H3><P>User needs.</P></DEV><DIV><H3>Strategic</H3><P>What to build.</P></DIV></BULLETS></SECTION>`,
+    );
+    expect(find(slide.content, "bullets")!.children.map(textOf)).toEqual([
+      "ScarceUser needs.",
+      "StrategicWhat to build.",
+    ]);
+  });
+
+  it("does not let a stray singular end tag close its plural group", () => {
+    const slide = parse(
+      `<SECTION><H1>Three steps</H1><STEPS><DIV><H3>One</H3></DIV></STEP><DIV><H3>Two</H3></DIV><DIV><H3>Three</H3></DIV></STEPS></SECTION>`,
+    );
+    expect(find(slide.content, "steps")!.children.map(textOf)).toEqual(["One", "Two", "Three"]);
+  });
+
   it("reads a '<' that starts no tag as text", () => {
     const slide = parse(`<SECTION><H1>Odds</H1><P>2 < 3 holds</P></SECTION>`);
     expect(textOf(slide.content[1]!)).toBe("2 < 3 holds");

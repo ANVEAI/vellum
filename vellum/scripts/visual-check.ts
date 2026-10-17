@@ -51,7 +51,7 @@ async function main() {
       cardPolicy: scope?.getAttribute("data-card-policy") ?? null,
       slides: slides.map((s) => {
         const cs = getComputedStyle(s);
-        const heading = s.querySelector(".v-title, .v-h1, .v-h2");
+        const heading = s.querySelector(".v-lead") ?? s.querySelector(".v-title, .v-h1, .v-h2");
         const hcs = heading ? getComputedStyle(heading) : null;
         return {
           archetype: s.getAttribute("data-archetype"),

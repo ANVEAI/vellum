@@ -41,6 +41,32 @@ identical planner, so the preview matches what gets persisted.
 `scripts/e2e-create.ts` asserts this against a real generation: zero archetype
 flips on settled slides.
 
+### Display type is a decision
+
+Cover, closing, divider, statement and full-bleed set the slide title at
+display size. Statement used to be inferred for any slide under 30 words
+without a group, and since a special layout may not follow itself, a run of
+same-shaped slides alternated: 110px title, 36px title, 110px, 36px. Now a
+statement comes from the writer's `role` (or the role written into `layout`,
+which the parser reads), or from a single headline number; density relief
+falls back only to an image-led full bleed, never to statement or divider.
+A sign-off title ("Thank you", "Questions?", "Q&A" — `isSignOff`) is the
+closing slide wherever it sits, even right after another closing. Three-up is
+offered only to a row of BOXES or ICONS, the only components its rules style.
+
+### The slide title is one role
+
+`leadHeadingIndex` (`src/lib/slides/walk.ts`) says which top-level block is a
+slide's title: the heading of the highest rank, the first of them if several
+share it. The model writes titles as TITLE, H1, H2 or H3 (715, 578, 58 and 6
+times across 55 decks), and each tag had its own size. The renderer and the
+print view mark the title `.v-lead` (a modifier class — the block structure
+is unchanged) and the stylesheet gives the role the family's H1 step on every
+content layout and display size on display layouts; any other heading keeps
+its tag's size. PowerPoint sizes the same block from the same function, Word
+handouts make every slide title Heading 1, and the planner signature and the
+lint read it as the slide's heading (they ignored H3).
+
 ### Headings are inline-only
 
 The model regularly leaves a `<TITLE>` or `<H1>` unclosed, or nests the rest
@@ -74,6 +100,14 @@ rewrite of it was a note about removing the duplicates. A misspelt end tag
 (`</CALOUT>`) let the callout swallow the rest of the slide, and a mixed-case
 pair (`<p>…</P>`) ended its parent early. `tests/parser-structure.test.ts`
 covers each shape, including every streaming prefix.
+
+**A one-letter slip still closes its element.** An end tag that names no
+open element closes the nearest one it is a typing slip of — one letter
+substituted (`</DEV>` for `<DIV>`) or doubled (`<TTITLE>…</TITLE>`), and in
+the second case the element becomes the heading the end tag names. Left
+open, `<TTITLE>` adopted the rest of its slide, speaker notes included,
+which then showed as text. A trailing S is never a slip (STEP and STEPS,
+ICON and ICONS), and names under three letters are left alone.
 
 ### Text written straight into a container is content
 
@@ -120,6 +154,16 @@ bullet — and is never applied to what a user types in the editor.
 prompt states it, the generation gate and the QA panel judge by it (with 15%
 tolerance). They used to carry four different numbers.
 
+It has a floor as well as a ceiling. `CONTENT_FLOOR` (a title of about eight
+words and two short points) is the least a content slide carries: below it the
+`sparse-slide` lint fires, a hard gate fault whose rewrite asks for more —
+from the slide's own notes and outline entry, set in a component, never
+invented (`enrichRequest`). Display layouts, sign-offs, and slides a chart,
+table, figures, diagram, cards or a rendered picture carries are exempt. No
+budget falls below a title and four short points: minimal density on the
+sparest family used to come to the floor itself (17, raised to 18 words), and
+the model wrote one-word bullets to stay under it.
+
 ### The quality gate keeps a rewrite only if it is better
 
 Up to five slides with hard faults are rewritten, worst first. The request is
@@ -133,6 +177,12 @@ from the original, its notes or its outline entry, add no title element the
 original did not have, and not take the deck title or another slide's heading.
 Without these, a slide was replaced by the model's twelve-word note about its
 edit (no heading, so no faults), and an agenda by a second title slide.
+
+A `sparse-slide` fault gets the opposite request from the others: more, not
+less (`enrichRequest`, with the slide's speaker notes quoted). The lint reports
+it last among a slide's checks, so it is the issue the gate acts on when a
+thin slide also has a topic heading — its request asks for a full-sentence
+title too.
 
 ### Image slots: newest job wins, and only for a slot that exists
 
@@ -157,9 +207,10 @@ single-slide replan applies the same rule — the gate's rewrites and
 `planPictures` (`src/lib/images/visual-plan.ts`) is the one decision about
 root images; the model's own prompt is a suggestion it weighs. Room is
 deterministic: no chart, table, diagram, sequence or headline numbers on the
-slide, at most one lane, and no more words than the theme family's
-`maxWordsPerSlide` — the canvas's physical capacity, not the density-scaled
-budget the writer is held to. A slide without room gets no picture. Of the
+slide, at most one lane, and no more words than fit beside a rail: the theme
+family's `maxWordsPerSlide`, never below 40 (`RAIL_WORDS`) — the keynote
+family's 28 is a writing budget, and slides of 30-40 words on it fit beside a
+rail with autofit untouched. A slide without room gets no picture. Of the
 slides with room, one structured model call decides which a picture would
 help and what it shows: a concrete subject, people described by role and
 never by name, settings without signage. A subject that needed scrubbing
@@ -170,6 +221,14 @@ which left dense slides' text unreadable, nor a background, which outside
 the full-bleed archetype is a 25% wash. Any device in a prompt is described
 with a dark, blank screen at generation time. If the call fails the room rule
 still applies and the model's usable prompts stand.
+
+An answer must decide every slide it was asked about (`decisionSchemaFor`); an
+empty list is invalid rather than a decision to remove every picture. On a
+technology deck the editor proposes subjects with writing or screen content
+for most slides — "a developer reviewing code", "a tablet showing a video
+call" — and refusing them cut a keynote to two to four pictures of the seven
+or eight its editor wanted, so the refused slides are asked once more with
+the reason (five to eight survived); whatever is still refused gets none.
 
 ### Root images are queued after the deck is saved
 
@@ -195,8 +254,19 @@ values are mostly zero is a list in the wrong component.
 `genParams.nCards` is authoritative everywhere. A template's `sections` array
 supplies the *default* count and the narrative arc — never a cap. Enforcement
 is symmetric at both stages: the outline tops up (max 2 retries) **and** trims;
-the content stage trims surplus sections from the tail. Historically both
-layers read `template.sections.length` and silently ignored the user.
+the content stage trims surplus sections. Historically both layers read
+`template.sections.length` and silently ignored the user.
+
+**Neither trim may cut the ending.** A continuation is appended after the
+outline's closing card, so sign-off cards move back to the end
+(`endOutlineOnSignOff`) and the outline's surplus comes from before them
+(`trimOutlineCards`). The model's own extras — a cover, section dividers —
+are not always at the tail either: a 10-card pitch came back as 11 slides and
+the old trim cut "The Ask". `trimToCount` keeps a closing or sign-off last
+slide, drops the dividers the writer added first, then the slides just
+before the ending; `endOnSignOff` moves a "Thank you" the model wrote early
+to the end. The deck is re-planned after either, since the planner reads
+predecessors.
 
 **A request that numbers its own slides keeps them.** When it lists three or
 more ("Slide 1: …"), `isScriptedRequest` is true, the template's sections
@@ -307,6 +377,22 @@ by `data-fit` as before, and wraps the slide so **every** native text run is
 scaled by `data-zoom` — including the labels, quotes and stats written at
 fixed point sizes, which zoom shrinks in the browser too.
 
+### Type roles
+
+The family scale (`src/lib/design/type-scale.ts`) is the only source of text
+sizes for flowing text: titles (`h1` via `.v-lead`, `display`), headings of
+cards, steps and bullets (`h3`, `h4`), paragraphs (`body`), and item text —
+bullets, cards, steps, callouts, table cells (`small`). Item, callout and
+table text used to be fixed at 15px: smaller than body text, outside the
+family, and untouched by autofit, so a slide shrunk to 0.65 set its bullets
+larger than its paragraphs. The reading sizes are about a sixth above the
+Phase-2 values (corporate body 17 to 20px); titles and display are unchanged.
+PowerPoint keeps its hand-tuned point sizes and scales each by the ratio of
+the family's step to the step it was tuned against (`LEGACY_SCALE`, plus 15px
+for item text), times `data-fit`. Printed documents keep their own point
+sizes. Diagram components (cycle, pyramid, rings, matrix, journey…) keep
+label sizes tuned to their geometry.
+
 ### Spacing
 
 `--v-gap-1..5` (8/12/16/24/32 px) times `--v-density`, where density derives
@@ -406,7 +492,7 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
 
 | Command | Checks |
 |---|---|
-| `npm test` | 353 unit/integration tests |
+| `npm test` | 390 unit/integration tests |
 | `npx tsx scripts/ui-check.ts <deck> <doc>` | 48 screenshots, 2 themes × 4 widths; console errors, overflow, unlabelled controls, hit targets, native dialogs, focus rings, menu reachability |
 | `npx tsx scripts/e2e-editor.ts <deck>` | 26 editor interactions on a throwaway copy |
 | `npx tsx scripts/e2e-create.ts` | real generation; asserts zero mid-stream re-layouts |
@@ -416,6 +502,7 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
 | `npx tsx scripts/nav-stability.ts <deck>` | navigator geometry at the 8/9/10 boundary |
 | `npx tsx scripts/geometry-audit.ts <doc...>` | per slide on the print route: clipped content, blocks escaping the canvas, overlapping blocks |
 | `npx tsx scripts/fit-audit.ts <doc> editor\|present` | autofit inside transformed render paths: scale, fit, zoom, true overrun |
+| `npx tsx scripts/type-audit.ts <doc...>` | type roles and fill on the print route: title tag and size, body and item sizes, canvas occupancy against the family's fill target; fails on more than one title size per layout kind at full scale, or on overflow |
 | `npx tsx scripts/layout-audit.ts <doc>` | every slide in every layout the picker offers for it: clipping, sideways overflow, text off the slide, heading visible, text covered by another block's text or shape (works on throwaway copies) |
 | `npx tsx scripts/layout-switch-e2e.ts <deck> [9,10,20]` | clicks every layout tile twice in the live editor and measures the canvas after each switch, overlaps included (`VERBOSE=1` prints every fit) |
 | `npx tsx scripts/regenerate.ts <doc> [theme]` | re-runs a past generation like for like (creates a new document) |
@@ -438,3 +525,8 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
   is regenerated (or the deck re-parsed from its `rawXml`).
 - `allowedSplits`, `maxItemsPerRow` and `maxItems` are declared per family and
   still unconsumed — wiring them needs planner changes, not CSS.
+- Archetypes are stored per slide. The planner's display-type rules apply to
+  new generations and regenerated slides; a saved deck keeps its stored
+  layouts (the title role and type roles reach it at render time).
+- The outline's top-up can still come back one card short when both
+  continuation attempts under-deliver (seen once: 20 of 21).

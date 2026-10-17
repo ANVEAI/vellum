@@ -527,7 +527,7 @@ export const templates: TemplateBlueprint[] = [
     promptPlaceholder:
       "e.g. Keynote: 'The next decade of local-first AI' for a 2,000-person developer conference…",
     globalGuidance:
-      "This is a KEYNOTE — slides are a backdrop for a speaker, not a document. Maximum 20 words per slide, most slides far fewer. Big statements, full-bleed images, one giant number at the turning point. Use role=\"statement\" and layout=\"background\" liberally; alternate between image slides and stark text slides. Every slide must survive being seen for only four seconds from the back row. Write rich speaker NOTES — the depth lives in the spoken track.",
+      "This is a KEYNOTE — slides are a backdrop for a speaker, not a document. Few words, big ideas: a content slide carries its claim as the title and two to four short points, each a phrase with a few words of support, in a component that holds them (ICONS, BOXES, STEPS, ARROWS) — never a heading over one-word labels. Big statements are deliberate moments marked role=\"statement\": the turning point and the one giant number, not every short slide. Every slide must survive being seen for four seconds from the back row. Write rich speaker NOTES for the stories and the argument; the slide keeps the points the audience has to read.",
     sections: [
       {
         heading: "The hook",
@@ -537,7 +537,7 @@ export const templates: TemplateBlueprint[] = [
       {
         heading: "The world as it is",
         guidance:
-          "The status quo in one image and under 15 words. layout=\"background\" with a single H2 claim.",
+          "The status quo: the claim as the title, and two or three concrete observations as ICONS or BOXES — a short heading and one line each.",
       },
       {
         heading: "The crack in the status quo",
@@ -545,24 +545,24 @@ export const templates: TemplateBlueprint[] = [
           "role=\"statement\": the tension — one sentence that makes the audience lean in.",
       },
       {
+        heading: "The shift",
+        guidance:
+          "Name the transformation in three beats: STEPS or ARROWS, each stage a short name and one line on what changes there.",
+      },
+      {
         heading: "The number that changes everything",
         guidance:
           "role=\"statement\" with a single STATS item: one giant number and a six-word caption.",
       },
       {
-        heading: "The shift",
-        guidance:
-          "Name the transformation in three beats. ARROWS or ARROW-SEQUENCE with three one-word-ish stages.",
-      },
-      {
         heading: "Proof it's already happening",
         guidance:
-          "Two or three concrete examples, one line each. ICONS with short labels, or a full-bleed image with a caption per example across slides.",
+          "Two or three concrete examples from the source, each a short heading and one line: ICONS or BOXES. Never invent a company, a product or a figure.",
       },
       {
         heading: "What this makes possible",
         guidance:
-          "Paint the near future — aspirational but concrete. layout=\"background\" image slide with one H2 line.",
+          "Paint the near future — aspirational but concrete: the claim as the title and two or three possibilities as BOXES or ICONS, one line each.",
       },
       {
         heading: "The call",
@@ -572,7 +572,7 @@ export const templates: TemplateBlueprint[] = [
       {
         heading: "Thank you / where to find this",
         guidance:
-          "role=\"closing\": speaker name, handle, one link. CONTRIBUTOR plus a single line.",
+          "role=\"closing\": \"Thank you\" as the title, the speaker's handle and one link. CONTRIBUTOR plus a single line.",
       },
     ],
   },

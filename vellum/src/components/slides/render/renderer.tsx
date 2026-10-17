@@ -29,7 +29,12 @@ import {
   parseAntvItems,
 } from "./parts/infographic-math";
 import { assetUrl } from "@/lib/client/base-path";
-import { columnLanes, contentItems, hasContent } from "@/lib/slides/walk";
+import {
+  columnLanes,
+  contentItems,
+  hasContent,
+  leadHeadingIndex,
+} from "@/lib/slides/walk";
 import { useDesignTokens } from "@/components/slides/theme-scope";
 
 function isText(node: Descendant): node is TText {
@@ -854,31 +859,43 @@ const ChartElement = dynamic(
 
 /* ---------- dispatcher ---------- */
 
-export function Node({ node }: { node: TElement }) {
+export function Node({
+  node,
+  lead = false,
+}: {
+  node: TElement;
+  /**
+   * This heading is the slide's title (`leadHeadingIndex`). It keeps its tag
+   * and gains `v-lead`, which the stylesheet sizes as the slide-title role —
+   * a modifier class, so the block structure the exporter measures is the
+   * same whether or not a heading is the lead.
+   */
+  lead?: boolean;
+}) {
   const type = String(node.type);
   if (CHROME_BLOCKS.has(type) && !hasContent(node)) return null;
   switch (type) {
     case "presentation-title":
       return (
-        <h1 className={cx("v-title", alignClass(node))}>
+        <h1 className={cx("v-title", lead && "v-lead", alignClass(node))}>
           <Children nodes={node.children} />
         </h1>
       );
     case "h1":
       return (
-        <h1 className={cx("v-h1", alignClass(node))}>
+        <h1 className={cx("v-h1", lead && "v-lead", alignClass(node))}>
           <Children nodes={node.children} />
         </h1>
       );
     case "h2":
       return (
-        <h2 className={cx("v-h2", alignClass(node))}>
+        <h2 className={cx("v-h2", lead && "v-lead", alignClass(node))}>
           <Children nodes={node.children} />
         </h2>
       );
     case "h3":
       return (
-        <h3 className="v-h3">
+        <h3 className={cx("v-h3", lead && "v-lead")}>
           <Children nodes={node.children} />
         </h3>
       );
@@ -886,7 +903,7 @@ export function Node({ node }: { node: TElement }) {
     case "h5":
     case "h6":
       return (
-        <h4 className="v-h4">
+        <h4 className={cx("v-h4", lead && "v-lead")}>
           <Children nodes={node.children} />
         </h4>
       );
@@ -1039,35 +1056,44 @@ export function SlideContent({
   /** Autofit bottomed out: stop centring so the heading is never clipped. */
   atFloor?: boolean;
 }) {
+  const lead = leadHeadingIndex(nodes);
   return (
     <div
       ref={contentRef}
       className={cx("v-content", atFloor && "v-content--overflow")}
       data-slide-content="true"
     >
-      {focusIndex === undefined ? (
-        <Children nodes={nodes} />
-      ) : (
-        nodes.map((node, i) => (
-          <div
-            key={
-              (!isText(node) &&
-                ((node as TElement).id as string | undefined)) ||
-              i
-            }
-            className={cx(
-              "v-focus-wrap",
-              i !== focusIndex && "v-focus-wrap--dim",
-            )}
-          >
-            {isText(node) ? (
-              <Leaf leaf={node} />
+      {focusIndex === undefined
+        ? nodes.map((node, i) =>
+            isText(node) ? (
+              <Leaf key={i} leaf={node} />
             ) : (
-              <Node node={node as TElement} />
-            )}
-          </div>
-        ))
-      )}
+              <Node
+                key={((node as TElement).id as string | undefined) ?? i}
+                node={node as TElement}
+                lead={i === lead}
+              />
+            ),
+          )
+        : nodes.map((node, i) => (
+            <div
+              key={
+                (!isText(node) &&
+                  ((node as TElement).id as string | undefined)) ||
+                i
+              }
+              className={cx(
+                "v-focus-wrap",
+                i !== focusIndex && "v-focus-wrap--dim",
+              )}
+            >
+              {isText(node) ? (
+                <Leaf leaf={node} />
+              ) : (
+                <Node node={node as TElement} lead={i === lead} />
+              )}
+            </div>
+          ))}
     </div>
   );
 }

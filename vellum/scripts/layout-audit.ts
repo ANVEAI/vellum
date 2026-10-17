@@ -93,7 +93,7 @@ const MEASURE = `
         }
       }
     });
-    var h = c.querySelector('.v-title, .v-h1, .v-h2');
+    var h = c.querySelector('.v-lead') || c.querySelector('.v-title, .v-h1, .v-h2');
     if (h) {
       var hr = h.getBoundingClientRect();
       out.headingVisible = hr.height > 0 && hr.top >= sr.top - 1 && hr.bottom <= sr.bottom + 1 && hr.top >= cr.top - 1;

@@ -33,6 +33,7 @@ import sharp from "sharp";
 import { db } from "@/lib/db";
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 import type { Descendant, TElement, TText } from "@/lib/slides/plate-shim";
+import { leadHeadingIndex } from "@/lib/slides/walk";
 import { resolveThemeOrDefault } from "@/lib/themes/resolve";
 import { openPrintPage, withExportPage } from "./browser";
 
@@ -458,8 +459,28 @@ export async function exportDocx(documentId: string): Promise<Buffer> {
     const contentEls = slide.content.filter(
       (n): n is TElement => typeof (n as TElement).type === "string",
     );
+    // A deck handout gives every slide's title the same outline level, the
+    // way the slides give it one size (leadHeadingIndex): Heading 1, and the
+    // Title style only for the cover's. Written as TITLE, H1, H2 or H3 by the
+    // model, slide titles used to land on four levels of Word's navigation
+    // pane, with "Title" repeated down the document.
+    const leadNode =
+      document.kind === "deck"
+        ? slide.content[leadHeadingIndex(slide.content)]
+        : undefined;
     for (let j = 0; j < contentEls.length; j++) {
-      await renderNode(contentEls[j], i, j);
+      const node = contentEls[j];
+      const asTitle =
+        node === leadNode
+          ? {
+              ...node,
+              type:
+                i === 0 && node.type === "presentation-title"
+                  ? "presentation-title"
+                  : "h1",
+            }
+          : node;
+      await renderNode(asTitle, i, j);
     }
   }
 

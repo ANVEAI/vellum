@@ -7,7 +7,9 @@ import { researchTopicWithSources } from "@/lib/generation/research/searxng";
 import {
   buildOutlinePrompt,
   countOutlineCards,
+  endOutlineOnSignOff,
   parseOutlineMarkdown,
+  trimOutlineCards,
 } from "@/lib/generation/prompts/outline";
 import { getTemplate } from "@/lib/templates/library";
 import {
@@ -154,10 +156,20 @@ export async function POST(request: NextRequest) {
       const parsed = parseOutlineMarkdown(markdown);
       const title = parsed.title;
       let cards = parsed.cards;
+      // A continuation is appended after the closing card; the deck still
+      // has to end on its sign-off.
+      if (document.kind !== "doc") {
+        const ordered = endOutlineOnSignOff(cards);
+        if (ordered !== cards) {
+          cards = ordered;
+          markdown = [`# ${title}`, ...cards].join("\n\n");
+        }
+      }
       // Over-delivery is just as wrong as under-delivery: the outline is what
-      // the user reviews and what the content stage is held to.
+      // the user reviews and what the content stage is held to. The surplus
+      // goes from before the sign-off, never the sign-off itself.
       if (cards.length > nCards) {
-        cards = cards.slice(0, nCards);
+        cards = trimOutlineCards(cards, nCards);
         markdown = [`# ${title}`, ...cards].join("\n\n");
       }
       await db.document.update({

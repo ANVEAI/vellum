@@ -33,9 +33,24 @@ describe("design tokens & style packs", () => {
     }
   });
 
-  it("keeps the corporate family pixel-identical to the legacy scale", () => {
-    expect(scaleForFamily("corporate")).toEqual(LEGACY_SCALE);
-    expect(scaleForFamily(undefined)).toEqual(LEGACY_SCALE);
+  it("keeps corporate's titles and display type, and raises its reading sizes", () => {
+    const corporate = scaleForFamily("corporate");
+    for (const role of ["numeral", "display", "title", "h1", "h2"] as const) {
+      expect(corporate[role], role).toBe(LEGACY_SCALE[role]);
+    }
+    for (const role of ["h3", "h4", "body", "small", "caption", "micro"] as const) {
+      expect(corporate[role], role).toBeGreaterThan(LEGACY_SCALE[role]);
+    }
+    expect(scaleForFamily(undefined)).toEqual(corporate);
+    expect(scaleForFamily("no-such-family")).toEqual(corporate);
+  });
+
+  it("orders every family's ramp, so no heading is smaller than the text under it", () => {
+    for (const family of ["swiss", "editorial", "corporate", "bold", "organic", "tech", "studio"]) {
+      const s = scaleForFamily(family);
+      const ramp = [s.numeral, s.display, s.title, s.h1, s.h2, s.h3, s.h4, s.body, s.small, s.caption, s.micro];
+      expect([...ramp].sort((a, b) => b - a), family).toEqual(ramp);
+    }
   });
 
   it("honors per-theme token overrides", () => {

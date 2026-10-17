@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { planDeck, replanSlide } from "@/lib/design/planner";
+import { SlideParser } from "@/lib/generation/parser/slide-parser";
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 
 let idCounter = 0;
@@ -69,7 +70,9 @@ const quoteSlide = () =>
     ],
   });
 const statementSlide = () =>
-  slide({ content: [el("h2", "One bold claim, few words.")] });
+  slide({ content: [el("h2", "One number carries the argument."), group("stats", 1)] });
+const shortSlide = (heading = "One bold claim, few words.") =>
+  slide({ content: [el("h2", heading), el("p", "A single supporting line.")] });
 
 function deck(): PlateSlide[] {
   return [
@@ -108,7 +111,7 @@ describe("layout planner", () => {
     expect(chartFirst[0].archetype).toBe("content");
   });
 
-  it("infers kpi, chart-focus, quote-full, statement from content", () => {
+  it("infers kpi, chart-focus, quote-full, and statement from a single number", () => {
     const planned = planDeck(deck());
     expect(planned[2].archetype).toBe("kpi");
     expect(planned[3].archetype).toBe("chart-focus");
@@ -117,7 +120,7 @@ describe("layout planner", () => {
   });
 
   it("honors a valid role and rejects an invalid one", () => {
-    const withRole = [heroSlide(), { ...statementSlide(), intent: "divider" }];
+    const withRole = [heroSlide(), { ...shortSlide(), intent: "divider" }];
     expect(planDeck(withRole)[1].archetype).toBe("divider");
     const invalid = [heroSlide(), { ...contentSlide(), intent: "kpi" }];
     // Bullets slide can't be a KPI grid — planner overrides to a workhorse.
@@ -291,5 +294,62 @@ describe("image prompts on a replanned slide", () => {
   it("keeps a concrete, new subject", () => {
     const replanned = replanSlide([withImage("a harbour at dusk"), withImage("a farmer photographing a leaf")], 1);
     expect(replanned.rootImage).toEqual({ query: "a farmer photographing a leaf" });
+  });
+});
+
+describe("display type is a decision", () => {
+  /**
+   * Regression: statement was inferred for any slide under 30 words, and
+   * special layouts may not repeat back to back, so a run of same-shaped
+   * slides alternated between a 110px and a 36px title (a 21-slide keynote,
+   * slides 13-19).
+   */
+  it("gives a run of same-shaped short slides one treatment", () => {
+    const planned = planDeck([
+      heroSlide(),
+      shortSlide("What this unlocks for teams"),
+      shortSlide("What this enables for customers"),
+      shortSlide("What this demands of leaders"),
+      shortSlide("What this changes by next year"),
+    ]);
+    const treatments = new Set(planned.slice(1).map((s) => s.archetype));
+    expect(treatments).toEqual(new Set(["content"]));
+  });
+
+  it("honors a statement the writer asked for", () => {
+    const planned = planDeck([heroSlide(), { ...shortSlide(), intent: "statement" }]);
+    expect(planned[1].archetype).toBe("statement");
+  });
+
+  it("reads a role written into the layout attribute", () => {
+    const parser = new SlideParser({ mode: "deck" });
+    parser.parseChunk(
+      '<PRESENTATION><SECTION layout="statement"><H2>Time is the new currency</H2><P>One line.</P></SECTION></PRESENTATION>',
+    );
+    parser.finalize();
+    const [parsed] = parser.getAllSlides();
+    expect(parsed.intent).toBe("statement");
+    expect(parsed.layoutType).toBe("left");
+  });
+
+  it("does not turn a slide into a statement or divider for relief", () => {
+    const planned = planDeck([heroSlide(), kpiSlide(), chartSlide(), shortSlide()]);
+    expect(planned[3].archetype).toBe("content");
+  });
+
+  it("recognises a sign-off as the closing slide", () => {
+    for (const heading of ["Thank You", "Thank You & Resources", "Questions?", "Q&A", "Any questions"]) {
+      const planned = planDeck([heroSlide(), contentSlide(), shortSlide(heading)]);
+      expect(planned[2].archetype, heading).toBe("closing");
+    }
+    const notOne = planDeck([heroSlide(), contentSlide(), shortSlide("Thanks to our partners, revenue doubled")]);
+    expect(notOne[2].archetype).not.toBe("closing");
+  });
+
+  it("offers three-up only to a row of boxes or icons", () => {
+    const bullets = slide({ content: [el("h1", "Three points in a list"), group("bullets", 3)] });
+    const boxes = slide({ content: [el("h1", "Three ideas side by side"), group("boxes", 3)] });
+    expect(planDeck([heroSlide(), bullets])[1].archetype).not.toBe("three-up");
+    expect(planDeck([heroSlide(), boxes])[1].archetype).toBe("three-up");
   });
 });

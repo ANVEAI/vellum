@@ -18,6 +18,7 @@ import { surfaceForSlide } from "@/lib/design/planner";
 import { SlideMetaContext, useSlideMeta } from "@/components/slides/render/slide-meta";
 import { footnoteLine, slideRefs } from "@/lib/slides/citations";
 import { objectPosition, readPlacement } from "@/lib/slides/image-fit";
+import { leadHeadingIndex } from "@/lib/slides/walk";
 import {
   DocumentView,
   computeDocToc,
@@ -125,6 +126,7 @@ function PrintSlide({ slide, index }: { slide: PlateSlide; index: number }) {
     fitCacheKey(slide, theme),
   );
   const { fit, zoom, overflowing, settled } = fitResult;
+  const lead = leadHeadingIndex(slide.content);
 
   return (
     <div
@@ -181,7 +183,7 @@ function PrintSlide({ slide, index }: { slide: PlateSlide; index: number }) {
               data-block-type={node.type}
               data-block-idx={blockIdx}
             >
-              <Node node={node} />
+              <Node node={node} lead={blockIdx === lead} />
             </div>
           ) : null,
         )}

@@ -42,7 +42,7 @@ const MEASURE = `
     if (!r.width || !r.height) return;
     side = Math.max(side, (r.right - cr.right) / scale, (cr.left - r.left) / scale);
   });
-  var h = c.querySelector('.v-title, .v-h1, .v-h2');
+  var h = c.querySelector('.v-lead') || c.querySelector('.v-title, .v-h1, .v-h2');
   var hr = h ? h.getBoundingClientRect() : null;
   // Text from one block covered by another block's text or painted shape
   // (see layout-audit.ts).

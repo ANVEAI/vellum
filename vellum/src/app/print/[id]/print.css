@@ -153,6 +153,13 @@ body {
     font-size: 11pt;
     line-height: 1.55;
   }
+  /* Item and callout text follow the slide scale's `small` role on screen;
+     on the printed page they stay with the body text, as they did when that
+     role was a fixed 15px. */
+  .print-doc .v-doc .v-item-body .v-p,
+  .print-doc .v-doc .v-callout {
+    font-size: 11pt;
+  }
   .print-doc .v-doc li {
     font-size: 11pt;
     line-height: 1.5;

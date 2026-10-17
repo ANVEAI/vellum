@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyVisualPlan,
+  decisionSchemaFor,
   hasRoomForPicture,
   visualCandidates,
   visualPlanPrompt,
@@ -26,11 +27,14 @@ describe("room for a picture", () => {
     expect(hasRoomForPicture(s, BUDGET)).toBe(true);
   });
 
-  it("a slide past the canvas's capacity has none", () => {
-    // Capacity is what the canvas holds at full type size; within it, a
-    // slide reflows beside a rail with its type one step down.
-    expect(hasRoomForPicture(slide([h1("Heading here"), p(words(28))]), BUDGET)).toBe(true);
-    expect(hasRoomForPicture(slide([h1("Heading here"), p(words(29))]), BUDGET)).toBe(false);
+  it("a slide past what fits beside a rail has none", () => {
+    // A family budget above the measured rail floor governs.
+    expect(hasRoomForPicture(slide([h1("Heading here"), p(words(58))]), 60)).toBe(true);
+    expect(hasRoomForPicture(slide([h1("Heading here"), p(words(59))]), 60)).toBe(false);
+    // One below it does not: 40 words fit beside a rail at full type size
+    // even on the family whose writing budget is 28.
+    expect(hasRoomForPicture(slide([h1("Heading here"), p(words(38))]), 28)).toBe(true);
+    expect(hasRoomForPicture(slide([h1("Heading here"), p(words(39))]), 28)).toBe(false);
   });
 
   it("a slide that already carries a visual has none", () => {
@@ -44,7 +48,11 @@ describe("room for a picture", () => {
       h1("Two sides"),
       { type: "column_group", children: [{ type: "column", children: [p("left")] }, { type: "column", children: [p("right")] }] },
     ]);
-    for (const s of [chart, steps, kpis, lanes]) expect(hasRoomForPicture(s, BUDGET)).toBe(false);
+    const oneNumber = slide(
+      [h1("Costs fell"), { type: "stats", children: [{ type: "stats-item", stat: "30%", children: [p("Cost reduction")] }] }],
+      { archetype: "statement" },
+    );
+    for (const s of [chart, steps, kpis, lanes, oneNumber]) expect(hasRoomForPicture(s, BUDGET)).toBe(false);
   });
 
   it("does not count a picture the slide already asked for, and an empty slide has none", () => {
@@ -156,5 +164,26 @@ describe("the picture editor's brief", () => {
     expect(user).toContain("Writer's picture idea: a student coding at night beside a window");
     expect(user).toContain("guest lecture at a college in India");
     expect(system).toMatch(/never ask for/i);
+  });
+});
+
+describe("the picture editor's answer", () => {
+  /**
+   * `{"slides": []}` passed the plain schema and would have counted as a
+   * decision against every picture — the fallback to the writer's own
+   * prompts only runs when the call fails.
+   */
+  it("must decide every slide it was asked about", () => {
+    const deck = [
+      slide([h1("We are no longer writing code"), p("We are curating intent.")], { archetype: "hero" }),
+      slide([h1("Speed is the new advantage"), p("Ten times faster.")], { archetype: "statement" }),
+    ];
+    const schema = decisionSchemaFor(visualCandidates(deck, BUDGET));
+    expect(schema.safeParse({ slides: [] }).success).toBe(false);
+    expect(schema.safeParse({ slides: [{ slide: 1, image: false }] }).success).toBe(false);
+    const complete = { slides: [{ slide: 1, image: false }, { slide: 2, image: true, subject: "a runner at the start line" }] };
+    expect(schema.safeParse(complete).success).toBe(true);
+    const failed = schema.safeParse({ slides: [] });
+    expect(failed.success ? "" : failed.error.issues[0].message).toContain("1, 2");
   });
 });

@@ -21,7 +21,8 @@
    computed, written to --v-fit and to data-fit, read by the PPTX exporter to
    size its text, and ignored by the browser. Listing both selectors keeps
    one copy of the arithmetic; the doc reader still resolves via
-   [data-family], where a fit of 1 is correct. */
+   [data-family], where a fit of 1 is correct. The fallbacks are the
+   corporate scale (type-scale.ts). */
 [data-family],
 .v-slide {
   --presentation-fs-numeral: calc(var(--v-fs-numeral, 160px) * var(--v-fit, 1));
@@ -29,12 +30,12 @@
   --presentation-fs-title: calc(var(--v-fs-title, 64px) * var(--v-fit, 1));
   --presentation-fs-h1: calc(var(--v-fs-h1, 44px) * var(--v-fit, 1));
   --presentation-fs-h2: calc(var(--v-fs-h2, 32px) * var(--v-fit, 1));
-  --presentation-fs-h3: calc(var(--v-fs-h3, 22px) * var(--v-fit, 1));
-  --presentation-fs-h4: calc(var(--v-fs-h4, 18px) * var(--v-fit, 1));
-  --presentation-fs-body: calc(var(--v-fs-body, 17px) * var(--v-fit, 1));
-  --presentation-fs-small: calc(var(--v-fs-small, 16px) * var(--v-fit, 1));
-  --presentation-fs-caption: calc(var(--v-fs-caption, 13px) * var(--v-fit, 1));
-  --presentation-fs-micro: calc(var(--v-fs-micro, 11px) * var(--v-fit, 1));
+  --presentation-fs-h3: calc(var(--v-fs-h3, 26px) * var(--v-fit, 1));
+  --presentation-fs-h4: calc(var(--v-fs-h4, 21px) * var(--v-fit, 1));
+  --presentation-fs-body: calc(var(--v-fs-body, 20px) * var(--v-fit, 1));
+  --presentation-fs-small: calc(var(--v-fs-small, 19px) * var(--v-fit, 1));
+  --presentation-fs-caption: calc(var(--v-fs-caption, 14px) * var(--v-fit, 1));
+  --presentation-fs-micro: calc(var(--v-fs-micro, 12px) * var(--v-fit, 1));
 }
 
 .v-slide {
@@ -190,6 +191,20 @@ img.v-img {
 .v-h2 { font-family: var(--presentation-heading-font, inherit); color: var(--presentation-heading, #fff); font-size: var(--presentation-fs-h2, 32px); font-weight: 650; line-height: 1.2; }
 .v-h3 { font-family: var(--presentation-heading-font, inherit); color: var(--presentation-heading, #fff); font-size: var(--presentation-fs-h3, 22px); font-weight: 650; line-height: 1.25; }
 .v-h4 { font-family: var(--presentation-heading-font, inherit); color: var(--presentation-heading, #fff); font-size: var(--presentation-fs-h4, 18px); font-weight: 600; line-height: 1.3; }
+/* The slide-title role. A slide's title is whichever top-level heading
+   leadHeadingIndex() picks — the model writes it as TITLE, H1, H2 or H3, and
+   each tag above has its own size, so one deck used to carry up to four
+   title sizes. As the lead it renders at the family's H1 step on every
+   content layout, the way a slide master fixes one title placeholder for
+   every slide. Display layouts (cover, closing, divider, statement,
+   full-bleed) set .v-lead at display size in archetypes.css. A heading that
+   is not the lead keeps the size of its own tag. */
+.v-slide .v-lead {
+  font-size: var(--presentation-fs-h1, 44px);
+  line-height: 1.12;
+  font-weight: var(--presentation-heading-weight, 700);
+  letter-spacing: var(--presentation-track-h1, -0.015em);
+}
 .v-p { font-size: var(--presentation-fs-body, 17px); line-height: 1.5; color: var(--presentation-text, #e8eaf0); opacity: 0.92; }
 .v-li { font-size: var(--presentation-fs-small, 16px); line-height: 1.5; margin-left: 1.1em; }
 
@@ -256,7 +271,10 @@ img.v-img {
 
 .v-item-body { min-width: 0; }
 .v-item-body .v-h3, .v-item-body .v-h4 { margin-bottom: 4px; }
-.v-item-body .v-p { font-size: 15px; opacity: 0.85; }
+/* Item text is the `small` role. It was a fixed 15px — smaller than body
+   text on every family, untouched by autofit, so a slide shrunk to 0.65 set
+   its bullets larger than its paragraphs. */
+.v-item-body .v-p { font-size: var(--presentation-fs-small, 19px); opacity: 0.85; }
 
 /* ---- bullets ---- */
 .v-bullets { display: flex; flex-direction: column; gap: var(--v-gap-3); }
@@ -403,10 +421,14 @@ img.v-img {
 .v-rootimg.v-img-pending { height: 100%; border-radius: 0; }
 
 .v-quote { border-left: 4px solid var(--presentation-accent, #7c6cff); padding: 6px 0 6px 20px; }
-.v-quote blockquote { font-size: 22px; font-style: italic; line-height: 1.45; color: var(--presentation-heading, #fff); }
-.v-quote figcaption { margin-top: 8px; font-size: 14px; opacity: 0.7; }
+/* Quote, callout and table text take their sizes from the scale's roles
+   (h3, caption, small) like everything else that flows; they were the last
+   fixed sizes outside the diagram components, whose labels stay tuned to
+   their geometry. */
+.v-quote blockquote { font-size: var(--presentation-fs-h3, 26px); font-style: italic; line-height: 1.45; color: var(--presentation-heading, #fff); }
+.v-quote figcaption { margin-top: 8px; font-size: var(--presentation-fs-caption, 14px); opacity: 0.7; }
 
-.v-callout { border-radius: var(--presentation-card-border-radius, 14px); padding: 14px 18px; font-size: 15px; border: 1px solid; }
+.v-callout { border-radius: var(--presentation-card-border-radius, 14px); padding: 14px 18px; font-size: var(--presentation-fs-small, 19px); border: 1px solid; }
 .v-callout-note, .v-callout-info { background: color-mix(in srgb, var(--presentation-info, #4f8ef7) 14%, transparent); border-color: color-mix(in srgb, var(--presentation-info, #4f8ef7) 40%, transparent); }
 .v-callout-warning, .v-callout-caution { background: color-mix(in srgb, var(--presentation-warning, #f7b84f) 14%, transparent); border-color: color-mix(in srgb, var(--presentation-warning, #f7b84f) 40%, transparent); }
 .v-callout-success { background: color-mix(in srgb, var(--presentation-positive, #34c98e) 14%, transparent); border-color: color-mix(in srgb, var(--presentation-positive, #34c98e) 40%, transparent); }
@@ -424,7 +446,7 @@ img.v-img {
   white-space: pre-wrap;
 }
 
-.v-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.v-table { width: 100%; border-collapse: collapse; font-size: var(--presentation-fs-small, 19px); }
 .v-table th {
   text-align: left;
   font-family: var(--presentation-heading-font, inherit);
