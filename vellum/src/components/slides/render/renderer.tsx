@@ -36,6 +36,7 @@ import {
   leadHeadingIndex,
 } from "@/lib/slides/walk";
 import { hasEmoji, splitEmoji } from "@/lib/slides/emoji";
+import { accentSrc } from "@/lib/slides/emoji-accents";
 import { useDesignTokens } from "@/components/slides/theme-scope";
 
 function isText(node: Descendant): node is TText {
@@ -81,6 +82,24 @@ function Leaf({ leaf }: { leaf: TText }) {
             ),
           )
         : leaf.text}
+    </span>
+  );
+}
+
+/**
+ * The slide's emoji accent (lib/slides/emoji-accents.ts): a picture on a
+ * line of its own at the top of the title, so the title's alignment places
+ * it and its size follows the title's. Decorative — the title says what the
+ * slide says — so screen readers skip it. `data-emoji-accent` is where the
+ * PowerPoint exporter finds it.
+ */
+function EmojiAccentMark({ emoji }: { emoji?: string }) {
+  const src = emoji ? accentSrc(emoji) : undefined;
+  if (!src) return null;
+  return (
+    <span className="v-emoji-line" data-emoji-accent="">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="v-emoji-accent" src={assetUrl(src)} alt="" draggable={false} />
     </span>
   );
 }
@@ -878,6 +897,7 @@ const ChartElement = dynamic(
 export function Node({
   node,
   lead = false,
+  emoji,
 }: {
   node: TElement;
   /**
@@ -887,31 +907,38 @@ export function Node({
    * same whether or not a heading is the lead.
    */
   lead?: boolean;
+  /** The slide's emoji accent, drawn inside the title (lead headings only). */
+  emoji?: string;
 }) {
   const type = String(node.type);
   if (CHROME_BLOCKS.has(type) && !hasContent(node)) return null;
+  const accent = lead ? <EmojiAccentMark emoji={emoji} /> : null;
   switch (type) {
     case "presentation-title":
       return (
         <h1 className={cx("v-title", lead && "v-lead", alignClass(node))}>
+          {accent}
           <Children nodes={node.children} />
         </h1>
       );
     case "h1":
       return (
         <h1 className={cx("v-h1", lead && "v-lead", alignClass(node))}>
+          {accent}
           <Children nodes={node.children} />
         </h1>
       );
     case "h2":
       return (
         <h2 className={cx("v-h2", lead && "v-lead", alignClass(node))}>
+          {accent}
           <Children nodes={node.children} />
         </h2>
       );
     case "h3":
       return (
         <h3 className={cx("v-h3", lead && "v-lead")}>
+          {accent}
           <Children nodes={node.children} />
         </h3>
       );
@@ -920,6 +947,7 @@ export function Node({
     case "h6":
       return (
         <h4 className={cx("v-h4", lead && "v-lead")}>
+          {accent}
           <Children nodes={node.children} />
         </h4>
       );
@@ -1065,12 +1093,15 @@ export function SlideContent({
   focusIndex,
   contentRef,
   atFloor,
+  emoji,
 }: {
   nodes: Descendant[];
   focusIndex?: number;
   contentRef?: React.Ref<HTMLDivElement>;
   /** Autofit bottomed out: stop centring so the heading is never clipped. */
   atFloor?: boolean;
+  /** The slide's emoji accent, drawn in its title. */
+  emoji?: string;
 }) {
   const lead = leadHeadingIndex(nodes);
   return (
@@ -1088,6 +1119,7 @@ export function SlideContent({
                 key={((node as TElement).id as string | undefined) ?? i}
                 node={node as TElement}
                 lead={i === lead}
+                emoji={emoji}
               />
             ),
           )
@@ -1106,7 +1138,7 @@ export function SlideContent({
               {isText(node) ? (
                 <Leaf leaf={node} />
               ) : (
-                <Node node={node as TElement} lead={i === lead} />
+                <Node node={node as TElement} lead={i === lead} emoji={emoji} />
               )}
             </div>
           ))}

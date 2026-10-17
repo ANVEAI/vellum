@@ -6,7 +6,7 @@
  * surface, present mode, and the print route (print uses scale=1).
  */
 import React, { useEffect, useRef, useState } from "react";
-import { fitCacheKey, useAutoFit } from "./use-auto-fit";
+import { ACCENT_HIDDEN, fitCacheKey, useAutoFit } from "./use-auto-fit";
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 import { useDesignTokens, useSlideTheme } from "@/components/slides/theme-scope";
 import { surfaceForSlide } from "@/lib/design/planner";
@@ -72,13 +72,15 @@ export function SlideSurface({
     contentRef,
     fitCacheKey(slide, theme),
   );
-  const { fit, zoom, overflowing } = fitResult;
+  const { fit, zoom, overflowing, accent } = fitResult;
 
 
   return (
     <div
       className={`v-slide v-layout-${layout} ${hasImage ? "v-has-img" : ""}`}
       data-archetype={slide.archetype || undefined}
+      // An emoji accent with no room at full size is not drawn (use-auto-fit).
+      data-accent={accent ? undefined : ACCENT_HIDDEN}
       // Read back by the PPTX exporter so its point sizes match what the
       // browser actually rendered.
       data-fit={fit === 1 ? undefined : String(fit)}
@@ -114,7 +116,12 @@ export function SlideSurface({
       {/* Top-align when the content genuinely still overflows, not merely
           when the ladder bottomed out — centring a slide that does not fit
           clips the heading off the top as well as the tail. */}
-      <SlideContent nodes={slide.content} contentRef={contentRef} atFloor={overflowing} />
+      <SlideContent
+        nodes={slide.content}
+        contentRef={contentRef}
+        atFloor={overflowing}
+        emoji={slide.emoji}
+      />
       <Footnotes slide={slide} />
       {theme.brandLogo &&
         (slide.archetype === "hero" || slide.archetype === "closing") && (

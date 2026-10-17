@@ -76,6 +76,14 @@ function lateContentPending(el: HTMLElement): boolean {
 }
 
 export interface FitResult {
+  /**
+   * Whether the slide's emoji accent is drawn (lib/slides/emoji-accents.ts).
+   * An accent adds a line above the title; it is drawn only when the slide
+   * fits with it at full size, so it never shrinks the slide's type. Where it
+   * does not fit, the slide renders as if it had none — the same choice in
+   * the editor, the PDF and PowerPoint, which reads it off the page.
+   */
+  accent: boolean;
   /** Type-scale multiplier to apply via `--v-fit`. */
   fit: number;
   /** Block zoom to apply via `--v-zoom`; 1 when the ladder sufficed. */
@@ -120,6 +128,7 @@ export function fitCacheKey(
     archetype?: string;
     layoutType?: string;
     rootImage?: unknown;
+    emoji?: string;
   },
   theme?: { name?: string; fonts?: { heading?: string; body?: string } },
 ): string {
@@ -133,11 +142,25 @@ export function fitCacheKey(
   // a switch could leave a slide overflowing until the page reloaded. Hence
   // switching back and forth "sometimes" fixed a slide. The image rail
   // (layout type, and whether there is an image) takes width from the text.
-  const frame = `${slide.archetype ?? ""}/${slide.layoutType ?? ""}/${slide.rootImage ? "img" : ""}`;
+  // An emoji accent adds a line above the title, so it is measured too.
+  const frame = `${slide.archetype ?? ""}/${slide.layoutType ?? ""}/${slide.rootImage ? "img" : ""}/${slide.emoji ?? ""}`;
   return `${slide.id}:${JSON.stringify(slide.content).length}:${frame}:${face}`;
 }
 
-const FITS: FitResult = { fit: 1, zoom: 1, overflowing: false, settled: false };
+const FITS: FitResult = {
+  accent: true,
+  fit: 1,
+  zoom: 1,
+  overflowing: false,
+  settled: false,
+};
+
+/**
+ * The slide attribute that hides an accent with no room (slides.css). Set by
+ * the renderers from `FitResult.accent`, and by the search below while it
+ * measures.
+ */
+export const ACCENT_HIDDEN = "hidden";
 
 /**
  * How far the content overruns its box, in the box's own layout pixels.
@@ -249,13 +272,36 @@ export function useAutoFit(
       const host = (el.closest(".v-slide") as HTMLElement | null) ?? el;
       const inlineFit = host.style.getPropertyValue("--v-fit");
       const inlineZoom = host.style.getPropertyValue("--v-zoom");
+      const inlineAccent = host.getAttribute("data-accent");
       const restore = () => {
         if (inlineFit) host.style.setProperty("--v-fit", inlineFit);
         else host.style.removeProperty("--v-fit");
         if (inlineZoom) host.style.setProperty("--v-zoom", inlineZoom);
         else host.style.removeProperty("--v-zoom");
+        if (inlineAccent !== null) host.setAttribute("data-accent", inlineAccent);
+        else host.removeAttribute("data-accent");
       };
       host.style.setProperty("--v-zoom", "1");
+
+      // ---- Stage 0: the emoji accent, only if it fits at full size ----
+      // Decided once, from the slide with the accent and the type at full
+      // size, before either stage runs — so nothing measured afterwards can
+      // bring it back, and the search cannot go round in a loop.
+      let accent = true;
+      host.removeAttribute("data-accent");
+      if (el.querySelector("[data-emoji-accent]")) {
+        host.style.setProperty("--v-fit", "1");
+        const m = overrun(el);
+        if (m === null) {
+          restore();
+          requestAnimationFrame(attempt);
+          return;
+        }
+        if (m.over > 1) {
+          accent = false;
+          host.setAttribute("data-accent", ACCENT_HIDDEN);
+        }
+      }
 
       // ---- Stage 1: the type ladder ----
       let available = 0;
@@ -308,6 +354,7 @@ export function useAutoFit(
 
       restore();
       const done: FitResult = {
+        accent,
         fit: STEPS[step],
         zoom,
         overflowing: over > 1,

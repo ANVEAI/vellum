@@ -462,7 +462,60 @@ takes as a picture could be half drawn. The print view provides
 `StaticChartsContext` and charts there set `animation: false`; the editor
 and present mode keep the animation.
 
-### Emoji are set in an emoji font, everywhere
+### A deck's emoji are a few pictures above chosen titles
+
+An emoji on every point, set in Windows' flat emoji font, read as cluttered
+and basic. Style guides agree on restraint — Microsoft's caps a message at
+three emoji, never as bullet markers, never on serious topics — and the AI
+slide tools that use emoji at all (Marp, Canva, Slidev's icon sets) draw
+them as images, because that is the only way they look the same everywhere.
+`src/lib/slides/emoji-accents.ts` holds the rules:
+
+- **Where.** One emoji, as a picture on a line of its own at the top of the
+  slide's title, only on the display moments: cover, section divider,
+  statement, closing (`ACCENT_ARCHETYPES`) — the layouts the planner gives
+  about one slide in four. A formal tone (`restrainedTone`: academic,
+  executive, investor, evidence-led…) keeps them to the cover and the close.
+- **Which.** A palette of 74 objects and symbols that read in a business,
+  technical or teaching deck (`EMOJI_ACCENTS`) — no faces, no flags —
+  drawn from Microsoft's Fluent Emoji 3D set (MIT), committed under
+  `public/static/emoji/` and named by code point (`1f680.png`).
+- **Who decides.** The model proposes with `emoji="…"` on a SECTION (or
+  writes it at the front of the title, which the parser reads as the same
+  proposal); `chooseEmojiAccents` keeps a proposal only on an eligible slide
+  with a title, each emoji once per deck, after the last re-plan. The
+  proposal (`emojiHint`) is never saved; the accent (`slide.emoji`) is.
+  "Regenerate slide" keeps the accent the slide had. Asked only to *allow*
+  an accent, qwen3.6 proposed none in three decks of four; the prompt now
+  teaches the attribute in the slide shell and asks for it on the cover,
+  the dividers and the close in the output contract. One deck then proposed
+  an emoji for all eleven slides, and the selection kept two — which is why
+  the rule lives in code, not in the prompt.
+- **Only where there is room.** An accent adds one title line, and on a
+  display slide that was already full it made autofit shrink the type (fit
+  0.8 → 0.65 on one statement, 1 → 0.9 on a cover beside a photo) — one
+  title size per layout kind no longer held. Autofit now decides it first
+  (`use-auto-fit.ts`, stage 0): with the accent and the type at full size,
+  the slide fits or the accent is hidden (`data-accent="hidden"`), and the
+  ladder then runs as before. One-way, so it cannot loop; the editor, the
+  print route and so the PDF and PowerPoint make the same choice. On three
+  copies of real decks every slide kept its original fit; about half the
+  accents were drawn.
+- **Not in the copy.** `clean.ts` takes emoji out of generated text —
+  titles, bullets, cards, quotes — except tables, where a ✅ is the cell's
+  value. What a user types in the editor is never cleaned.
+- **Drawn the same three ways.** The renderer puts the picture inside the
+  lead heading (`.v-emoji-line`, one title line tall via `1lh`, so it
+  follows the title through display size and autofit, and the title's
+  alignment places it); the print route renders the same markup for the
+  PDF; the PowerPoint exporter places the same PNG where the page drew it
+  and starts the title's text box at the text's first line
+  (`addEmojiAccent`). The block structure is unchanged — the accent is
+  inside the heading, not a block of its own.
+- **Editable.** The Inspector's Emoji section sets or clears a slide's
+  accent from the same palette.
+
+### Emoji typed into text are set in an emoji font, everywhere
 
 Left to fallback, each renderer picked its own emoji: the browser whatever
 colour emoji font the machine had, and PowerPoint — given runs set in the
@@ -541,7 +594,7 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
 
 | Command | Checks |
 |---|---|
-| `npm test` | 406 unit/integration tests |
+| `npm test` | 430 unit/integration tests |
 | `npx tsx scripts/ui-check.ts <deck> <doc>` | 48 screenshots, 2 themes × 4 widths; console errors, overflow, unlabelled controls, hit targets, native dialogs, focus rings, menu reachability |
 | `npx tsx scripts/e2e-editor.ts <deck>` | 26 editor interactions on a throwaway copy |
 | `npx tsx scripts/e2e-create.ts` | real generation; asserts zero mid-stream re-layouts |
@@ -577,10 +630,15 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
 - Archetypes are stored per slide. The planner's display-type rules apply to
   new generations and regenerated slides; a saved deck keeps its stored
   layouts (the title role and type roles reach it at render time).
-- Emoji in PowerPoint follow the viewer's platform where Segoe UI Emoji is
-  not installed (Apple's designs on a Mac), and Windows shows flags as
-  letters in both the PDF and the deck. Word exports are unchanged: Word
-  substitutes an emoji font itself.
+- Emoji typed into text in PowerPoint follow the viewer's platform where
+  Segoe UI Emoji is not installed (Apple's designs on a Mac), and Windows
+  shows flags as letters in both the PDF and the deck. Word exports are
+  unchanged: Word substitutes an emoji font itself, and carries no accents.
+- Emoji accents apply to new generations. A saved deck has none until one
+  is picked in the Inspector; emoji already in its text stay.
+- An accent on a slide with no room for it at full size is kept but not
+  drawn. The Inspector still shows it picked; its caption states the rule,
+  not the slide's outcome.
 - Display titles' gradient fill (`background-clip: text`) leaves a faint
   edge around the title box in PDF renderings (seen in pdf.js); it predates
   the emoji work.

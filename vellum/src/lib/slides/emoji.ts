@@ -55,6 +55,17 @@ function emojiPattern(): RegExp | null {
 
 const EMOJI = emojiPattern();
 
+/**
+ * A code point every emoji has at least one of: ©, ®, the symbol blocks from
+ * ‼ (U+203C) to ㊙ (U+3299) — which hold the keycap mark and the dingbats —
+ * the presentation selector, and the pictograph planes U+1F000–U+1FAFF
+ * (flags, people, objects). Text with none of these has no emoji, so it is
+ * never run through the full pattern: RGI_Emoji is a set of thousands of
+ * sequences, and the parser cleans every text leaf of a deck on every
+ * streaming tick.
+ */
+const MAYBE_EMOJI = /[\u{A9}\u{AE}\u{203C}-\u{3299}\u{FE0F}\u{1F000}-\u{1FAFF}]/u;
+
 export interface TextPiece {
   text: string;
   emoji: boolean;
@@ -67,7 +78,7 @@ export interface TextPiece {
  * ways.
  */
 export function hasEmoji(text: string): boolean {
-  if (!EMOJI || !text) return false;
+  if (!EMOJI || !text || !MAYBE_EMOJI.test(text)) return false;
   EMOJI.lastIndex = 0;
   const found = EMOJI.test(text);
   EMOJI.lastIndex = 0;
@@ -79,7 +90,7 @@ export function hasEmoji(text: string): boolean {
  * Text without emoji comes back as one piece.
  */
 export function splitEmoji(text: string): TextPiece[] {
-  if (!EMOJI || !text) return [{ text, emoji: false }];
+  if (!EMOJI || !text || !MAYBE_EMOJI.test(text)) return [{ text, emoji: false }];
   const pieces: TextPiece[] = [];
   let at = 0;
   EMOJI.lastIndex = 0;
@@ -94,4 +105,39 @@ export function splitEmoji(text: string): TextPiece[] {
   }
   if (at < text.length) pieces.push({ text: text.slice(at), emoji: false });
   return pieces.length > 0 ? pieces : [{ text, emoji: false }];
+}
+
+/**
+ * The emoji a text opens with, after any leading space, or null. One emoji,
+ * not the run: "🚀✨ Launch" opens with 🚀.
+ */
+export function leadingEmoji(text: string): string | null {
+  if (!EMOJI || !text || !MAYBE_EMOJI.test(text)) return null;
+  const trimmed = text.trimStart();
+  EMOJI.lastIndex = 0;
+  const match = EMOJI.exec(trimmed);
+  EMOJI.lastIndex = 0;
+  return match && match.index === 0 ? match[0] : null;
+}
+
+/**
+ * The text with its emoji taken out and the gap each one leaves closed:
+ * "🚀 Launch" → "Launch", "Fast ⚡ cheap" → "Fast cheap", "Done ✅" → "Done".
+ * Line breaks are kept. Text without emoji comes back as it was.
+ */
+export function withoutEmoji(text: string): string {
+  if (!hasEmoji(text)) return text;
+  const marked = splitEmoji(text)
+    .map((piece) => (piece.emoji ? "\u0000" : piece.text))
+    .join("");
+  // An emoji — or a run of them, spaces between — goes with the spaces
+  // beside it. Between two words one space stays; at an end of the text or
+  // of a line, none does.
+  return marked.replace(/[^\S\n]*(?:\u0000[^\S\n]*)+/g, (gap: string, at: number) => {
+    const before = marked[at - 1];
+    const after = marked[at + gap.length];
+    const edge =
+      before === undefined || after === undefined || before === "\n" || after === "\n";
+    return edge ? "" : " ";
+  });
 }

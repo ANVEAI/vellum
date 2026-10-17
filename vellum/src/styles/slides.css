@@ -215,6 +215,26 @@ img.v-img {
   font-family: var(--presentation-emoji-font, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif);
   font-style: normal;
 }
+/* A slide's emoji accent (lib/slides/emoji-accents.ts): a picture on a line
+   of its own at the top of the title. One title line tall (1lh), so it
+   follows the title from content size to display size and through autofit;
+   an inline box on its own line, so the title's alignment places it. The
+   gap below is the one between a card's parts. */
+.v-emoji-line {
+  display: block;
+  margin-bottom: var(--v-gap-1, 8px);
+}
+.v-emoji-accent {
+  display: inline-block;
+  width: 1lh;
+  height: 1lh;
+  vertical-align: top;
+}
+/* No room for the accent at full size (use-auto-fit.ts, stage 0): the slide
+   renders as if it had none rather than shrinking its type to make room. */
+.v-slide[data-accent="hidden"] .v-emoji-line {
+  display: none;
+}
 .v-li { font-size: var(--presentation-fs-small, 16px); line-height: 1.5; margin-left: 1.1em; }
 
 .v-label {

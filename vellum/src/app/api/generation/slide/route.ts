@@ -22,6 +22,7 @@ import { replanSlide } from "@/lib/design/planner";
 import { resolveDesignTokens } from "@/lib/design/tokens";
 import { resolveThemeOrDefault } from "@/lib/themes/resolve";
 import { planPictures } from "@/lib/images/visual-plan";
+import { keepAccentOf } from "@/lib/slides/emoji-accents";
 import type { PlateSlide } from "@/lib/generation/parser/slide-parser";
 
 export const runtime = "nodejs";
@@ -120,6 +121,7 @@ ${instruction ? `\nAdditional instruction: ${instruction}` : ""}`;
       );
     }
 
+    const previous = slides[index];
     const replacement = fresh[0];
     // Preserve the original slide's identity: the parser seeds ids by
     // section index, so a single-section reparse collides with slide 1's id
@@ -156,6 +158,10 @@ ${instruction ? `\nAdditional instruction: ${instruction}` : ""}`;
         }
       }
     }
+
+    // The slide keeps its emoji accent, if it had one; the model's proposal
+    // for the rewrite is not saved.
+    slides[index] = keepAccentOf(previous, slides[index]);
 
     const imageRequests = collectImageRequests([slides[index]]);
     // The previous content's images are no longer wanted. Pending ones are

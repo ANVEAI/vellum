@@ -229,6 +229,40 @@
 .focus-dot[aria-checked="true"] { background: var(--accent); }
 .focus-dot:disabled { opacity: 0.35; cursor: default; }
 
+/* Emoji accent picker: the palette from lib/slides/emoji-accents.ts. Tiles
+   are the default control height square, above the 24px touch minimum; the
+   picture fills the tile inside one grid step of padding. */
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--h-control), 1fr));
+  gap: var(--s-2);
+}
+.emoji-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  min-height: var(--h-control);
+  padding: var(--s-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 1px var(--hairline);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: box-shadow var(--dur-instant) var(--ease-out);
+}
+.emoji-tile:hover { box-shadow: 0 0 0 1px var(--hairline-strong); }
+.emoji-tile[aria-checked="true"] {
+  box-shadow: 0 0 0 2px var(--accent);
+  color: var(--text-primary);
+}
+.emoji-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 /* ---------------- status bar ---------------- */
 .editor-status {
   display: flex;

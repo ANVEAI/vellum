@@ -16,6 +16,7 @@ import {
   slideWordBudget,
   type TextDensity,
 } from "@/lib/design/budget";
+import { EMOJI_ACCENTS, restrainedTone } from "@/lib/slides/emoji-accents";
 
 export type { TextDensity };
 export { slideWordBudget };
@@ -192,6 +193,32 @@ Use charts only for real numeric comparisons, trends, shares, distributions, or 
 - For multi-series charts, add more columns: label, revenue, profit.
 - For scatter or bubble charts, use x, y, and optional z columns.`;
 
+/**
+ * Emoji accents (lib/slides/emoji-accents.ts). The model proposes; the
+ * pipeline keeps a proposal only on a display moment, and clean.ts takes any
+ * emoji out of the copy — this says so up front, so the model spends its
+ * emoji where they will be kept. The serious-subject rule is the model's to
+ * apply: Microsoft's style guide keeps emoji off serious topics, and only the
+ * writer can tell a post-mortem from a product launch.
+ */
+function emojiGuidance(restrained: boolean): string {
+  const slides = restrained
+    ? "This deck's tone is formal, so exactly two slides carry one: the hero and the closing."
+    : "The hero and the closing each carry one, and so does each section divider.";
+  return `A few slides carry one emoji as an accent, which the renderer draws as a picture above the slide's title. ${slides} Write it as emoji="…" on that SECTION, choosing the symbol from this list that fits the slide's idea:
+${EMOJI_ACCENTS.map((accent) => accent.emoji).join(" ")}
+- One emoji per slide, never the same one twice in a deck, and only in that attribute. Never write an emoji inside any text: titles, labels, bullets, cards, quotes and notes are words only.
+- Content, data and quote slides carry none.
+- When the subject is serious — loss, harm, a crisis, layoffs, illness, a legal or financial disclosure — leave emoji out of the deck entirely.`;
+}
+
+/** The output contract's line for accents, so the last checklist the model reads has it. */
+function emojiContract(restrained: boolean): string {
+  return restrained
+    ? `- Unless the subject is serious, the hero SECTION and the closing SECTION each carry emoji="…" from the EMOJI ACCENTS list.`
+    : `- Unless the subject is serious, the hero SECTION, each divider SECTION and the closing SECTION carry emoji="…" from the EMOJI ACCENTS list.`;
+}
+
 function densityGuidance(density: TextDensity): string {
   switch (density) {
     case "minimal":
@@ -269,6 +296,10 @@ ${templateBlock}${citationBlock}
 
 ${VISUAL_GUIDANCE}
 
+# EMOJI ACCENTS
+
+${emojiGuidance(restrainedTone(input.tone))}
+
 # Image query guidance:
 ${imageStyle}
 
@@ -288,6 +319,7 @@ Presentation rules:
 - Use the outline to cover the intended ideas, but shape the final slide copy like a strong presentation rather than copying the outline literally.
 - Include images where they strengthen the slide visually.
 - Include one <NOTES>...</NOTES> element per SECTION with 2-3 spoken-voice sentences the presenter would say on that slide.
+${emojiContract(restrainedTone(input.tone))}
 - Every word inside a SECTION is shown to the audience. Never write "Slide N" in a heading or anywhere on a slide, and never write notes about your own choices or edits.
 - Every item holds its own text: never leave a <DIV> empty inside BULLETS, BOXES, COLUMNS or any group, and never write a group's items as an attribute.
 

@@ -9,10 +9,11 @@
 export const LAYOUT_REFERENCE = `Available XML syntax and layout families:
 
 Base slide shell:
-<PRESENTATION><SECTION layout="left|right|vertical|background" role="hero|agenda|divider|statement|quote|testimonial|full-bleed|comparison|roadmap|phases|kpi|metrics|team|closing">...</SECTION></PRESENTATION>
+<PRESENTATION><SECTION layout="left|right|vertical|background" role="hero|agenda|divider|statement|quote|testimonial|full-bleed|comparison|roadmap|phases|kpi|metrics|team|closing" emoji="one emoji from the EMOJI ACCENTS list">...</SECTION></PRESENTATION>
 Use one main component inside each SECTION. Add a direct child <IMG query="..." /> or <IMG url="..." /> only when a root slide image helps; place it last. Simple slides may use only <TITLE>, <LABEL>, <H1>, <H2>, <H3>, <H4>, <P>, <QUOTE>, <CALLOUT>, <CODE>, or <CONTRIBUTOR />.
 - layout="background" makes the root IMG a full-bleed backdrop with a scrim and overlaid text — use it for the hero, section dividers, and high-impact image moments (keep text under 40 words on those slides).
 - role="..." is an optional design hint naming the slide's job in the deck; the layout engine uses it to pick the right composition. Set it whenever a slide clearly is one of those roles.
+- emoji="..." draws one emoji as a picture above the slide's title. It belongs on the hero, the section dividers and the closing — see EMOJI ACCENTS — and on no other slide.
 - Each SECTION may include one <NOTES>Speaker talking points for this slide.</NOTES> element — spoken-voice notes for the presenter, never shown on the slide.
 
 Shared item pattern:

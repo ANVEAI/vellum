@@ -1287,6 +1287,15 @@ export default function EditorPage() {
                   rootImage: { ...(s.rootImage ?? {}), focus },
                 }) as PlateSlide)
               }
+              onEmoji={(emoji) =>
+                selected &&
+                replaceSlide(selected.id, (s) => {
+                  const next = { ...s };
+                  if (emoji) next.emoji = emoji;
+                  else delete next.emoji;
+                  return next;
+                })
+              }
               onDuplicate={() => selected && duplicateSlide(selected.id)}
               onDelete={() => selected && void deleteSlide(selected.id)}
               onRegenerateSlide={(instruction) =>

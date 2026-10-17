@@ -17,7 +17,7 @@ it in facts, and PowerPoint / PDF / Word exports are rendered headlessly from
 the same canonical model the editor shows.
 
 It is finished and in daily use — not a prototype. 55 documents in the library
-(417 slides), 406 tests, `tsc` and `lint` clean.
+(417 slides), 430 tests, `tsc` and `lint` clean.
 
 | Layer | Choice |
 |---|---|
@@ -58,7 +58,7 @@ aai-ppt/
     src/components/slides/render/   renderer + slide-frame (ScaledSlide)
     src/styles/         slides.css, archetypes.css, packs.css, variants.css
     scripts/            verification + E2E (see section 7)
-    tests/              406 tests
+    tests/              430 tests
     data/               NOT in git: db, images, icon vectors
 ```
 
@@ -147,6 +147,12 @@ rewrite that draws on the slide's own notes; trims that keep a deck's ending;
 and a picture step that re-asks for drawable subjects. Details and the
 measurements behind each are in `docs/ARCHITECTURE.md`.
 
+Emoji (October 2026): a deck's emoji are a few Fluent 3D pictures (MIT,
+`public/static/emoji/`) drawn above the titles of its cover, dividers and
+close, only where the slide has room at full size, and never in the copy.
+The model proposes, `lib/slides/emoji-accents.ts` decides, and the
+Inspector's Emoji section sets or clears one per slide.
+
 Also: reference-counted asset GC (files and themes are shared between
 duplicates, so ownership is unanswerable — liveness is a text scan over all DB
 content), `VELLUM_DATA_DIR` so tests can't sweep the real library, and a
@@ -183,7 +189,7 @@ Server must be running for anything browser-based.
 
 ```powershell
 cd vellum
-npm test                                          # 406 tests
+npm test                                          # 430 tests
 npx tsc --noEmit
 npm run lint
 npx tsx scripts\ui-check.ts <deckId> <docId>      # 48 screenshots, a11y, menus
@@ -216,7 +222,7 @@ Nothing is broken. These are known and deliberate:
 - Regenerating a slide resets its image fit/focal choice.
 - `allowedSplits`, `maxItemsPerRow`, `maxItems` are declared per family and
   still unconsumed — wiring them is a planner change, not CSS.
-- No LICENSE file (the repo is private).
+- No LICENSE file. The repo is public on GitHub (ANVEAI/vellum).
 - Bulk multi-select delete on the dashboard was deferred.
 
 ---

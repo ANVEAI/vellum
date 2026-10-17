@@ -22,6 +22,8 @@ import { Button, SegmentedControl, Spinner, cx } from "@/components/ui/primitive
 import { ThemePickerRow } from "@/components/ui/theme-picker";
 import type { QaIssueView } from "@/components/ui/quality-panel";
 import { ARCHETYPE_LABEL, ArchetypeGlyph } from "./archetype-glyph";
+import { EMOJI_ACCENTS, accentFor, accentSrc } from "@/lib/slides/emoji-accents";
+import { assetUrl } from "@/lib/client/base-path";
 
 export type InspectorScope = "format" | "design" | "notes";
 
@@ -65,6 +67,8 @@ export interface InspectorProps {
   onUploadImage: (file: File) => void;
   onImageFit: (fit: ImageFit) => void;
   onImageFocus: (focus: ImageFocus) => void;
+  /** Set or clear (null) the slide's emoji accent. */
+  onEmoji: (emoji: string | null) => void;
   onDuplicate: () => void;
   onDelete: () => void;
   onRegenerateSlide: (instruction?: string) => void;
@@ -140,6 +144,7 @@ export function Inspector(props: InspectorProps) {
 function FormatScope({
   slide,
   unit,
+  kind,
   hasChart,
   imageState,
   regenerating,
@@ -151,6 +156,7 @@ function FormatScope({
   onUploadImage,
   onImageFit,
   onImageFocus,
+  onEmoji,
   onDuplicate,
   onDelete,
   onRegenerateSlide,
@@ -325,6 +331,8 @@ function FormatScope({
         </Section>
       )}
 
+      {kind !== "doc" && <EmojiSection slide={slide} onEmoji={onEmoji} />}
+
       <Section title={unit}>
         <label className="t-label mb-1.5 mt-3 block text-ink-2" htmlFor="insp-instruction">
           Rewrite instruction
@@ -356,6 +364,59 @@ function FormatScope({
         </div>
       </Section>
     </>
+  );
+}
+
+/**
+ * The slide's emoji accent: one picture above its title, from the same
+ * palette generated decks use (lib/slides/emoji-accents.ts), or none. A
+ * radio group like the layout grid: one choice, "None" included.
+ */
+function EmojiSection({
+  slide,
+  onEmoji,
+}: {
+  slide: PlateSlide;
+  onEmoji: (emoji: string | null) => void;
+}) {
+  const current = accentFor(slide.emoji);
+  return (
+    <Section title="Emoji">
+      <div className="emoji-grid mt-3" role="radiogroup" aria-label="Slide emoji">
+        <button
+          type="button"
+          role="radio"
+          aria-checked={!current}
+          className="emoji-tile"
+          title="No emoji"
+          aria-label="No emoji"
+          onClick={() => onEmoji(null)}
+        >
+          <Icon name="close" size={14} />
+        </button>
+        {EMOJI_ACCENTS.map((accent) => (
+          <button
+            key={accent.emoji}
+            type="button"
+            role="radio"
+            aria-checked={current?.emoji === accent.emoji}
+            className="emoji-tile"
+            title={accent.name}
+            aria-label={accent.name}
+            onClick={() => onEmoji(accent.emoji)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={assetUrl(accentSrc(accent.emoji) ?? "")} alt="" draggable={false} />
+          </button>
+        ))}
+      </div>
+      <p className="t-caption mt-3 text-ink-3">
+        {current ? `${current.name}. ` : ""}
+        Drawn above the title when the slide has room for it at full size —
+        it never shrinks the text. Keep emoji to a few slides: the cover,
+        section openers, the close.
+      </p>
+    </Section>
   );
 }
 

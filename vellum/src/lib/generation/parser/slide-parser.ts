@@ -143,6 +143,7 @@ import {
   type TChartElement,
 } from "@/lib/slides/plate-shim";
 import { cleanSlideContent } from "@/lib/slides/clean";
+import { accentFor, titleAccent } from "@/lib/slides/emoji-accents";
 
 export type PlateNode =
   | TElement
@@ -227,6 +228,17 @@ export type PlateSlide = {
   archetype?: string;
   /** Per-slide speaker notes (<NOTES> tag). */
   speakerNote?: string;
+  /**
+   * An emoji drawn as a picture above the slide's title (persisted). See
+   * lib/slides/emoji-accents.ts.
+   */
+  emoji?: string;
+  /**
+   * The emoji the model proposed for this slide (emoji="…" on the SECTION,
+   * or one opening its title). Generation only: chooseEmojiAccents settles
+   * it into `emoji` or drops it before the deck is saved.
+   */
+  emojiHint?: string;
   alignment?: "start" | "center" | "end";
   bgColor?: string;
   width?: "S" | "M" | "L";
@@ -1277,6 +1289,16 @@ export class SlideParser {
       }
     }
 
+    // The accent the model proposed: emoji="…" on the SECTION, or an emoji
+    // opening the title, read before cleaning takes emoji out of the text.
+    // Only a proposal — chooseEmojiAccents decides once the deck is planned.
+    // Documents have no accents.
+    const emojiHint =
+      this.mode === "deck"
+        ? (accentFor(sectionNode.attributes.emoji)?.emoji ??
+          titleAccent(plateElements as Descendant[]))
+        : undefined;
+
     return {
       id: slideId,
       // Cleaned before ids are assigned, so an item that is dropped does not
@@ -1290,6 +1312,7 @@ export class SlideParser {
       ...(isImageSlide ? { isImageSlide: true } : {}),
       ...(intent ? { intent } : {}),
       ...(speakerNote ? { speakerNote } : {}),
+      ...(emojiHint ? { emojiHint } : {}),
       alignment: "center",
     };
   };

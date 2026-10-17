@@ -36,6 +36,23 @@ describe("which characters are emoji", () => {
     expect(splitEmoji(text)[0]).toEqual({ text: "🚀", emoji: true });
   });
 
+  it("never skips an emoji with its quick check", () => {
+    // hasEmoji first looks for a code point every emoji carries one of, and
+    // runs the full RGI_Emoji pattern only then. Every single emoji, bare or
+    // with its presentation selector, must pass that first look; sequences
+    // (skin tones, ZWJ, flags, keycaps) are built from these or carry U+FE0F.
+    const rgi = new RegExp("^\\p{RGI_Emoji}$", "v");
+    const missed: string[] = [];
+    for (let cp = 0; cp <= 0x1ffff; cp++) {
+      if (cp >= 0xd800 && cp <= 0xdfff) continue;
+      const char = String.fromCodePoint(cp);
+      for (const candidate of [char, `${char}\u{FE0F}`]) {
+        if (rgi.test(candidate) && !hasEmoji(candidate)) missed.push(cp.toString(16));
+      }
+    }
+    expect(missed).toEqual([]);
+  });
+
   it("keeps neighbouring emoji together and returns text without emoji whole", () => {
     expect(splitEmoji("Ship 🚀🎉 now")).toEqual([
       { text: "Ship ", emoji: false },

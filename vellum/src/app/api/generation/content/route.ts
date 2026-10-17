@@ -39,6 +39,7 @@ import { resolveThemeOrDefault } from "@/lib/themes/resolve";
 import { resolveDesignTokens } from "@/lib/design/tokens";
 import { buildSourcesSlide, slideRefs } from "@/lib/slides/citations";
 import { planPictures } from "@/lib/images/visual-plan";
+import { chooseEmojiAccents, restrainedTone } from "@/lib/slides/emoji-accents";
 import type { DeckSource } from "@/lib/generation/research/searxng";
 
 export const runtime = "nodejs";
@@ -86,6 +87,15 @@ export async function POST(request: NextRequest) {
   );
   const wordBudget = budgetTokens.content.maxWordsPerSlide;
   const mode = document.kind === "doc" ? "document" : "deck";
+  // The same tone the prompt read (promptInputFor), so the model is told the
+  // rule this run then enforces.
+  let tone: string | undefined;
+  try {
+    tone = (JSON.parse(document.genParams ?? "{}") as { tone?: string }).tone;
+  } catch {
+    tone = undefined;
+  }
+  const emojiOptions = { restrained: restrainedTone(tone) };
 
   return sseResponse(
     async (sse) => {
@@ -485,6 +495,11 @@ export async function POST(request: NextRequest) {
           if (pictures.changed.length > 0) slides = planDeck(pictures.slides);
         }
 
+        // Emoji accents: which display moments keep the emoji the model
+        // proposed — decided on the deck as it will be saved, after the last
+        // re-plan, since the layout is what makes a slide eligible.
+        if (mode === "deck") slides = chooseEmojiAccents(slides, emojiOptions);
+
         // Any images the per-section kickoff missed (Set-guarded). From the
         // slides as they stand, not a fresh parse of the stream: a re-parse
         // brings back the ORIGINAL content of every slide the gate rewrote
@@ -580,7 +595,9 @@ export async function POST(request: NextRequest) {
           (error.name === "AbortError" || request.signal.aborted);
         // Client went away mid-stream: keep whatever sections completed
         // rather than flagging the document as failed.
-        const partial = snapshotSlides();
+        const snapshot = snapshotSlides();
+        const partial =
+          mode === "deck" ? chooseEmojiAccents(snapshot, emojiOptions) : snapshot;
         if (aborted && partial.length > 0) {
           await db.document
             .update({

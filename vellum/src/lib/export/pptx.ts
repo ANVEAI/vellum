@@ -11,7 +11,7 @@
  * No DOM scraping of content: text comes from the PlateSlide[] model; the
  * DOM only supplies geometry.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import PptxGenJS from "pptxgenjs";
 import sharp from "sharp";
@@ -28,6 +28,7 @@ import { fitImage, readPlacement } from "@/lib/slides/image-fit";
 // A group's items as the renderer draws them, so the boxes measured on the
 // page and the model's items still pair up one for one.
 import { contentItems, leadHeadingIndex } from "@/lib/slides/walk";
+import { accentSrc } from "@/lib/slides/emoji-accents";
 import { repairParagraphs, withEmojiRuns } from "./pptx-emoji";
 import { openPrintPage, withExportPage } from "./browser";
 
@@ -764,6 +765,53 @@ async function addIconGlyph(
 }
 
 /**
+ * A title's emoji accent (lib/slides/emoji-accents.ts), placed as its
+ * picture at the box the page drew it in. Returns the box left for the
+ * title's text: from the top of its first line to the bottom of the block.
+ * A picture PowerPoint can show on any machine, where an emoji in the text
+ * would be drawn by whatever emoji font that machine has. Without the file
+ * or the measured picture the block comes back whole, untouched.
+ *
+ * The first line starts below the accent's line and its margin. Not at the
+ * top of the first text span: a font's glyph box is taller than a title's
+ * tight line height (1.02 on a cover), so the span reaches above its own
+ * line, and a box started there overlapped the picture by up to 0.05in.
+ */
+async function addEmojiAccent(
+  out: PptxSlide,
+  block: Locator,
+  emoji: string,
+  box: InBox,
+  slideBox: Box,
+): Promise<InBox> {
+  const src = accentSrc(emoji);
+  const file = src ? path.join(process.cwd(), "public", ...src.split("/")) : null;
+  if (!file || !existsSync(file)) return box;
+  const picture = block.locator("[data-emoji-accent] img").first();
+  if ((await picture.count()) === 0) return box;
+  const drawn = (await picture.boundingBox()) as Box | null;
+  if (!drawn || drawn.width < 2 || drawn.height < 2) return box;
+  const at = relBox(drawn, slideBox);
+  out.addImage({ path: file, x: at.x, y: at.y, w: at.w, h: at.h });
+
+  // The margin is read in CSS pixels; the box it sits under is drawn at the
+  // autofit zoom, so the margin is scaled by the same ratio.
+  const lineEnd = await block
+    .locator("[data-emoji-accent]")
+    .first()
+    .evaluate((line) => {
+      const drawnBox = line.getBoundingClientRect();
+      const style = getComputedStyle(line);
+      const zoom = drawnBox.height / (parseFloat(style.height) || drawnBox.height);
+      return drawnBox.bottom + (parseFloat(style.marginBottom) || 0) * zoom;
+    });
+  const topPx = Math.max(lineEnd, drawn.y + drawn.height);
+  const top = (topPx - slideBox.y) / PX_PER_IN;
+  const bottom = box.y + box.h;
+  return top < bottom ? { ...box, y: top, h: bottom - top } : box;
+}
+
+/**
  * Emit a smart layout as native shapes+text. Returns false (→ snapshot
  * fallback) when the DOM sub-item count doesn't match the model.
  */
@@ -1198,7 +1246,13 @@ export async function exportPptx(documentId: string): Promise<Buffer> {
         }
 
         if (NATIVE_TYPES.has(String(node.type))) {
-          addNativeText(out, node, rel, theme, slidePts, model.archetype, node === leadNode);
+          // A title with an emoji accent: the picture where the page drew
+          // it, and the text in the part of the block below it.
+          const textBox =
+            node === leadNode && model.emoji
+              ? await addEmojiAccent(out, blockLocator, model.emoji, rel, slideBox)
+              : rel;
+          addNativeText(out, node, textBox, theme, slidePts, model.archetype, node === leadNode);
           continue;
         }
         if (node.type === "contributor") continue;

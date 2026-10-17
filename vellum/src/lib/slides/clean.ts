@@ -13,6 +13,11 @@
  * - The same item twice in one list.
  * - "Slide 3:" in front of a heading, copied from the numbered outline the
  *   prompt hands it.
+ * - Emoji in the text — on a bullet, in front of every card heading. A deck's
+ *   emoji are a few accents drawn above chosen titles (emoji-accents.ts), not
+ *   characters in the copy; the parser reads a title's opening emoji as the
+ *   slide's proposed accent before this pass takes it out. Tables are left
+ *   alone: a ✅ in a comparison grid is the cell's value.
  *
  * It runs inside the parser, so the streaming preview, the saved deck, the
  * quality gate's rewrites and single-slide regeneration all see the same
@@ -21,6 +26,7 @@
  */
 import type { Descendant, TElement, TText } from "@/lib/slides/plate-shim";
 import { hasContent, isElement } from "@/lib/slides/walk";
+import { withoutEmoji } from "@/lib/slides/emoji";
 
 /** Groups whose children are its items, one per bullet, card, step or lane. */
 const ITEM_GROUPS = new Set([
@@ -223,6 +229,13 @@ function withoutSlotName(node: TElement): TElement {
   };
 }
 
+/** A text leaf without its emoji (the same leaf when it has none). */
+function withoutEmojiText(leaf: TText): TText {
+  const text = leaf.text ?? "";
+  const stripped = withoutEmoji(text);
+  return stripped === text ? leaf : { ...leaf, text: stripped };
+}
+
 /* ---------- the pass ---------- */
 
 /** Two nodes that differ only in their ids are the same content. */
@@ -244,7 +257,7 @@ function cleanChildren(
   const seen = new Set<string>();
   for (const child of children) {
     if (!isElement(child)) {
-      out.push(child);
+      out.push(withoutEmojiText(child as TText));
       continue;
     }
     const type = String(child.type);

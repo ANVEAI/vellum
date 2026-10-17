@@ -6,6 +6,7 @@ import type { Descendant, TElement } from "@/lib/slides/plate-shim";
 import { Node } from "@/components/slides/render/renderer";
 import { SLIDE_W, SLIDE_H } from "@/components/slides/render/slide-frame";
 import {
+  ACCENT_HIDDEN,
   fitCacheKey,
   useAutoFit,
 } from "@/components/slides/render/use-auto-fit";
@@ -126,7 +127,7 @@ function PrintSlide({ slide, index }: { slide: PlateSlide; index: number }) {
     contentRef,
     fitCacheKey(slide, theme),
   );
-  const { fit, zoom, overflowing, settled } = fitResult;
+  const { fit, zoom, overflowing, settled, accent } = fitResult;
   const lead = leadHeadingIndex(slide.content);
 
   return (
@@ -134,6 +135,9 @@ function PrintSlide({ slide, index }: { slide: PlateSlide; index: number }) {
       className={`v-slide v-layout-${layout} ${hasImage ? "v-has-img" : ""} print-slide`}
       data-slide-idx={index}
       data-archetype={slide.archetype || undefined}
+      // The same accent decision as the editor's, so the PDF and PowerPoint
+      // carry the accent exactly where the slide does.
+      data-accent={accent ? undefined : ACCENT_HIDDEN}
       data-fit={fit === 1 ? undefined : String(fit)}
       // Stage-2 autofit zoom, published separately from the type scale: zoom
       // shrinks every block, including text the type scale never touches, so
@@ -184,7 +188,7 @@ function PrintSlide({ slide, index }: { slide: PlateSlide; index: number }) {
               data-block-type={node.type}
               data-block-idx={blockIdx}
             >
-              <Node node={node} lead={blockIdx === lead} />
+              <Node node={node} lead={blockIdx === lead} emoji={slide.emoji} />
             </div>
           ) : null,
         )}

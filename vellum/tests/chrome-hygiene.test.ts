@@ -20,6 +20,9 @@ const EXEMPT_DIRS = [
   path.join("src", "lib", "generation"),
   path.join("src", "lib", "themes"),
   path.join("src", "app", "print"),
+  // The emoji accent palette: what slides may carry, drawn as pictures on
+  // the slide (the Inspector shows those pictures, not these characters).
+  path.join("src", "lib", "slides", "emoji-accents.ts"),
 ];
 
 function walk(dir: string, out: string[] = []): string[] {
