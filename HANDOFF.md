@@ -17,7 +17,7 @@ it in facts, and PowerPoint / PDF / Word exports are rendered headlessly from
 the same canonical model the editor shows.
 
 It is finished and in daily use — not a prototype. 55 documents in the library
-(417 slides), 393 tests, `tsc` and `lint` clean.
+(417 slides), 406 tests, `tsc` and `lint` clean.
 
 | Layer | Choice |
 |---|---|
@@ -58,7 +58,7 @@ aai-ppt/
     src/components/slides/render/   renderer + slide-frame (ScaledSlide)
     src/styles/         slides.css, archetypes.css, packs.css, variants.css
     scripts/            verification + E2E (see section 7)
-    tests/              393 tests
+    tests/              406 tests
     data/               NOT in git: db, images, icon vectors
 ```
 
@@ -183,7 +183,7 @@ Server must be running for anything browser-based.
 
 ```powershell
 cd vellum
-npm test                                          # 393 tests
+npm test                                          # 406 tests
 npx tsc --noEmit
 npm run lint
 npx tsx scripts\ui-check.ts <deckId> <docId>      # 48 screenshots, a11y, menus

@@ -16,6 +16,7 @@ import {
 } from "@/components/slides/theme-scope";
 import { surfaceForSlide } from "@/lib/design/planner";
 import { SlideMetaContext, useSlideMeta } from "@/components/slides/render/slide-meta";
+import { StaticChartsContext } from "@/components/slides/render/static-charts";
 import { footnoteLine, slideRefs } from "@/lib/slides/citations";
 import { objectPosition, readPlacement } from "@/lib/slides/image-fit";
 import { leadHeadingIndex } from "@/lib/slides/walk";
@@ -209,23 +210,26 @@ export function PrintView({
 }) {
   return (
     <ThemeScope themeName={themeName} customThemeData={customThemeData}>
-      {kind === "deck" ? (
-        <SlideMetaContext.Provider value={{ title, sources }}>
-          <main className="print-deck" data-print-ready-target>
-            {slides.map((slide, i) => (
-              <PrintSlide key={slide.id} slide={slide} index={i} />
-            ))}
+      {/* This page is captured, not watched: charts draw their final frame. */}
+      <StaticChartsContext.Provider value>
+        {kind === "deck" ? (
+          <SlideMetaContext.Provider value={{ title, sources }}>
+            <main className="print-deck" data-print-ready-target>
+              {slides.map((slide, i) => (
+                <PrintSlide key={slide.id} slide={slide} index={i} />
+              ))}
+            </main>
+          </SlideMetaContext.Provider>
+        ) : (
+          <main className="print-doc" data-print-ready-target>
+            <h1 className="print-doc-title" style={{ display: "none" }}>
+              {title}
+            </h1>
+            <PrintDocFurniture title={title} slides={slides} />
+            <DocumentView slides={slides} />
           </main>
-        </SlideMetaContext.Provider>
-      ) : (
-        <main className="print-doc" data-print-ready-target>
-          <h1 className="print-doc-title" style={{ display: "none" }}>
-            {title}
-          </h1>
-          <PrintDocFurniture title={title} slides={slides} />
-          <DocumentView slides={slides} />
-        </main>
-      )}
+        )}
+      </StaticChartsContext.Provider>
     </ThemeScope>
   );
 }

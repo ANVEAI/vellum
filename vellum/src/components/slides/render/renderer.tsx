@@ -35,6 +35,7 @@ import {
   hasContent,
   leadHeadingIndex,
 } from "@/lib/slides/walk";
+import { hasEmoji, splitEmoji } from "@/lib/slides/emoji";
 import { useDesignTokens } from "@/components/slides/theme-scope";
 
 function isText(node: Descendant): node is TText {
@@ -60,11 +61,26 @@ function alignClass(node: TElement): string | undefined {
   return undefined;
 }
 
-/** Leaf text with typewriter support for `generating: true` marks. */
+/**
+ * Leaf text with typewriter support for `generating: true` marks. Emoji sit
+ * in spans of their own, set in the emoji font the PowerPoint export also
+ * names (lib/slides/emoji.ts), so the slide, the PDF and the deck agree.
+ */
 function Leaf({ leaf }: { leaf: TText }) {
+  const pieces = hasEmoji(leaf.text) ? splitEmoji(leaf.text) : null;
   return (
     <span className={cx(Boolean(leaf.generating) && "vellum-generating")}>
-      {leaf.text}
+      {pieces
+        ? pieces.map((piece, i) =>
+            piece.emoji ? (
+              <span key={i} className="v-emoji">
+                {piece.text}
+              </span>
+            ) : (
+              piece.text
+            ),
+          )
+        : leaf.text}
     </span>
   );
 }

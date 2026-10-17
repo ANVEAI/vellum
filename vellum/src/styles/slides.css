@@ -206,6 +206,15 @@ img.v-img {
   letter-spacing: var(--presentation-track-h1, -0.015em);
 }
 .v-p { font-size: var(--presentation-fs-body, 17px); line-height: 1.5; color: var(--presentation-text, #e8eaf0); opacity: 0.92; }
+/* Emoji, as the renderer splits them out (lib/slides/emoji.ts): set in the
+   emoji font the PowerPoint export also names, so the slide, the PDF and the
+   deck show the same glyph rather than whatever each one falls back to.
+   Upright: an italic quote otherwise slants its emoji with a synthesized
+   oblique, which PowerPoint's upright emoji runs do not match. */
+.v-emoji {
+  font-family: var(--presentation-emoji-font, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif);
+  font-style: normal;
+}
 .v-li { font-size: var(--presentation-fs-small, 16px); line-height: 1.5; margin-left: 1.1em; }
 
 .v-label {

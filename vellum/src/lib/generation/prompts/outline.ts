@@ -120,6 +120,22 @@ export function countOutlineCards(markdown: string): number {
 }
 
 /**
+ * What to put between an outline and a continuation of it, so the first new
+ * "## " heading starts a line of its own.
+ *
+ * Top-ups were appended straight onto the outline, and the model rarely ends
+ * its output with a newline, so the first new heading landed at the end of
+ * the last bullet — "…a clean, professional end state## The New Skill
+ * Stack". Neither the counter nor the parser sees a heading there: that
+ * section's text merged into the card before it, every top-up came up one
+ * card short, and a 21-slide keynote shipped 20 slides twice in three runs.
+ */
+export function sectionBreak(markdown: string): string {
+  if (markdown.length === 0 || markdown.endsWith("\n\n")) return "";
+  return markdown.endsWith("\n") ? "\n" : "\n\n";
+}
+
+/**
  * An outline card whose heading is the sign-off: "Thank You & Resources",
  * "The Closing Thank You and Resources", "Q&A", "Questions?". Planning
  * headings describe the slide rather than title it, so "thank you" may sit

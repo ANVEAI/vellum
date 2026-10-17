@@ -62,11 +62,13 @@ async function main() {
     const cards = await page.$$('ol > li input[aria-label$="heading"]');
     check("outline streamed into editable cards", cards.length >= 3, `${cards.length} cards, “${title}”`);
 
-    documentId = await page.evaluate(async () => {
-      const res = await fetch("/api/documents");
+    // Under the app's URL prefix: a bare "/api/documents" returned the HTML
+    // not-found page and the script failed parsing it as JSON.
+    documentId = await page.evaluate(async (basePath) => {
+      const res = await fetch(`${basePath}/api/documents`);
       const docs = (await res.json()) as Array<{ id: string }>;
       return docs[0]?.id ?? null;
-    });
+    }, BASE_PATH);
 
     await page.click('button:has-text("Generate presentation")');
     await page.waitForSelector('[role="progressbar"]', { timeout: 20_000 });

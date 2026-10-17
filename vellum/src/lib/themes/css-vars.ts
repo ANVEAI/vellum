@@ -20,6 +20,7 @@ import {
   SERIES_FALLBACK,
 } from "@/lib/design/tokens";
 import { trackingFor } from "@/lib/design/type-scale";
+import { EMOJI_FONT_STACK } from "@/lib/slides/emoji";
 
 /** Portion of the body text color kept when deriving the muted color. */
 const MUTED_TEXT_WEIGHT = 0.5;
@@ -158,6 +159,9 @@ export function themeToCssVars(
     "--presentation-muted": deriveMutedColor(colors.text, colors.background),
     "--presentation-heading-font": quoteFamily(fonts.heading),
     "--presentation-body-font": quoteFamily(fonts.body),
+    // Emoji are set in an emoji font of their own (lib/slides/emoji.ts), the
+    // same one the PowerPoint export names for them.
+    "--presentation-emoji-font": EMOJI_FONT_STACK,
     "--presentation-card-border-radius": borderRadius.card,
     "--presentation-slide-border-radius": borderRadius.slide,
     "--presentation-button-border-radius": borderRadius.button,

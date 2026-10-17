@@ -4,7 +4,7 @@
  * Client ECharts renderer for chart-* nodes. Colors come from the resolved
  * theme via context so charts restyle with the deck.
  */
-import React, { useEffect, useRef } from "react";
+import React, { useContext, useEffect, useRef } from "react";
 import * as echarts from "echarts";
 import type { TElement } from "@/lib/slides/plate-shim";
 import { useSlideTheme } from "@/components/slides/theme-scope";
@@ -12,10 +12,12 @@ import {
   buildChartOption,
   paletteFromColors,
 } from "@/lib/charts/build-option";
+import { StaticChartsContext } from "./static-charts";
 
 export function ChartElement({ node }: { node: TElement }) {
   const ref = useRef<HTMLDivElement>(null);
   const theme = useSlideTheme();
+  const staticCharts = useContext(StaticChartsContext);
 
   useEffect(() => {
     const el = ref.current;
@@ -62,14 +64,14 @@ export function ChartElement({ node }: { node: TElement }) {
             : undefined,
       },
     );
-    chart.setOption(option);
+    chart.setOption(staticCharts ? { ...option, animation: false } : option);
     const observer = new ResizeObserver(() => chart.resize());
     observer.observe(el);
     return () => {
       observer.disconnect();
       chart.dispose();
     };
-  }, [node, theme]);
+  }, [node, theme, staticCharts]);
 
   return <div ref={ref} className="v-chart" />;
 }

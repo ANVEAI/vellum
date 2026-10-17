@@ -268,6 +268,20 @@ before the ending; `endOnSignOff` moves a "Thank you" the model wrote early
 to the end. The deck is re-planned after either, since the planner reads
 predecessors.
 
+**A top-up starts on a new line.** Continuations were appended straight
+onto the outline, and the model rarely ends with a newline, so the first new
+heading landed on the end of the last bullet ("…end state## The New Skill
+Stack"), where neither the counter nor the parser sees a heading. That
+section merged into the card before it and each top-up came up one short: a
+21-slide keynote shipped 20 slides in two of three runs. `sectionBreak` puts
+a paragraph break first (sent as a chunk too, so the live preview matches).
+
+**The client uses the server's final outline.** The create page built its
+cards from the raw chunks it had received and saved those back before
+generating, so the trim and the sign-off reorder above never reached a deck
+made in the app. The route now sends its final outline with the completion
+event, and the page uses it.
+
 **A request that numbers its own slides keeps them.** When it lists three or
 more ("Slide 1: …"), `isScriptedRequest` is true, the template's sections
 stand aside in both the outline and the content prompt, and only the
@@ -439,6 +453,41 @@ waits for every `<img>` to be `complete` with non-zero `naturalWidth`, calls
 `decode()`, awaits `document.fonts.ready`, then gives autofit a frame. Skipping
 this yields blank image boxes in PDFs.
 
+**Charts draw their final frame on the print route.** ECharts animates a
+chart in over about a second, and the exporter waits for each chart's SVG to
+exist, not for the animation to end. A slope chart's lines were still moving
+when the PDF was taken, so two exports of one deck differed (and
+`e2e-export`'s byte comparison failed now and then), and a chart PowerPoint
+takes as a picture could be half drawn. The print view provides
+`StaticChartsContext` and charts there set `animation: false`; the editor
+and present mode keep the animation.
+
+### Emoji are set in an emoji font, everywhere
+
+Left to fallback, each renderer picked its own emoji: the browser whatever
+colour emoji font the machine had, and PowerPoint — given runs set in the
+theme's text font, which has no emoji — a substitute of its own, possibly
+black and white. `src/lib/slides/emoji.ts` finds emoji with Unicode's
+`RGI_Emoji` set (whole sequences: 👩‍💻, 👍🏽, 🇮🇳, 1️⃣, ❤️; text-presentation
+characters such as ✔, ❤ without a selector, © stay text) and names one font
+for them, Segoe UI Emoji — the font Office switches a typed emoji to, and
+the one the server renders the PDF with.
+
+- The renderer wraps emoji in `.v-emoji` spans set in
+  `--presentation-emoji-font`, upright (an italic quote slanted them with a
+  synthesized oblique). In a display title's gradient fill, the emoji paints
+  itself: clipped with the letters, 🚀 became a flat silhouette.
+- The PowerPoint exporter's slides are wrapped (`withEmojiRuns`) so every
+  `addText`/`addTable` sets emoji as runs of their own in Segoe UI Emoji,
+  upright and regular, keeping the paragraph's bullet and line breaks where
+  they were. pptxgenjs 4.0.1 writes an `<a:pPr>` before every run of a
+  paragraph, which the schema does not allow; `repairParagraphs` keeps the
+  first, and returns an export without split runs byte for byte.
+- Flags: Windows has no flag emoji, so on Windows the PDF and PowerPoint both
+  show the two letters; PowerPoint for Mac shows the flag. Where Segoe UI
+  Emoji is missing (Mac, LibreOffice) the viewer substitutes its own colour
+  emoji font.
+
 ---
 
 ## Storage and deletion
@@ -492,7 +541,7 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
 
 | Command | Checks |
 |---|---|
-| `npm test` | 390 unit/integration tests |
+| `npm test` | 406 unit/integration tests |
 | `npx tsx scripts/ui-check.ts <deck> <doc>` | 48 screenshots, 2 themes × 4 widths; console errors, overflow, unlabelled controls, hit targets, native dialogs, focus rings, menu reachability |
 | `npx tsx scripts/e2e-editor.ts <deck>` | 26 editor interactions on a throwaway copy |
 | `npx tsx scripts/e2e-create.ts` | real generation; asserts zero mid-stream re-layouts |
@@ -528,5 +577,10 @@ Everything below needs the server running (`vellum/scripts/start-vellum.ps1`).
 - Archetypes are stored per slide. The planner's display-type rules apply to
   new generations and regenerated slides; a saved deck keeps its stored
   layouts (the title role and type roles reach it at render time).
-- The outline's top-up can still come back one card short when both
-  continuation attempts under-deliver (seen once: 20 of 21).
+- Emoji in PowerPoint follow the viewer's platform where Segoe UI Emoji is
+  not installed (Apple's designs on a Mac), and Windows shows flags as
+  letters in both the PDF and the deck. Word exports are unchanged: Word
+  substitutes an emoji font itself.
+- Display titles' gradient fill (`background-clip: text`) leaves a faint
+  edge around the title box in PDF renderings (seen in pdf.js); it predates
+  the emoji work.

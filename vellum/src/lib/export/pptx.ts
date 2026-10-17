@@ -28,6 +28,7 @@ import { fitImage, readPlacement } from "@/lib/slides/image-fit";
 // A group's items as the renderer draws them, so the boxes measured on the
 // page and the model's items still pair up one for one.
 import { contentItems, leadHeadingIndex } from "@/lib/slides/walk";
+import { repairParagraphs, withEmojiRuns } from "./pptx-emoji";
 import { openPrintPage, withExportPage } from "./browser";
 
 /**
@@ -1098,7 +1099,11 @@ export async function exportPptx(documentId: string): Promise<Buffer> {
       if (!slideBox) continue;
 
       const zoomAttr = await slideLocator.getAttribute("data-zoom");
-      const out = zoomText(pptx.addSlide(), zoomAttr ? Number(zoomAttr) : 1);
+      // Emoji become runs of their own in the emoji font (pptx-emoji.ts);
+      // outermost, so the zoom then scales the runs it produces.
+      const out = withEmojiRuns(
+        zoomText(pptx.addSlide(), zoomAttr ? Number(zoomAttr) : 1),
+      );
       // The renderer may have shrunk this slide's type to fit. Point sizes are
       // computed from the scale, not read off the DOM, so without this the
       // exported text would be larger than the boxes measured around it.
@@ -1294,6 +1299,9 @@ export async function exportPptx(documentId: string): Promise<Buffer> {
     }
 
     const output = (await pptx.write({ outputType: "nodebuffer" })) as Buffer;
-    return output;
+    // pptxgenjs repeats paragraph properties before each run of a paragraph;
+    // split emoji runs are the only multi-run paragraphs, and this leaves a
+    // deck without them byte for byte as written.
+    return repairParagraphs(output);
   });
 }

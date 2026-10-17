@@ -63,6 +63,16 @@
     background-clip: text;
     color: transparent;
   }
+  /* A colour emoji clipped like the letters loses its colours: the knockout
+     takes only its outline, and 🚀 on a cover came out as a flat silhouette
+     in the heading colour. The emoji paints itself instead. */
+  .v-slide[data-archetype="hero"] .v-lead .v-emoji,
+  .v-slide[data-archetype="statement"] .v-lead .v-emoji,
+  .v-slide[data-archetype="divider"] .v-lead .v-emoji,
+  .v-slide[data-archetype="closing"] .v-lead .v-emoji {
+    color: var(--presentation-heading, #fff);
+    -webkit-text-fill-color: currentColor;
+  }
 }
 
 /* ---- studio family (Meridian): hairline tile register ---- */

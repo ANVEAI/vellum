@@ -345,6 +345,14 @@ export default function NewDocumentPage() {
         } else if (event.type === "error") {
           throw new Error((event.data as { detail: string }).detail);
         } else if (event.type === "complete") {
+          // The server's final outline, not the raw stream: it trims a
+          // surplus and moves the sign-off last after streaming, and these
+          // cards are what gets saved back and generated from.
+          const final = (event.data as { outline?: unknown }).outline;
+          if (typeof final === "string" && final.trim()) {
+            md = final;
+            setStreamMd(md);
+          }
           const parsed = cardsFromMarkdown(md);
           setTitle(parsed.title);
           setCards(parsed.cards);

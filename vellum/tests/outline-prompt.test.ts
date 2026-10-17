@@ -6,7 +6,12 @@
  * then asking for 10 slides silently produced 8.
  */
 import { describe, expect, it } from "vitest";
-import { buildOutlinePrompt } from "@/lib/generation/prompts/outline";
+import {
+  buildOutlinePrompt,
+  countOutlineCards,
+  parseOutlineMarkdown,
+  sectionBreak,
+} from "@/lib/generation/prompts/outline";
 import { getTemplate, templates } from "@/lib/templates/library";
 
 const pitch = getTemplate("pitch-deck")!;
@@ -77,5 +82,32 @@ describe("outline prompt card count", () => {
         expect(system).toContain(section.heading);
       }
     }
+  });
+});
+
+describe("outline top-up", () => {
+  /**
+   * Regression: a continuation was appended straight onto the outline, and
+   * its first heading landed on the end of the last bullet — this exact line
+   * is from a 21-card keynote that shipped 20 slides.
+   */
+  it("starts a continuation's first heading on a line of its own", () => {
+    const outline = `# Deck\n\n## The call\n- Audit one process\n\n## Thank you\n- Role="closing" to provide a clean, professional end state`;
+    const continuation = `## The New Skill Stack: Prompting as Primary Literacy\n- New skill\n\n## The Governance Layer\n- Risk`;
+    expect(countOutlineCards(outline + continuation)).toBe(3);
+    const joined = outline + sectionBreak(outline) + continuation;
+    expect(countOutlineCards(joined)).toBe(4);
+    expect(parseOutlineMarkdown(joined).cards.map((c) => c.split("\n")[0])).toEqual([
+      "## The call",
+      "## Thank you",
+      "## The New Skill Stack: Prompting as Primary Literacy",
+      "## The Governance Layer",
+    ]);
+  });
+
+  it("adds nothing when the outline already ends a paragraph", () => {
+    expect(sectionBreak("## A\n- b\n\n")).toBe("");
+    expect(sectionBreak("## A\n- b\n")).toBe("\n");
+    expect(sectionBreak("")).toBe("");
   });
 });

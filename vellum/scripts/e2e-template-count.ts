@@ -26,11 +26,18 @@ function check(name: string, ok: boolean, detail?: string) {
   console.log(`${ok ? "  ok  " : " FAIL "} ${name}${detail ? ` — ${detail}` : ""}`);
 }
 
+/**
+ * The streamed text — or, as the create page now does, the final outline the
+ * server sends with its completion event, after its own trim and reorder.
+ */
 async function drain(res: Response): Promise<string> {
   let text = "";
   for await (const event of readSse(res)) {
     if (event.type === "chunk") text += (event.data as { chunk: string }).chunk;
-    else if (event.type === "error") {
+    else if (event.type === "complete") {
+      const final = (event.data as { outline?: unknown }).outline;
+      if (typeof final === "string" && final.trim()) text = final;
+    } else if (event.type === "error") {
       throw new Error((event.data as { detail: string }).detail);
     }
   }

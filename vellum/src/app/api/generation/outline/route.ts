@@ -9,6 +9,7 @@ import {
   countOutlineCards,
   endOutlineOnSignOff,
   parseOutlineMarkdown,
+  sectionBreak,
   trimOutlineCards,
 } from "@/lib/generation/prompts/outline";
 import { getTemplate } from "@/lib/templates/library";
@@ -132,6 +133,12 @@ export async function POST(request: NextRequest) {
         sse.event("status", {
           status: `Adding ${missing} more section${missing > 1 ? "s" : ""}`,
         });
+        // Sent as a chunk too, so the live preview reads the same text.
+        const separator = sectionBreak(markdown);
+        if (separator) {
+          markdown += separator;
+          sse.event("chunk", { chunk: separator });
+        }
         await streamChat({
           baseUrl: settings.llm.ollamaUrl,
           model: settings.llm.model,
@@ -180,7 +187,17 @@ export async function POST(request: NextRequest) {
           status: "draft",
         },
       });
-      sse.event("complete", { documentId, title, cardCount: cards.length });
+      // The final outline goes to the client with the completion. The client
+      // used to build its cards from the raw chunks it had received and save
+      // those back before generating slides, so nothing this route did after
+      // the stream — reordering the sign-off, trimming the surplus — ever
+      // reached a deck made through the app.
+      sse.event("complete", {
+        documentId,
+        title,
+        cardCount: cards.length,
+        outline: markdown,
+      });
     },
     { signal: request.signal },
   );
