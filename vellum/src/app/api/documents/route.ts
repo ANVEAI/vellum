@@ -4,6 +4,7 @@ import { db, ensureWal } from "@/lib/db";
 import { getTemplate } from "@/lib/templates/library";
 import { getSettings } from "@/lib/settings";
 import { themeDataFromBrand } from "@/lib/brand/theme";
+import { documentScope, scopeWhere } from "@/lib/auth/anve-scope";
 
 export const runtime = "nodejs";
 
@@ -50,9 +51,11 @@ const createSchema = z.object({
     .default({}),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   await ensureWal();
+  // Behind ANVE, only the documents this person may see (src/lib/auth/anve-scope.ts).
   const documents = await db.document.findMany({
+    where: scopeWhere(documentScope(request.headers)),
     orderBy: { updatedAt: "desc" },
     select: {
       id: true,

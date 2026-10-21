@@ -98,6 +98,18 @@ stored image and icon URLs. Two consequences worth knowing before you flip it:
 Rollback is to empty the variable and rebuild. `APP_ORIGIN` stays the bare
 origin — the headless exporter appends the prefix itself.
 
+### Behind ANVE: one library per person
+
+Vellum has one library; ANVE embeds it for many people and records whose deck is
+whose. Set `ANVE_SCOPE=required` in `.env` (a runtime value: restart, no rebuild)
+and the library page and `GET /api/documents` list only the documents named in
+the signed `x-anve-scope` header ANVE's proxy adds to each request — and nothing
+at all when the header is missing, expired or forged. The key is derived from
+`APP_PASSWORD`, which ANVE already holds; to use a separate key, set
+`ANVE_SCOPE_SECRET` here and `ANVE_VELLUM_SCOPE_SECRET` in ANVE to the same
+value. ANVE refuses to show its users a library from a Vellum that does not
+answer `x-vellum-scope: enforced`. See `src/lib/auth/anve-scope.ts`.
+
 The E2E scripts read the same variable, so they run against a prefixed instance
 unchanged. On Git Bash, export it as `MSYS_NO_PATHCONV=1 NEXT_PUBLIC_BASE_PATH=/vellum`
 or MSYS rewrites the leading `/` into a Windows path.

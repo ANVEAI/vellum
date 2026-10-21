@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readSession, SESSION_COOKIE } from "@/lib/auth/session";
 
+/**
+ * Behind ANVE, every response says that lists are scoped (src/lib/auth/anve-scope.ts),
+ * so ANVE's proxy can refuse to show a library from a Vellum that is not enforcing it.
+ * Kept inline rather than imported: that module needs node:crypto, and this is the edge.
+ */
+function scoped<T extends NextResponse>(res: T): T {
+  if (process.env.ANVE_SCOPE_SECRET || process.env.ANVE_SCOPE === "required") {
+    res.headers.set("x-vellum-scope", "enforced");
+  }
+  return res;
+}
+
 const PUBLIC_PATHS = ["/login", "/api/auth/login"];
 
 function isPublic(pathname: string): boolean {
@@ -15,7 +27,7 @@ function isPublic(pathname: string): boolean {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (isPublic(pathname)) return NextResponse.next();
+  if (isPublic(pathname)) return scoped(NextResponse.next());
 
   // /print/* and /api/export/* accept a short-lived HMAC token instead of a
   // session so headless export (Playwright hitting localhost) works. The token
@@ -25,15 +37,15 @@ export async function middleware(request: NextRequest) {
   const session = await readSession(
     request.cookies.get(SESSION_COOKIE)?.value,
   );
-  if (session) return NextResponse.next();
+  if (session) return scoped(NextResponse.next());
 
   if (pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return scoped(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
   }
   const loginUrl = request.nextUrl.clone();
   loginUrl.pathname = "/login";
   loginUrl.search = "";
-  return NextResponse.redirect(loginUrl);
+  return scoped(NextResponse.redirect(loginUrl));
 }
 
 export const config = {
