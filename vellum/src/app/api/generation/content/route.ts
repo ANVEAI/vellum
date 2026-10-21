@@ -197,6 +197,7 @@ export async function POST(request: NextRequest) {
             { role: "user", content: user },
           ],
           signal: request.signal,
+          documentId,
           onDelta: (delta) => {
             cumulative += delta;
             sse.event("chunk", { chunk: delta });
@@ -244,6 +245,7 @@ export async function POST(request: NextRequest) {
               { role: "user", content: correction },
             ],
             signal: request.signal,
+            documentId,
           });
           cumulative = retryRaw;
           raw = retryRaw;
@@ -418,6 +420,7 @@ export async function POST(request: NextRequest) {
                   },
                 ],
                 signal: request.signal,
+                documentId,
               });
               const gateParser = new SlideParser({ mode });
               gateParser.parseChunk(regenRaw);
@@ -491,6 +494,7 @@ export async function POST(request: NextRequest) {
             request: document.prompt ?? "",
             llm: { baseUrl: settings.llm.ollamaUrl, model: settings.llm.model },
             signal: request.signal,
+            documentId,
           });
           if (pictures.changed.length > 0) slides = planDeck(pictures.slides);
         }

@@ -1,7 +1,12 @@
 /**
  * Minimal Ollama client (native /api/chat) with streaming, think-toggle, and
  * abort support. Plain fetch — no SDK — so we control flush/heartbeat timing.
+ *
+ * Every model call in Vellum goes through streamChat/chatOnce here. When
+ * LLM_BASE_URL is set they are served by the OpenAI-compatible client in
+ * openai.ts instead (Vellum behind ANVE's gateway); nothing else changes.
  */
+import { openAIConfig, streamChatOpenAI } from "./openai";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -17,6 +22,9 @@ export interface OllamaStreamOptions {
   format?: object;
   stop?: string[];
   signal?: AbortSignal;
+  /** The document this call is for. Sent to an OpenAI-compatible gateway so
+   *  it can attribute the call; Ollama ignores it. */
+  documentId?: string;
   /** Called for every content delta. */
   onDelta: (delta: string) => void;
 }
@@ -34,6 +42,9 @@ interface OllamaChatChunk {
  * models that inline <think> blocks in content.
  */
 export async function streamChat(options: OllamaStreamOptions): Promise<string> {
+  const gateway = openAIConfig();
+  if (gateway) return streamChatOpenAI(gateway, options);
+
   const res = await fetch(`${options.baseUrl}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
