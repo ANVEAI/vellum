@@ -107,6 +107,7 @@ ${instruction ? `\nAdditional instruction: ${instruction}` : ""}`;
         { role: "user", content: regenUser },
       ],
       signal: request.signal,
+      documentId,
     });
 
     const parser = new SlideParser({ mode });
@@ -152,6 +153,7 @@ ${instruction ? `\nAdditional instruction: ${instruction}` : ""}`;
           llm: { baseUrl: settings.llm.ollamaUrl, model: settings.llm.model },
           only: [index],
           signal: request.signal,
+          documentId,
         });
         if (pictures.changed.length > 0) {
           slides[index] = replanSlide(pictures.slides, index);

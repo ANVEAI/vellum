@@ -105,6 +105,7 @@ export async function runQualityCheck(documentId: string): Promise<void> {
       baseUrl: settings.llm.ollamaUrl,
       model: settings.llm.model,
       schema: critiqueSchema,
+      documentId,
       messages: [
         {
           role: "system",

@@ -38,6 +38,7 @@ interface Settings {
 
 interface Health {
   services: { db: boolean; ollama: boolean; searxng: boolean; comfyui: boolean };
+  settings?: { model: string; provider?: "ollama" | "openai-compatible" };
 }
 
 const COMFY_MODELS = [
@@ -337,38 +338,50 @@ export default function SettingsPage() {
         </p>
 
         <div className="mt-6 grid gap-5 md:grid-cols-2">
-          <Section
-            title="Language model"
-            description="Ollama serves every generation."
-            health={health?.services.ollama}
-          >
-            <Row label="Server" htmlFor="set-ollama-url">
-              <input
-                id="set-ollama-url"
-                className="input"
-                value={s.llm.ollamaUrl}
-                onChange={(e) => save({ ...s, llm: { ...s.llm, ollamaUrl: e.target.value } })}
-              />
-            </Row>
-            <Row label="Model" htmlFor="set-ollama-model">
-              <input
-                id="set-ollama-model"
-                className="input"
-                value={s.llm.model}
-                onChange={(e) => save({ ...s, llm: { ...s.llm, model: e.target.value } })}
-              />
-            </Row>
-            <Row
-              label="Thinking"
-              hint="Let the model reason before answering — better structure, noticeably slower."
+          {health?.settings?.provider === "openai-compatible" ? (
+            <Section
+              title="Language model"
+              description="An OpenAI-compatible gateway serves every generation. It is set in this machine's .env (LLM_BASE_URL), not here."
+              health={health?.services.ollama}
             >
-              <Switch
-                label="Enable extended thinking"
-                checked={s.llm.think}
-                onChange={(think) => save({ ...s, llm: { ...s.llm, think } })}
-              />
-            </Row>
-          </Section>
+              <Row label="Model">
+                <span className="t-body">{health.settings.model}</span>
+              </Row>
+            </Section>
+          ) : (
+            <Section
+              title="Language model"
+              description="Ollama serves every generation."
+              health={health?.services.ollama}
+            >
+              <Row label="Server" htmlFor="set-ollama-url">
+                <input
+                  id="set-ollama-url"
+                  className="input"
+                  value={s.llm.ollamaUrl}
+                  onChange={(e) => save({ ...s, llm: { ...s.llm, ollamaUrl: e.target.value } })}
+                />
+              </Row>
+              <Row label="Model" htmlFor="set-ollama-model">
+                <input
+                  id="set-ollama-model"
+                  className="input"
+                  value={s.llm.model}
+                  onChange={(e) => save({ ...s, llm: { ...s.llm, model: e.target.value } })}
+                />
+              </Row>
+              <Row
+                label="Thinking"
+                hint="Let the model reason before answering — better structure, noticeably slower."
+              >
+                <Switch
+                  label="Enable extended thinking"
+                  checked={s.llm.think}
+                  onChange={(think) => save({ ...s, llm: { ...s.llm, think } })}
+                />
+              </Row>
+            </Section>
+          )}
 
           <Section
             title="Web research"

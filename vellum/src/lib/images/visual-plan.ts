@@ -352,6 +352,8 @@ export async function planPictures(
     /** Decide only these slides (0-based) — "Regenerate slide" passes one. */
     only?: number[];
     signal?: AbortSignal;
+    /** The document being planned, for the LLM gateway's call log. */
+    documentId?: string;
   },
 ): Promise<{ slides: PlateSlide[]; changed: number[] }> {
   const candidates = visualCandidates(slides, options.capacity).filter(
@@ -381,6 +383,7 @@ export async function planPictures(
       parseRetries: 2,
       validationLoops: 2,
       signal: options.signal,
+      documentId: options.documentId,
     });
   };
   let decisions = fallback;

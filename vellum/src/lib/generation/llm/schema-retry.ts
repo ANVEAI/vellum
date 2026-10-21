@@ -18,6 +18,8 @@ export async function generateStructuredWithRetries<T>(options: {
   parseRetries?: number;
   validationLoops?: number;
   signal?: AbortSignal;
+  /** See OllamaStreamOptions.documentId. */
+  documentId?: string;
 }): Promise<T> {
   const parseRetries = options.parseRetries ?? 3;
   const validationLoops = options.validationLoops ?? 4;
@@ -39,6 +41,7 @@ export async function generateStructuredWithRetries<T>(options: {
           format: jsonSchema,
           messages: conversation,
           signal: options.signal,
+          documentId: options.documentId,
         });
         break;
       } catch (error) {

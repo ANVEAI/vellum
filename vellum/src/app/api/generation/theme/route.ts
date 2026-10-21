@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
       model: settings.llm.model,
       schema: aiThemeSchema,
       signal: request.signal,
+      documentId,
       messages: [
         {
           role: "system",

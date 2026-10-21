@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
           { role: "user", content: user },
         ],
         signal: request.signal,
+        documentId,
         onDelta: (delta) => {
           markdown += delta;
           sse.event("chunk", { chunk: delta });
@@ -153,6 +154,7 @@ export async function POST(request: NextRequest) {
             },
           ],
           signal: request.signal,
+          documentId,
           onDelta: (delta) => {
             markdown += delta;
             sse.event("chunk", { chunk: delta });
