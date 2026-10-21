@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { db, ensureWal } from "@/lib/db";
+import { documentScope, scopeWhere } from "@/lib/auth/anve-scope";
 import { TopNav } from "@/components/ui/chrome";
 import { Icon } from "@/components/ui/icon";
 import { Library, type LibraryCard } from "./library";
@@ -9,7 +11,10 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   await ensureWal();
+  // Behind ANVE, only the documents this person may see (src/lib/auth/anve-scope.ts).
+  const scope = documentScope(await headers());
   const documents = await db.document.findMany({
+    where: scopeWhere(scope),
     orderBy: { updatedAt: "desc" },
     select: {
       id: true,
