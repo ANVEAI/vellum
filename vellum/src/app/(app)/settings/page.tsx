@@ -24,7 +24,7 @@ interface Settings {
   llm: { ollamaUrl: string; model: string; think: boolean };
   search: { enabled: boolean; searxngUrl: string; maxResults: number };
   images: {
-    provider: "comfyui" | "gemini" | "pexels" | "none";
+    provider: "comfyui" | "gemini" | "pexels" | "anve" | "none";
     comfyuiUrl: string;
     comfyuiWorkflow: "16x9" | "square";
     comfyModel: "flux-schnell" | "qwen-image" | "hidream";
@@ -51,6 +51,7 @@ const PROVIDERS = [
   { value: "comfyui" as const, label: "ComfyUI" },
   { value: "gemini" as const, label: "Gemini" },
   { value: "pexels" as const, label: "Pexels" },
+  { value: "anve" as const, label: "ANVE" },
   { value: "none" as const, label: "None" },
 ];
 
@@ -540,6 +541,15 @@ export default function SettingsPage() {
                   />
                 </Row>
               </>
+            )}
+
+            {s.images.provider === "anve" && (
+              <Row label="">
+                <p className="t-caption text-ink-3">
+                  Drawn by ANVE&apos;s image endpoint (LLM_BASE_URL/images/generations, with
+                  LLM_API_KEY): Gemini on Vertex AI, logged and governed in ANVE.
+                </p>
+              </Row>
             )}
 
             {s.images.provider === "pexels" && (

@@ -157,6 +157,7 @@ async function processJob(jobId: string): Promise<void> {
       context.shapeFor(job.slideId, job.nodeId),
       context.model,
       context.negative,
+      job.documentId ?? undefined,
     );
     const filename = `${job.id}.${result.ext}`;
     writeFileSync(path.join(imagesDir(), filename), result.bytes);
@@ -236,7 +237,10 @@ async function processJob(jobId: string): Promise<void> {
 
 async function pump(): Promise<void> {
   const settings = await getSettings();
-  const limit = settings.images.provider === "comfyui" ? 1 : 4;
+  // ComfyUI is one GPU; ANVE's gateway is one Vertex quota shared with
+  // everything else on the box, so two at a time there.
+  const limit =
+    settings.images.provider === "comfyui" ? 1 : settings.images.provider === "anve" ? 2 : 4;
   if (running >= limit) return;
 
   const next = await db.generatedImage.findFirst({

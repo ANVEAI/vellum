@@ -25,7 +25,7 @@ Built by combining the strongest parts of
 | App | Next.js 15 (single runtime), SQLite via Prisma 6 |
 | LLM | Ollama (`qwen3.6:35b`) — one streaming call per deck/document |
 | Web research | SearXNG (`:8888`), injected as untrusted reference context |
-| Images | ComfyUI on GPU 1, offline: FLUX.1-schnell (fast, ~2s), Qwen-Image (in-image text), HiDream-I1 (photoreal); Google Nano Banana / Pexels switchable |
+| Images | ComfyUI on GPU 1, offline: FLUX.1-schnell (fast, ~2s), Qwen-Image (in-image text), HiDream-I1 (photoreal); Google Nano Banana / Pexels switchable / ANVE switchable. `IMAGE_PROVIDER` in the environment (`comfyui`, `gemini`, `pexels`, `anve`, `none`) overrides the saved setting; `anve` posts to `$LLM_BASE_URL/images/generations` with `LLM_API_KEY` (ANVE's Gemini-on-Vertex endpoint, logged and governed there) |
 | Icons | 1,512 Phosphor icons × 6 weights, semantic search via `nomic-embed-text` |
 | Charts | ECharts (client + SSR for export) |
 | Export | Playwright print → PDF; pptxgenjs with native text + measured geometry → PPTX; `docx` → DOCX |
