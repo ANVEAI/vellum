@@ -33,7 +33,10 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+# package-lock.json was written on macOS/Windows and lacks some Linux-only optional entries
+# (sharp's @emnapi/* wasm fallback), so `npm ci` refuses it on Linux. `npm install` then
+# keeps every version the lock pins and adds only what is missing.
+RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 
 FROM deps AS build
 COPY . .
