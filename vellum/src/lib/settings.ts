@@ -1,6 +1,25 @@
 import { z } from "zod";
 import { db, ensureWal } from "@/lib/db";
 
+export const IMAGE_PROVIDERS = ["comfyui", "gemini", "pexels", "anve", "none"] as const;
+export type ImageProviderName = (typeof IMAGE_PROVIDERS)[number];
+
+/**
+ * IMAGE_PROVIDER in the environment wins over the saved setting, so a server's
+ * provider is part of its deployment (ANVE's VM sets `anve`) rather than a row
+ * someone has to remember to change in the settings page. Unset or unknown: the
+ * saved setting stands.
+ */
+export function envImageProvider(): ImageProviderName | null {
+  const v = (process.env.IMAGE_PROVIDER ?? "").trim().toLowerCase();
+  return (IMAGE_PROVIDERS as readonly string[]).includes(v) ? (v as ImageProviderName) : null;
+}
+
+function withEnv(s: AppSettings): AppSettings {
+  const provider = envImageProvider();
+  return provider ? { ...s, images: { ...s.images, provider } } : s;
+}
+
 export const settingsSchema = z.object({
   llm: z
     .object({
@@ -18,7 +37,7 @@ export const settingsSchema = z.object({
     .default({}),
   images: z
     .object({
-      provider: z.enum(["comfyui", "gemini", "pexels", "none"]).default("comfyui"),
+      provider: z.enum(IMAGE_PROVIDERS).default("comfyui"),
       comfyuiUrl: z.string().default("http://127.0.0.1:8188"),
       comfyuiWorkflow: z.enum(["16x9", "square"]).default("16x9"),
       comfyModel: z
@@ -61,7 +80,7 @@ export async function getSettings(): Promise<AppSettings> {
       // ignore malformed rows; defaults win
     }
   }
-  cache = settingsSchema.parse(raw);
+  cache = withEnv(settingsSchema.parse(raw));
   return cache;
 }
 
@@ -85,8 +104,8 @@ export async function updateSettings(
       update: { value: JSON.stringify(merged[key]) },
     });
   }
-  cache = merged;
-  return merged;
+  cache = withEnv(merged);
+  return cache;
 }
 
 export function invalidateSettingsCache() {

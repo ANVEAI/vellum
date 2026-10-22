@@ -1,6 +1,7 @@
 /**
  * Image provider dispatch: comfyui (default, offline) | gemini (Nano
- * Banana) | pexels (stock) | none. Returns raw image bytes + extension.
+ * Banana) | pexels (stock) | anve (ANVE's gateway) | none. Returns raw image
+ * bytes + extension.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -140,6 +141,67 @@ async function generateGeminiImage(
   throw new Error("Gemini returned no image data");
 }
 
+/** The aspect ratio ANVE's image endpoint maps each slot to (it takes WxH too). */
+const ANVE_SIZE: Record<ImageShape, string> = {
+  "16x9": "16:9",
+  square: "1:1",
+  portrait: "2:3",
+  wide: "21:9",
+  band: "21:9",
+};
+
+/**
+ * ANVE's OpenAI-compatible image endpoint, on the same gateway and key as the
+ * LLM client (LLM_BASE_URL, LLM_API_KEY; IMAGE_BASE_URL overrides the URL).
+ * ANVE draws with Gemini on Vertex AI, logs the call under this app - and
+ * under the deck's owner when X-Vellum-Document names a deck it filed - and
+ * holds it to the workspace's cloud policy. No key lives in Vellum's settings.
+ */
+export async function generateAnveImage(
+  prompt: string,
+  shape: ImageShape = "16x9",
+  documentId?: string,
+): Promise<GeneratedImageResult> {
+  const base = (process.env.IMAGE_BASE_URL ?? process.env.LLM_BASE_URL ?? "")
+    .trim()
+    .replace(/\/+$/, "");
+  if (!base) throw new Error("ANVE image provider: LLM_BASE_URL is not set");
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const key = (process.env.LLM_API_KEY ?? "").trim();
+  if (key) headers.Authorization = `Bearer ${key}`;
+  if (documentId) headers["X-Vellum-Document"] = documentId;
+  const res = await fetch(`${base}/images/generations`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      prompt,
+      n: 1,
+      size: ANVE_SIZE[shape],
+      response_format: "b64_json",
+    }),
+    signal: AbortSignal.timeout(150_000),
+  });
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const body = (await res.json()) as { error?: { message?: string } | string };
+      detail = typeof body.error === "string" ? body.error : (body.error?.message ?? "");
+    } catch {
+      // keep the status alone
+    }
+    throw new Error(`ANVE images HTTP ${res.status}${detail ? `: ${detail.slice(0, 200)}` : ""}`);
+  }
+  const data = (await res.json()) as {
+    data?: Array<{ b64_json?: string; anve?: { mime?: string } }>;
+  };
+  const first = data.data?.[0];
+  if (!first?.b64_json) throw new Error("ANVE returned no image data");
+  return {
+    bytes: Buffer.from(first.b64_json, "base64"),
+    ext: (first.anve?.mime ?? "image/png").includes("jpeg") ? "jpeg" : "png",
+  };
+}
+
 async function fetchPexelsImage(
   settings: AppSettings,
   prompt: string,
@@ -177,6 +239,7 @@ export async function generateImage(
   shape: ImageShape = "16x9",
   modelOverride?: ComfyModel,
   negativePrompt?: string,
+  documentId?: string,
 ): Promise<GeneratedImageResult> {
   switch (settings.images.provider) {
     case "comfyui": {
@@ -197,6 +260,8 @@ export async function generateImage(
       return generateGeminiImage(settings, prompt, shape);
     case "pexels":
       return fetchPexelsImage(settings, prompt, shape);
+    case "anve":
+      return generateAnveImage(prompt, shape, documentId);
     case "none":
       throw new Error("Image generation is disabled (provider: none)");
   }
