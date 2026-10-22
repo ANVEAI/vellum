@@ -1,0 +1,12 @@
+# Never in the image: local state, secrets, build output and dependencies (rebuilt inside).
+.git
+.env*
+!.env.example
+data
+node_modules
+.next
+out
+coverage
+tsconfig.tsbuildinfo
+*.log
+.DS_Store
