@@ -4,6 +4,7 @@ import { getSettings } from "@/lib/settings";
 import { sseResponse } from "@/lib/sse";
 import { streamChat } from "@/lib/generation/llm/ollama";
 import { researchTopicWithSources } from "@/lib/generation/research/searxng";
+import { anveResearchEnabled, researchViaAnve } from "@/lib/generation/research/anve";
 import {
   buildOutlinePrompt,
   countOutlineCards,
@@ -69,11 +70,19 @@ export async function POST(request: NextRequest) {
         sse.event("status", { status: "Researching your topic" });
         // Registry keeps URLs server-side; the model only ever sees the
         // numbered refs, preserving the injection-safe text stripping.
-        const research = await researchTopicWithSources({
-          searxngUrl: settings.search.searxngUrl,
-          query: document.prompt ?? "",
-          limit: settings.search.maxResults,
-        });
+        // Behind ANVE without SearXNG (RESEARCH_PROVIDER=anve): ANVE's grounded
+        // Google Search research, sources included, under this deck's owner.
+        const research = anveResearchEnabled()
+          ? await researchViaAnve({
+              query: document.prompt ?? "",
+              limit: settings.search.maxResults,
+              documentId,
+            })
+          : await researchTopicWithSources({
+              searxngUrl: settings.search.searxngUrl,
+              query: document.prompt ?? "",
+              limit: settings.search.maxResults,
+            });
         researchContext = research.context;
         if (researchContext) {
           await db.document.update({

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db, ensureWal } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { openAIConfig, probeOpenAI } from "@/lib/generation/llm/openai";
+import { anveResearchEnabled } from "@/lib/generation/research/anve";
 
 export const runtime = "nodejs";
 
@@ -34,10 +35,11 @@ export async function GET() {
           ok,
           model: settings.llm.model,
         })),
-    probe(
-      `${settings.search.searxngUrl}/search?q=ping&format=json`,
-      4000,
-    ),
+    // RESEARCH_PROVIDER=anve: research is ANVE's /web-research on the gateway, so the
+    // search lamp follows the gateway rather than a SearXNG nobody runs.
+    anveResearchEnabled() && gateway
+      ? Promise.resolve(true)
+      : probe(`${settings.search.searxngUrl}/search?q=ping&format=json`, 4000),
     probe(`${settings.images.comfyuiUrl}/system_stats`),
   ]);
 
@@ -54,6 +56,7 @@ export async function GET() {
       model: llm.model,
       provider: gateway ? "openai-compatible" : "ollama",
       imageProvider: settings.images.provider,
+      researchProvider: anveResearchEnabled() ? "anve" : "searxng",
     },
   });
 }
