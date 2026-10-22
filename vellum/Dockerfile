@@ -43,7 +43,8 @@ COPY . .
 ARG NEXT_PUBLIC_BASE_PATH=/vellum
 ENV NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH} \
     DATABASE_URL=file:/tmp/build.db
-RUN npx prisma generate && npm run build
+# .next/cache is the build's own cache (hundreds of MB); `next start` does not need it.
+RUN npx prisma generate && npm run build && rm -rf .next/cache
 
 FROM base AS runtime
 ARG NEXT_PUBLIC_BASE_PATH=/vellum
@@ -53,11 +54,12 @@ ENV NODE_ENV=production \
     HOST=127.0.0.1 \
     PORT=3210 \
     HOME=/tmp
-# chromium-headless-shell and the system libraries it needs (--with-deps runs apt).
-COPY --from=deps /app/node_modules /app/node_modules
-RUN npx playwright install --with-deps --only-shell chromium \
- && rm -rf /var/lib/apt/lists/* /tmp/*
+# One copy of the app and its node_modules (copying node_modules in a layer of its own as
+# well doubled the image), then chromium-headless-shell and the system libraries it needs
+# (--with-deps runs apt).
 COPY --from=build /app /app
+RUN npx playwright install --with-deps --only-shell chromium \
+ && rm -rf /var/lib/apt/lists/* /tmp/* /root/.npm
 RUN groupadd -g 10010 vellum && useradd -u 10010 -g 10010 -d /tmp -s /usr/sbin/nologin vellum \
  && mkdir -p /app/data /app/.next/cache \
  && chown -R 10010:10010 /app/data /app/.next/cache
