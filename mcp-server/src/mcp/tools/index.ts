@@ -693,7 +693,7 @@ function numOrUndef(v: unknown, scale = 1): number | undefined {
   return typeof v === "number" ? v * scale : undefined;
 }
 
-function sinkFor(record: {
+export function sinkFor(record: {
   statusMessage?: string;
   progress?: { current: number; total: number };
   documentId?: string;

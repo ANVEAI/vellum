@@ -43,6 +43,21 @@ const envSchema = z.object({
   VELLUM_MCP_REQUIRE_AUTH: bool(false),
   /** Comma-separated bearer tokens accepted when REQUIRE_AUTH is on. */
   VELLUM_MCP_AUTH_TOKENS: z.string().default(""),
+  /**
+   * Comma-separated client IP addresses allowed to call /mcp. Empty allows
+   * everyone who passes the token check. Behind a tunnel on this machine the
+   * client is read from the proxy's CF-Connecting-IP header — see guard.ts.
+   */
+  VELLUM_MCP_ALLOW_CLIENTS: z.string().default(""),
+
+  // --- Tool set ------------------------------------------------------------
+  /**
+   * "full": the 26 tools a trusted local host drives. "anve-box": only
+   * start_presentation and check_presentation, for ANVE Box's cloud — see
+   * tools/anve-box.ts. One set per process, so a public endpoint never lists
+   * delete or settings.
+   */
+  VELLUM_MCP_TOOLSET: z.enum(["full", "anve-box"]).default("full"),
 
   // --- Timeouts ------------------------------------------------------------
   /** Ordinary reads/writes. Vellum answers these in milliseconds. */
@@ -99,6 +114,9 @@ export type Config = Readonly<{
   httpPort: number;
   requireAuth: boolean;
   authTokens: readonly string[];
+  /** Client addresses allowed to call /mcp; empty allows any. */
+  allowClients: readonly string[];
+  toolset: "full" | "anve-box";
   requestTimeoutMs: number;
   generationTimeoutMs: number;
   exportTimeoutMs: number;
@@ -154,6 +172,19 @@ export function loadConfig(
     );
   }
 
+  const allowClients = e.VELLUM_MCP_ALLOW_CLIENTS.split(",")
+    .map((a) => a.trim())
+    .filter(Boolean);
+
+  // The tool set for a public endpoint is only half the lock; without a token
+  // anyone who found the URL could start decks on this machine's GPU.
+  if (e.VELLUM_MCP_TOOLSET === "anve-box" && !e.VELLUM_MCP_REQUIRE_AUTH) {
+    throw new ConfigError(
+      'VELLUM_MCP_TOOLSET is "anve-box" but VELLUM_MCP_REQUIRE_AUTH is off — ' +
+        "the public tool set needs a token.",
+    );
+  }
+
   return Object.freeze({
     vellumBaseUrl: e.VELLUM_BASE_URL,
     vellumAppPassword: e.VELLUM_APP_PASSWORD,
@@ -162,6 +193,8 @@ export function loadConfig(
     httpPort: e.VELLUM_MCP_HTTP_PORT,
     requireAuth: e.VELLUM_MCP_REQUIRE_AUTH,
     authTokens: Object.freeze(tokens),
+    allowClients: Object.freeze(allowClients),
+    toolset: e.VELLUM_MCP_TOOLSET,
     requestTimeoutMs: e.VELLUM_MCP_REQUEST_TIMEOUT_MS,
     generationTimeoutMs: e.VELLUM_MCP_GENERATION_TIMEOUT_MS,
     exportTimeoutMs: e.VELLUM_MCP_EXPORT_TIMEOUT_MS,

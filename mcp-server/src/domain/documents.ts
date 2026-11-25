@@ -78,6 +78,15 @@ export class DocumentService {
   }
 
   /**
+   * The summary view without its asset read: a read and nothing else. Asset
+   * reads kick Vellum's image queue, which a read-only status check should not
+   * do. Throws not_found for an unknown id.
+   */
+  async status(documentId: string, signal: AbortSignal) {
+    return summarize(await this.mustGet(documentId, signal));
+  }
+
+  /**
    * Read one document through a projection.
    *
    * There is deliberately no "give me everything" mode short of `raw_xml`:
