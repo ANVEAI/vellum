@@ -32,6 +32,12 @@ const SETTLE_MS = 750;
 const SSE_IDLE_TIMEOUT_MS = 45_000;
 const ASSET_POLL_MS = 2_000;
 const QUALITY_POLL_MS = 3_000;
+/**
+ * How often a run waiting on another client's generation asks Vellum again.
+ * A deck takes minutes, so asking every few seconds adds at most that much
+ * delay, for a dozen small requests a minute.
+ */
+const BUSY_POLL_MS = 5_000;
 
 export interface GenerateInput {
   prompt: string;
@@ -45,6 +51,12 @@ export interface GenerateInput {
   stopAfterOutline?: boolean;
   waitForImagesMs?: number;
   waitForQualityMs?: number;
+  /**
+   * When Vellum is busy with another client's generation, wait up to this long
+   * for its slot instead of failing. See openContentStream. Unset: fail at
+   * once, as always.
+   */
+  busyRetryMs?: number;
 }
 
 export interface GenerateResult {
@@ -233,6 +245,7 @@ export class PresentationService {
       warnings: string[];
       waitForImagesMs?: number;
       waitForQualityMs?: number;
+      busyRetryMs?: number;
     },
     signal: AbortSignal,
     sink: ProgressSink,
@@ -244,7 +257,13 @@ export class PresentationService {
     let generationError: string | null = null;
 
     try {
-      const body = await api.streamContent(this.client, documentId, controller.signal);
+      const body = await this.openContentStream(
+        documentId,
+        controller.signal,
+        ctx.busyRetryMs ?? 0,
+        sink,
+        log,
+      );
       const session = new SseSession(body, {
         controller,
         idleTimeoutMs: SSE_IDLE_TIMEOUT_MS,
@@ -328,6 +347,37 @@ export class PresentationService {
         ? ["vellum.get_document", "vellum.generate_slides_from_outline"]
         : ["vellum.export_document", "vellum.get_document"],
     };
+  }
+
+  /**
+   * Open the content stream.
+   *
+   * Vellum runs one generation at a time across ALL its clients — its own web
+   * app, this server, another process of this server — and refuses a second
+   * with 409. This server's queue only orders its own work. Given a
+   * `busyRetryMs` budget, a run waits for Vellum's slot instead of failing,
+   * asking again every BUSY_POLL_MS. With no budget a 409 still fails the run
+   * at once.
+   */
+  private async openContentStream(
+    documentId: string,
+    signal: AbortSignal,
+    busyRetryMs: number,
+    sink: ProgressSink,
+    log: Logger,
+  ): Promise<ReadableStream<Uint8Array>> {
+    const deadline = Date.now() + busyRetryMs;
+    for (;;) {
+      try {
+        return await api.streamContent(this.client, documentId, signal);
+      } catch (err) {
+        const vellumBusy = err instanceof VellumMcpError && err.kind === "busy";
+        if (!vellumBusy || Date.now() + BUSY_POLL_MS > deadline) throw err;
+        sink.status?.("Waiting for Vellum: another deck is being made.");
+        log.info("vellum busy with another client; waiting for its generation slot");
+        await sleep(BUSY_POLL_MS, signal);
+      }
+    }
   }
 
   /* ---------------------------------------------------------------------- */

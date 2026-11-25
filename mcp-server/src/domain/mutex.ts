@@ -56,6 +56,15 @@ export class GenerationMutex {
   }
 
   /**
+   * How many runs are ahead of the first waiter whose label matches — the
+   * holder and the waiters queued before it — or 0 when none is waiting.
+   */
+  aheadOf(match: (label: string) => boolean): number {
+    const index = this.queue.findIndex((w) => match(w.label));
+    return index === -1 ? 0 : index + 1;
+  }
+
+  /**
    * Acquire the mutex. Resolves with a release function that MUST be called —
    * always from a `finally`.
    */

@@ -6,9 +6,12 @@
  * process singleton shared across requests. See container.ts for why that split
  * is load-bearing rather than stylistic.
  *
- * Binds to loopback by default. There is no inbound authentication in this
- * version, so anything that can reach the port has full read/write access to
- * the Vellum library; do not expose it beyond a trusted network.
+ * Binds to loopback by default. Inbound checks are off unless configured: with
+ * VELLUM_MCP_REQUIRE_AUTH every /mcp and /exports request needs a bearer
+ * token, and VELLUM_MCP_ALLOW_CLIENTS limits them to given client addresses
+ * (guard.ts). Without them, anything that can reach the port has full
+ * read/write access to the Vellum library; do not expose it beyond a trusted
+ * network.
  */
 import { createReadStream, statSync, type Stats } from "node:fs";
 import path from "node:path";
@@ -16,11 +19,36 @@ import express from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Container } from "../../container.js";
 import { buildServer } from "../server.js";
+import { checkAccess } from "./guard.js";
 
 export async function startHttp(container: Container): Promise<void> {
   const { config, logger, services } = container;
   const app = express();
   app.use(express.json({ limit: "8mb" }));
+
+  // Token and client checks for everything that touches the library. Answered
+  // here, before any MCP machinery runs, and never by a redirect.
+  app.use(["/mcp", "/exports"], (req, res, next) => {
+    const decision = checkAccess(
+      {
+        authorization: req.get("authorization"),
+        peer: req.socket.remoteAddress,
+        connectingIp: req.get("cf-connecting-ip"),
+      },
+      config,
+    );
+    if (decision.ok) {
+      next();
+      return;
+    }
+    logger.warn("request refused", { status: decision.status, client: decision.client ?? null });
+    if (decision.status === 401) res.setHeader("WWW-Authenticate", 'Bearer realm="vellum-mcp"');
+    res.status(decision.status).json({
+      jsonrpc: "2.0",
+      error: { code: decision.status === 401 ? -32001 : -32003, message: decision.message },
+      id: null,
+    });
+  });
 
   // Liveness. Deliberately does NOT touch Vellum: gating this on Vellum would
   // make a Vellum restart kill the MCP container too.

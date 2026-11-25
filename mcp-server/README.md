@@ -105,6 +105,39 @@ vellum.generate_slides_from_outline
 
 ---
 
+## The endpoint for ANVE Box's cloud
+
+ANVE Box's cloud (box.anveai.com, on Google Cloud) makes decks in this Vellum through a
+second process of this server with only two tools:
+
+| Tool | Does |
+|---|---|
+| `start_presentation` | Starts a deck and answers within seconds with an id. Only `topic` is required; `slides` (1-30, default 8), `style` (every deck template, or `general`), `detail` (visual to text-heavy), `tone`, `audience`, `language` and `requestId` all have defaults. When Vellum is busy it answers at once: queued, with how many decks are ahead, or `busy:` when the queue is full. |
+| `check_presentation` | Read-only. `working` (Vellum's stage, or the place in the queue), `done` (title and slide count) or `failed` (one-line reason). Accepts the id `start_presentation` returned; it is Vellum's document id, so it survives a restart of this server. |
+
+```
+ANVE Box (GCP, 8.234.105.212) -> https://vellum-mcp.anveai.com/mcp
+  -> Cloudflare tunnel (cloudflared on this machine, only /mcp is routed)
+  -> 127.0.0.1:8766  this server, VELLUM_MCP_TOOLSET=anve-box
+  -> Vellum on 127.0.0.1:3210
+```
+
+- **Locks.** A bearer token (`VELLUM_MCP_REQUIRE_AUTH` + `VELLUM_MCP_AUTH_TOKENS`) and the
+  client allowlist (`VELLUM_MCP_ALLOW_CLIENTS=8.234.105.212`), read from Cloudflare's
+  `CF-Connecting-IP` — believed only on a loopback connection, i.e. from the tunnel.
+  The public set lists nothing that deletes or changes settings.
+- **The private endpoint is untouched.** `:8765` keeps the full set with no token for the
+  local ANVE platform; its `tools/list` is byte-identical to before these tools existed.
+- **Sharing Vellum's slot.** The public process has its own queue, and Vellum also takes
+  work from its web app and the private process, refusing a second generation with 409.
+  Runs started by `start_presentation` wait for Vellum's slot (`busyRetryMs`) instead of
+  failing; the full set's tools keep failing fast, as before.
+- **Running it.** Settings and the token live in `mcp-server/.env.anve-box` (git-ignored).
+  `scripts\vellum-mcp-anve-box-autostart.ps1 -Register` keeps the process and the tunnel up
+  as SYSTEM; the tunnel's config is `%ProgramData%\Vellum\vellum-mcp-tunnel.yml`.
+
+---
+
 ## Things this server has to work around
 
 Vellum was not built to be driven remotely. These are the behaviours the adapter absorbs
@@ -188,7 +221,10 @@ in-process queues; there is no isolation primitive for this server to build on.
   name, session cookies and bearer tokens by pattern.
 - **Inbound auth is off by default.** Anything that can reach the port has full read/write
   on the library, including delete. `VELLUM_MCP_REQUIRE_AUTH=true` plus
-  `VELLUM_MCP_AUTH_TOKENS` turns it on.
+  `VELLUM_MCP_AUTH_TOKENS` turns it on: every `/mcp` and `/exports` request then needs
+  `Authorization: Bearer <token>` (compared in constant time), and
+  `VELLUM_MCP_ALLOW_CLIENTS` can further limit the client addresses. The config used to
+  accept these settings without the transport checking them.
 
 ---
 
@@ -196,7 +232,7 @@ in-process queues; there is no isolation primitive for this server to build on.
 
 ```bash
 npm run typecheck
-npm test              # 44 unit + contract tests, no live Vellum needed
+npm test              # 72 unit + contract tests, no live Vellum needed
 npm run build
 ```
 

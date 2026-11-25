@@ -8,3 +8,5 @@ dist/
 # from committing a 26 MB deck.
 .exports/
 exports/
+# The anve-box process's own export directory (.env.anve-box).
+.exports-anve-box/
