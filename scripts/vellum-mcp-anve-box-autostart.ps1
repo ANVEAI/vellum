@@ -1,10 +1,11 @@
 # Keep Vellum's public MCP endpoint for ANVE Box's cloud answering - at boot,
 # and after a crash. Two processes:
 #
-#   1. the MCP server with the two-tool "anve-box" set, on 127.0.0.1:8766,
-#      configured by mcp-server\.env.anve-box (token, allowed client address);
-#   2. the Cloudflare tunnel that publishes it as https://vellum-mcp.anveai.com/mcp,
-#      configured by the tunnel file (-TunnelConfig).
+#   1. the MCP server on 127.0.0.1:8766 (the full tool set since 26 Nov 2026;
+#      before that the two-tool "anve-box" set), configured by
+#      mcp-server\.env.anve-box (tool set, token, allowed client address);
+#   2. the Cloudflare tunnel that publishes it as https://vellum-mcp.anveai.com/mcp
+#      (and /exports/<file>), configured by the tunnel file (-TunnelConfig).
 #
 #   powershell -ExecutionPolicy Bypass -File scripts\vellum-mcp-anve-box-autostart.ps1 -Register
 #       registers a scheduled task that runs this script as SYSTEM, once at
@@ -99,7 +100,7 @@ if ($Register) {
 # ---------------------------------------------------------------------------
 # 1. The MCP server.
 if (-not (Test-Port $Port)) {
-  Write-Log ("port " + $Port + " not answering - starting the anve-box mcp server")
+  Write-Log ("port " + $Port + " not answering - starting the mcp server for ANVE Box")
   if (-not (Test-Path (Join-Path $App "dist\index.js"))) {
     Write-Log ("FAILED: no build at " + $App + "\dist - run npm run build")
     exit 1

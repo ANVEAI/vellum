@@ -153,15 +153,18 @@ close, only where the slide has room at full size, and never in the copy.
 The model proposes, `lib/slides/emoji-accents.ts` decides, and the
 Inspector's Emoji section sets or clears one per slide.
 
-MCP for ANVE Box (November 2026): ANVE Box's cloud (box.anveai.com) makes
-decks here through `https://vellum-mcp.anveai.com/mcp` — a Cloudflare tunnel
-to a second MCP process on 127.0.0.1:8766 with two tools
-(`start_presentation`, `check_presentation`), a bearer token and only
-8.234.105.212 allowed. Settings and the token: `mcp-server/.env.anve-box`
-(git-ignored). Kept up by the `VellumMCPAnveBox` scheduled task
+MCP for ANVE Box (November 2026): ANVE Box's cloud (box.anveai.com) uses
+Vellum here through `https://vellum-mcp.anveai.com/mcp` — a Cloudflare tunnel
+to a second MCP process on 127.0.0.1:8766, locked to a bearer token and to
+8.234.105.212. Since 26 November it serves the full 26-tool set: ANVE asked to
+move off the two-tool `anve-box` set, which stays in the code. The tunnel also
+forwards `/exports/<file>`, for exports too large to embed. The full set starts
+without a token, so `VELLUM_MCP_REQUIRE_AUTH` and `VELLUM_MCP_ALLOW_CLIENTS`
+must stay in `mcp-server/.env.anve-box` (git-ignored; it also holds the token).
+Kept up by the `VellumMCPAnveBox` scheduled task
 (`scripts/vellum-mcp-anve-box-autostart.ps1`); the tunnel config is
-`C:\ProgramData\Vellum\vellum-mcp-tunnel.yml`. The private :8765 endpoint and its
-26 tools are unchanged. Details in `mcp-server/README.md`.
+`C:\ProgramData\Vellum\vellum-mcp-tunnel.yml`. The private :8765 endpoint is
+unchanged. Details in `mcp-server/README.md`.
 
 Also: reference-counted asset GC (files and themes are shared between
 duplicates, so ownership is unanswerable — liveness is a text scan over all DB

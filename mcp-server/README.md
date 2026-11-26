@@ -107,34 +107,51 @@ vellum.generate_slides_from_outline
 
 ## The endpoint for ANVE Box's cloud
 
-ANVE Box's cloud (box.anveai.com, on Google Cloud) makes decks in this Vellum through a
-second process of this server with only two tools:
-
-| Tool | Does |
-|---|---|
-| `start_presentation` | Starts a deck and answers within seconds with an id. Only `topic` is required; `slides` (1-30, default 8), `style` (every deck template, or `general`), `detail` (visual to text-heavy), `tone`, `audience`, `language` and `requestId` all have defaults. When Vellum is busy it answers at once: queued, with how many decks are ahead, or `busy:` when the queue is full. |
-| `check_presentation` | Read-only. `working` (Vellum's stage, or the place in the queue), `done` (title and slide count) or `failed` (one-line reason). Accepts the id `start_presentation` returned; it is Vellum's document id, so it survives a restart of this server. |
+ANVE Box's cloud (box.anveai.com, on Google Cloud) uses this Vellum through a second
+process of this server. Since 26 November 2026 that process serves the full set: the same
+26 tools as the private endpoint, with identical definitions, which ANVE pins. ANVE uses
+only the tools it has reviewed and never calls `delete_document` or the settings tools.
 
 ```
 ANVE Box (GCP, 8.234.105.212) -> https://vellum-mcp.anveai.com/mcp
-  -> Cloudflare tunnel (cloudflared on this machine, only /mcp is routed)
-  -> 127.0.0.1:8766  this server, VELLUM_MCP_TOOLSET=anve-box
+  -> Cloudflare tunnel (cloudflared on this machine; only /mcp and /exports/<file> are routed)
+  -> 127.0.0.1:8766  this server, VELLUM_MCP_TOOLSET=full
   -> Vellum on 127.0.0.1:3210
 ```
 
 - **Locks.** A bearer token (`VELLUM_MCP_REQUIRE_AUTH` + `VELLUM_MCP_AUTH_TOKENS`) and the
   client allowlist (`VELLUM_MCP_ALLOW_CLIENTS=8.234.105.212`), read from Cloudflare's
   `CF-Connecting-IP` — believed only on a loopback connection, i.e. from the tunnel.
-  The public set lists nothing that deletes or changes settings.
+  **The full set starts without a token**, so both settings must stay in `.env.anve-box`.
+- **Exports.** A file up to `VELLUM_MCP_EMBED_MAX_BYTES` (5 MB) is embedded in the result.
+  A larger one comes back as a link on `VELLUM_MCP_PUBLIC_URL`
+  (`https://vellum-mcp.anveai.com/exports/<file>`), which asks for the same token and
+  address and expires after `VELLUM_MCP_ARTIFACT_TTL_MS` (24 hours).
+- **Sharing Vellum's slot.** Vellum makes one deck at a time for its web app, the private
+  endpoint and this one, and refuses a second with 409. This process queues its own runs;
+  a run that meets another client's deck fails with a retryable busy error, as on the
+  private endpoint.
 - **The private endpoint is untouched.** `:8765` keeps the full set with no token for the
-  local ANVE platform; its `tools/list` is byte-identical to before these tools existed.
-- **Sharing Vellum's slot.** The public process has its own queue, and Vellum also takes
-  work from its web app and the private process, refusing a second generation with 409.
-  Runs started by `start_presentation` wait for Vellum's slot (`busyRetryMs`) instead of
-  failing; the full set's tools keep failing fast, as before.
+  local ANVE platform.
 - **Running it.** Settings and the token live in `mcp-server/.env.anve-box` (git-ignored).
   `scripts\vellum-mcp-anve-box-autostart.ps1 -Register` keeps the process and the tunnel up
-  as SYSTEM; the tunnel's config is `%ProgramData%\Vellum\vellum-mcp-tunnel.yml`.
+  as SYSTEM; the tunnel's config is `%ProgramData%\Vellum\vellum-mcp-tunnel.yml`. Restart
+  the process only when no deck is being made: it drives the runs it started, so a restart
+  can leave a deck half-made.
+
+### The two-tool set
+
+From 25 to 26 November 2026 the endpoint served only these two
+(`VELLUM_MCP_TOOLSET=anve-box`). They stay in the code for a client that should see nothing
+that deletes or changes settings, and the set refuses to start without a token.
+
+| Tool | Does |
+|---|---|
+| `start_presentation` | Starts a deck and answers within seconds with an id. Only `topic` is required; `slides` (1-30, default 8), `style` (every deck template, or `general`), `detail` (visual to text-heavy), `tone`, `audience`, `language` and `requestId` all have defaults. When Vellum is busy it answers at once: queued, with how many decks are ahead, or `busy:` when the queue is full. |
+| `check_presentation` | Read-only. `working` (Vellum's stage, or the place in the queue), `done` (title and slide count) or `failed` (one-line reason). Accepts the id `start_presentation` returned; it is Vellum's document id, so it survives a restart of this server. |
+
+Runs started by `start_presentation` wait for Vellum's slot (`busyRetryMs`) instead of
+failing with busy.
 
 ---
 
@@ -224,7 +241,9 @@ in-process queues; there is no isolation primitive for this server to build on.
   `VELLUM_MCP_AUTH_TOKENS` turns it on: every `/mcp` and `/exports` request then needs
   `Authorization: Bearer <token>` (compared in constant time), and
   `VELLUM_MCP_ALLOW_CLIENTS` can further limit the client addresses. The config used to
-  accept these settings without the transport checking them.
+  accept these settings without the transport checking them. The `anve-box` set refuses
+  to start without a token; the full set does not, so an endpoint reachable from outside
+  must turn it on.
 
 ---
 
